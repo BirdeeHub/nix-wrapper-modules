@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib }:
 let
   /**
     A function to create a wrapper module.
@@ -24,15 +24,14 @@ let
       # This will return a derivation that wraps the hello package with the --greeting flag set to "hi".
   */
   wrapModule =
-    declarationArgs:
+    packageInterface:
     let
-      declaration = declarationArgs wrapperLib;
-
       wrapperLib = {
         types = {
           inherit file;
         };
       };
+      # pkgs -> module { content, path }
       file =
         # we need to pass pkgs here, because writeText is in pkgs
         pkgs:
@@ -57,78 +56,108 @@ let
             };
           }
         );
-      evalArgs = cfg: {
-        modules = [
-          declaration
-          cfg
-          {
-            options = {
-              pkgs = lib.mkOption {
-                description = ''
-                  The nixpkgs pkgs instance to use.
-                  We want to have this, so wrapper modules can be system agnostic.
-                '';
-              };
-              package = lib.mkOption {
-                type = lib.types.package;
-                description = ''
-                  The base package to wrap.
-                  This means we inherit all other files from this package
-                  (like man page, /share, ...)
-                '';
-              };
-              extraPackages = lib.mkOption {
-                type = lib.types.listOf lib.types.package;
-                default = [ ];
-                description = ''
-                  Additional packages to add to the wrapper's runtime dependencies.
-                  This is useful if the wrapped program needs additional libraries or tools to function correctly.
-                  These packages will be added to the wrapper's runtime dependencies, ensuring they are available when the wrapped program is executed.
-                '';
-              };
-              flags = lib.mkOption {
-                type = lib.types.attrsOf lib.types.unspecified; # TODO add list handling
-                default = { };
-                description = ''
-                  Flags to pass to the wrapper.
-                  The key is the flag name, the value is the flag value.
-                  If the value is true, the flag will be passed without a value.
-                  If the value is false or null, the flag will not be passed.
-                  If the value is a list, the flag will be passed multiple times with each value.
-                '';
-              };
-              env = lib.mkOption {
-                type = lib.types.attrsOf lib.types.str;
-                default = { };
-                description = ''
-                  Environment variables to set in the wrapper.
-                '';
-              };
-              passthru = lib.mkOption {
-                type = lib.types.attrs;
-                default = { };
-                description = ''
-                  Additional attributes to add to the resulting derivation's passthru.
-                  This can be used to add additional metadata or functionality to the wrapped package.
-                  This will always contain options, config and settings, so these are reserved names and cannot be used here.
-                '';
-              };
+      staticModules = [
+        {
+          options = {
+            pkgs = lib.mkOption {
+              description = ''
+                The nixpkgs pkgs instance to use.
+                We want to have this, so wrapper modules can be system agnostic.
+              '';
             };
-          }
-        ];
-      };
+            package = lib.mkOption {
+              type = lib.types.package;
+              description = ''
+                The base package to wrap.
+                This means we inherit all other files from this package
+                (like man page, /share, ...)
+              '';
+            };
+            extraPackages = lib.mkOption {
+              type = lib.types.listOf lib.types.package;
+              default = [ ];
+              description = ''
+                Additional packages to add to the wrapper's runtime dependencies.
+                This is useful if the wrapped program needs additional libraries or tools to function correctly.
+                These packages will be added to the wrapper's runtime dependencies, ensuring they are available when the wrapped program is executed.
+              '';
+            };
+            flags = lib.mkOption {
+              type = lib.types.attrsOf lib.types.unspecified; # TODO add list handling
+              default = { };
+              description = ''
+                Flags to pass to the wrapper.
+                The key is the flag name, the value is the flag value.
+                If the value is true, the flag will be passed without a value.
+                If the value is false or null, the flag will not be passed.
+                If the value is a list, the flag will be passed multiple times with each value.
+              '';
+            };
+            env = lib.mkOption {
+              type = lib.types.attrsOf lib.types.str;
+              default = { };
+              description = ''
+                Environment variables to set in the wrapper.
+              '';
+            };
+            passthru = lib.mkOption {
+              type = lib.types.attrs;
+              default = { };
+              description = ''
+                Additional attributes to add to the resulting derivation's passthru.
+                This can be used to add additional metadata or functionality to the wrapped package.
+                This will always contain options, config and settings, so these are reserved names and cannot be used here.
+              '';
+            };
+          };
+        }
+      ];
+      eval =
+        settings:
+        lib.evalModules {
+          modules = [
+            (
+              { config, ... }:
+              {
+                options.interface = lib.mkOption {
+                  type = lib.types.deferredModule;
+                  default = packageInterface;
+                };
+                options.settings = lib.mkOption {
+                  type = lib.types.deferredModule;
+                  default = settings;
+                };
+                options.result = lib.mkOption {
+                  type = lib.types.deferredModule;
+                  apply =
+                    v:
+                    (lib.evalModules {
+                      modules = [ v ];
+                      specialArgs = {
+                        wlib = wrapperLib;
+                      };
+                    });
+                  default = {
+                    imports = staticModules ++ [
+                      config.interface
+                      config.settings
+                    ];
+                  };
+                };
+              }
+            )
+          ];
+        };
     in
     {
       # expose options to generate documentation of available modules
-      options = (lib.evalModules (evalArgs { })).options;
+      options = (eval { }).config.result.options;
       apply =
         settings:
         let
-          eval = lib.evalModules (evalArgs {
-            config = settings;
-          });
-          options = eval.options;
-          config = eval.config;
+          # Result of eval modules is a 'configuration' with options, config
+          configuration = eval settings;
+          config = configuration.config.result.config;
         in
         wrapPackage {
           pkgs = config.pkgs;
@@ -138,7 +167,7 @@ let
           flags = config.flags;
           env = config.env;
           passthru = {
-            inherit options config settings;
+            inherit configuration settings;
           }
           // config.passthru;
         };
@@ -192,30 +221,30 @@ let
     ```
   */
   wrapPackage =
-    {
-      pkgs,
-      package,
-      runtimeInputs ? [ ],
-      env ? { },
-      flags ? { },
-      flagSeparator ? " ", # " " for "--flag value" or "=" for "--flag=value"
-      preHook ? "",
-      passthru ? { },
-      aliases ? [ ],
-      wrapper ? (
-        {
-          exePath,
-          flagsString,
-          envString,
-          preHook,
-          ...
+    { pkgs
+    , package
+    , runtimeInputs ? [ ]
+    , env ? { }
+    , flags ? { }
+    , flagSeparator ? " "
+    , # " " for "--flag value" or "=" for "--flag=value"
+      preHook ? ""
+    , passthru ? { }
+    , aliases ? [ ]
+    , wrapper ? (
+        { exePath
+        , flagsString
+        , envString
+        , preHook
+        , ...
         }:
-        ''
-          ${envString}
-          ${preHook}
-          exec ${exePath}${flagsString} "$@"
-        ''
-      ),
+          ''
+            ${envString}
+            ${preHook}
+            exec ${exePath}${flagsString} "$@"
+          ''
+      )
+    ,
     }:
     let
       # Extract binary name from the exe path
@@ -227,9 +256,10 @@ let
         if env == { } then
           ""
         else
-          lib.concatStringsSep "\n" (
-            lib.mapAttrsToList (name: value: ''export ${name}="${toString value}"'') env
-          )
+          lib.concatStringsSep "\n"
+            (
+              lib.mapAttrsToList (name: value: ''export ${name}="${toString value}"'') env
+            )
           + "\n";
 
       # Generate flag arguments with proper line breaks and indentation
@@ -239,10 +269,12 @@ let
         else
           " \\\n  "
           + lib.concatStringsSep " \\\n  " (
-            lib.mapAttrsToList (
-              name: value:
-              if value == { } then "${name}" else "${name}${flagSeparator}${lib.escapeShellArg (toString value)}"
-            ) flags
+            lib.mapAttrsToList
+              (
+                name: value:
+                  if value == { } then "${name}" else "${name}${flagSeparator}${lib.escapeShellArg (toString value)}"
+              )
+              flags
           );
 
       finalWrapper = wrapper {
@@ -258,16 +290,15 @@ let
 
       # Multi-output aware symlink join function
       multiOutputSymlinkJoin =
-        {
-          name,
-          paths,
-          outputs ? [ "out" ],
-          originalOutputs ? { },
-          passthru ? { },
-          meta ? { },
-          aliases ? [ ],
-          binName ? null,
-          ...
+        { name
+        , paths
+        , outputs ? [ "out" ]
+        , originalOutputs ? { }
+        , passthru ? { }
+        , meta ? { }
+        , aliases ? [ ]
+        , binName ? null
+        , ...
         }@args:
         pkgs.stdenv.mkDerivation (
           {
@@ -321,12 +352,15 @@ let
       # Get original package outputs for symlinking
       originalOutputs =
         if package ? outputs then
-          lib.listToAttrs (
-            map (output: {
-              name = output;
-              value = if package ? ${output} then package.${output} else null;
-            }) package.outputs
-          )
+          lib.listToAttrs
+            (
+              map
+                (output: {
+                  name = output;
+                  value = if package ? ${output} then package.${output} else null;
+                })
+                package.outputs
+            )
         else
           { };
 

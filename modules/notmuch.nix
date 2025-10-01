@@ -1,11 +1,9 @@
-{
-  wlib,
-  lib,
-  ...
+{ wlib
+, lib
+, ...
 }:
 wlib.wrapModule (
-  wlib:
-  { config, ... }:
+  { config, wlib, ... }:
   let
     iniFmt = config.pkgs.formats.ini { };
     writeNotmuchConfig = cfg: iniFmt.generate "notmuch.ini" cfg;
