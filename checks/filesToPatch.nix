@@ -5,26 +5,30 @@
 
 let
   # Create a dummy package with a desktop file that references itself
-  dummyPackage = (pkgs.runCommand "dummy-app" { } ''
-    mkdir -p $out/bin
-    mkdir -p $out/share/applications
+  dummyPackage =
+    (pkgs.runCommand "dummy-app" { } ''
+      mkdir -p $out/bin
+      mkdir -p $out/share/applications
 
-    # Create a simple executable
-    cat > $out/bin/dummy-app <<'EOF'
-    #!/bin/sh
-    echo "Hello from dummy app"
-    EOF
-    chmod +x $out/bin/dummy-app
+      # Create a simple executable
+      cat > $out/bin/dummy-app <<'EOF'
+      #!/bin/sh
+      echo "Hello from dummy app"
+      EOF
+      chmod +x $out/bin/dummy-app
 
-    # Create a desktop file that references the package path
-    cat > $out/share/applications/dummy-app.desktop <<EOF
-    [Desktop Entry]
-    Name=Dummy App
-    Exec=$out/bin/dummy-app
-    Icon=$out/share/icons/dummy-app.png
-    Type=Application
-    EOF
-  '') // { meta.mainProgram = "dummy-app"; };
+      # Create a desktop file that references the package path
+      cat > $out/share/applications/dummy-app.desktop <<EOF
+      [Desktop Entry]
+      Name=Dummy App
+      Exec=$out/bin/dummy-app
+      Icon=$out/share/icons/dummy-app.png
+      Type=Application
+      EOF
+    '')
+    // {
+      meta.mainProgram = "dummy-app";
+    };
 
   # Wrap the package
   wrappedPackage = self.lib.wrapPackage {

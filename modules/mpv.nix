@@ -26,6 +26,7 @@ wlib.wrapModule (
         description = "Extra flags to pass to mpv.";
       };
     };
+    config.flagSeparator = "=";
     config.flags = {
       "--input-conf" = config."mpv.input".path;
       "--include" = config."mpv.conf".path;

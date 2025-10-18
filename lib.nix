@@ -1,5 +1,38 @@
 { lib }:
 let
+  # Helper function to generate args list from flags attrset
+  generateArgsFromFlags =
+    flags: flagSeparator:
+    lib.flatten (
+      lib.mapAttrsToList (
+        name: value:
+        if value == false || value == null then
+          [ ]
+        else if value == { } then
+          [ name ]
+        else if lib.isList value then
+          lib.flatten (
+            map (
+              v:
+              if flagSeparator == " " then
+                [
+                  name
+                  (toString v)
+                ]
+              else
+                [ "${name}${flagSeparator}${toString v}" ]
+            ) value
+          )
+        else if flagSeparator == " " then
+          [
+            name
+            (toString value)
+          ]
+        else
+          [ "${name}${flagSeparator}${toString value}" ]
+      ) flags
+    );
+
   /**
     A function to create a wrapper module.
     returns an attribute set with options and apply function.
@@ -14,6 +47,8 @@ let
         config.flags = {
           "--greeting" = config.greeting;
         };
+        # Or use args directly:
+        # config.args = [ "--greeting" config.greeting ];
       };
 
       helloWrapper.apply {
@@ -57,68 +92,88 @@ let
           }
         );
       staticModules = [
-        {
-          options = {
-            pkgs = lib.mkOption {
-              description = ''
-                The nixpkgs pkgs instance to use.
-                We want to have this, so wrapper modules can be system agnostic.
-              '';
+        (
+          { config, ... }:
+          {
+            options = {
+              pkgs = lib.mkOption {
+                description = ''
+                  The nixpkgs pkgs instance to use.
+                  We want to have this, so wrapper modules can be system agnostic.
+                '';
+              };
+              package = lib.mkOption {
+                type = lib.types.package;
+                description = ''
+                  The base package to wrap.
+                  This means we inherit all other files from this package
+                  (like man page, /share, ...)
+                '';
+              };
+              extraPackages = lib.mkOption {
+                type = lib.types.listOf lib.types.package;
+                default = [ ];
+                description = ''
+                  Additional packages to add to the wrapper's runtime dependencies.
+                  This is useful if the wrapped program needs additional libraries or tools to function correctly.
+                  These packages will be added to the wrapper's runtime dependencies, ensuring they are available when the wrapped program is executed.
+                '';
+              };
+              flags = lib.mkOption {
+                type = lib.types.attrsOf lib.types.unspecified; # TODO add list handling
+                default = { };
+                description = ''
+                  Flags to pass to the wrapper.
+                  The key is the flag name, the value is the flag value.
+                  If the value is true, the flag will be passed without a value.
+                  If the value is false or null, the flag will not be passed.
+                  If the value is a list, the flag will be passed multiple times with each value.
+                '';
+              };
+              flagSeparator = lib.mkOption {
+                type = lib.types.str;
+                default = " ";
+                description = ''
+                  Separator between flag names and values when generating args from flags.
+                  " " for "--flag value" or "=" for "--flag=value"
+                '';
+              };
+              args = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = generateArgsFromFlags config.flags config.flagSeparator;
+                description = ''
+                  Command-line arguments to pass to the wrapper (like argv in execve).
+                  This is a list of strings representing individual arguments.
+                  If not specified, will be automatically generated from flags.
+                '';
+              };
+              env = lib.mkOption {
+                type = lib.types.attrsOf lib.types.str;
+                default = { };
+                description = ''
+                  Environment variables to set in the wrapper.
+                '';
+              };
+              passthru = lib.mkOption {
+                type = lib.types.attrs;
+                default = { };
+                description = ''
+                  Additional attributes to add to the resulting derivation's passthru.
+                  This can be used to add additional metadata or functionality to the wrapped package.
+                  This will always contain options, config and settings, so these are reserved names and cannot be used here.
+                '';
+              };
+              filesToPatch = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ "share/applications/*.desktop" ];
+                description = ''
+                  List of file paths (glob patterns) relative to package root to patch for self-references.
+                  Desktop files are patched by default to update Exec= and Icon= paths.
+                '';
+              };
             };
-            package = lib.mkOption {
-              type = lib.types.package;
-              description = ''
-                The base package to wrap.
-                This means we inherit all other files from this package
-                (like man page, /share, ...)
-              '';
-            };
-            extraPackages = lib.mkOption {
-              type = lib.types.listOf lib.types.package;
-              default = [ ];
-              description = ''
-                Additional packages to add to the wrapper's runtime dependencies.
-                This is useful if the wrapped program needs additional libraries or tools to function correctly.
-                These packages will be added to the wrapper's runtime dependencies, ensuring they are available when the wrapped program is executed.
-              '';
-            };
-            flags = lib.mkOption {
-              type = lib.types.attrsOf lib.types.unspecified; # TODO add list handling
-              default = { };
-              description = ''
-                Flags to pass to the wrapper.
-                The key is the flag name, the value is the flag value.
-                If the value is true, the flag will be passed without a value.
-                If the value is false or null, the flag will not be passed.
-                If the value is a list, the flag will be passed multiple times with each value.
-              '';
-            };
-            env = lib.mkOption {
-              type = lib.types.attrsOf lib.types.str;
-              default = { };
-              description = ''
-                Environment variables to set in the wrapper.
-              '';
-            };
-            passthru = lib.mkOption {
-              type = lib.types.attrs;
-              default = { };
-              description = ''
-                Additional attributes to add to the resulting derivation's passthru.
-                This can be used to add additional metadata or functionality to the wrapped package.
-                This will always contain options, config and settings, so these are reserved names and cannot be used here.
-              '';
-            };
-            filesToPatch = lib.mkOption {
-              type = lib.types.listOf lib.types.str;
-              default = [ "share/applications/*.desktop" ];
-              description = ''
-                List of file paths (glob patterns) relative to package root to patch for self-references.
-                Desktop files are patched by default to update Exec= and Icon= paths.
-              '';
-            };
-          };
-        }
+          }
+        )
       ];
       eval =
         settings:
@@ -171,8 +226,9 @@ let
           pkgs = config.pkgs;
           package = config.package;
           runtimeInputs = config.extraPackages;
-          flagSeparator = "=";
           flags = config.flags;
+          flagSeparator = config.flagSeparator;
+          args = config.args;
           env = config.env;
           filesToPatch = config.filesToPatch;
           passthru = {
@@ -192,13 +248,14 @@ let
     - `runtimeInputs`: List of packages to add to PATH (optional)
     - `env`: Attribute set of environment variables to export (optional)
     - `flags`: Attribute set of command-line flags to add (optional)
-    - `flagSeparator`: Separator between flag names and values (optional, defaults to " ")
+    - `flagSeparator`: Separator between flag names and values when generating args from flags (optional, defaults to " ")
+    - `args`: List of command-line arguments like argv in execve (optional, auto-generated from flags if not provided)
     - `preHook`: Shell script to run before executing the command (optional)
     - `passthru`: Attribute set to pass through to the wrapped derivation (optional)
     - `aliases`: List of additional names to symlink to the wrapped executable (optional)
     - `filesToPatch`: List of file paths (glob patterns) to patch for self-references (optional, defaults to ["share/applications/*.desktop"])
-    - `wrapper`: Custom wrapper function (optional, defaults to exec'ing the original binary with flags)
-      - Called with { env, flags, envString, flagsString, exePath, preHook }
+    - `wrapper`: Custom wrapper function (optional, defaults to exec'ing the original binary with args)
+      - Called with { env, flags, args, envString, flagsString, exePath, preHook }
 
     # Example
 
@@ -214,6 +271,8 @@ let
         "--silent" = { }; # becomes --silent
         "--connect-timeout" = "30"; # becomes --connect-timeout 30
       };
+      # Or use args directly:
+      # args = [ "--silent" "--connect-timeout" "30" ];
       preHook = ''
         echo "Making request..." >&2
       '';
@@ -239,6 +298,7 @@ let
       flags ? { },
       flagSeparator ? " ",
       # " " for "--flag value" or "=" for "--flag=value"
+      args ? generateArgsFromFlags flags flagSeparator,
       preHook ? "",
       passthru ? { },
       aliases ? [ ],
@@ -258,7 +318,7 @@ let
           exec ${exePath}${flagsString} "$@"
         ''
       ),
-    }@args:
+    }@funcArgs:
     let
       # Extract binary name from the exe path
       exePath = lib.getExe package;
@@ -276,21 +336,16 @@ let
 
       # Generate flag arguments with proper line breaks and indentation
       flagsString =
-        if flags == { } then
+        if args == [ ] then
           ""
         else
-          " \\\n  "
-          + lib.concatStringsSep " \\\n  " (
-            lib.mapAttrsToList (
-              name: value:
-              if value == { } then "${name}" else "${name}${flagSeparator}${lib.escapeShellArg (toString value)}"
-            ) flags
-          );
+          " \\\n  " + lib.concatStringsSep " \\\n  " (map lib.escapeShellArg args);
 
       finalWrapper = wrapper {
         inherit
           env
           flags
+          args
           envString
           flagsString
           exePath
@@ -430,13 +485,14 @@ let
               inherit
                 env
                 flags
+                args
                 preHook
                 aliases
                 ;
               override =
                 overrideArgs:
                 wrapPackage (
-                  args
+                  funcArgs
                   // {
                     package = package.override overrideArgs;
                   }

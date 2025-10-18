@@ -58,7 +58,9 @@ wrappers.lib.wrapPackage {
     "--silent" = {};
     "--connect-timeout" = "30";
   };
-  flagSeparator = "=";  # Use --flag=value instead of --flag value
+  # Or use args directly for more control:
+  # args = [ "--silent" "--connect-timeout" "30" ];
+  flagSeparator = "=";  # Use --flag=value instead of --flag value (default is " ")
   preHook = ''
     echo "Making request..." >&2
   '';
@@ -107,7 +109,10 @@ Arguments:
   - Value `{}`: Flag without argument (e.g., `--verbose`)
   - Value `"string"`: Flag with argument (e.g., `--output "file.txt"`)
   - Value `false` or `null`: Flag omitted
-- `flagSeparator`: Separator between flag name and value (default: `" "`, can be `"="`)
+- `flagSeparator`: Separator between flag name and value when generating args from flags (default: `" "`, can be `"="`)
+- `args`: List of command-line arguments like argv in execve (default: auto-generated from `flags`)
+  - Example: `[ "--silent" "--connect-timeout" "30" ]`
+  - If provided, overrides automatic generation from `flags`
 - `preHook`: Shell script executed before the command (default: `""`)
 - `passthru`: Additional attributes for the derivation's passthru (default: `{}`)
 - `aliases`: List of additional symlink names for the executable (default: `[]`)
@@ -133,7 +138,9 @@ Built-in options (always available):
 - `pkgs`: nixpkgs instance (required)
 - `package`: Base package to wrap
 - `extraPackages`: Additional runtime dependencies
-- `flags`: Command-line flags
+- `flags`: Command-line flags (attribute set)
+- `flagSeparator`: Separator between flag name and value (default: `" "`)
+- `args`: Command-line arguments list (auto-generated from `flags` if not provided)
 - `env`: Environment variables
 - `passthru`: Additional passthru attributes
 - `filesToPatch`: List of file paths (glob patterns) to patch for self-references (default: `["share/applications/*.desktop"]`)

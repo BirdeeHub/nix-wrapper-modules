@@ -23,13 +23,20 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-        in
-        {
-          filesToPatch = import ./checks/filesToPatch.nix {
-            inherit pkgs;
-            self = self;
+          checkFiles = builtins.readDir ./checks;
+          importCheck = name: {
+            name = nixpkgs.lib.removeSuffix ".nix" name;
+            value = import (./checks + "/${name}") {
+              inherit pkgs;
+              self = self;
+            };
           };
-        }
+        in
+        builtins.listToAttrs (
+          map importCheck (
+            builtins.filter (name: nixpkgs.lib.hasSuffix ".nix" name) (builtins.attrNames checkFiles)
+          )
+        )
       );
     };
 }
