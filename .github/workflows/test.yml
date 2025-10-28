@@ -21,5 +21,8 @@ jobs:
       - name: Setup Nix cache
         uses: DeterminateSystems/magic-nix-cache-action@main
 
+      - name: Check formatting
+        run: nix fmt -- --fail-on-change .
+
       - name: Run checks
         run: nix flake check --log-format bar-with-logs
