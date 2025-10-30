@@ -8,6 +8,13 @@ Then this library is for you!
 
 [xkcd 927](https://xkcd.com/927/)
 
+##
+
+Watch this excellent Video by Vimjoyer for an explanation:
+
+[![Homeless Dotfiles with Nix Wrappers](https://img.youtube.com/vi/Zzvn9uYjQJY/0.jpg)](https://www.youtube.com/watch?v=Zzvn9uYjQJY)
+
+
 ## Overview
 
 This library provides two main components:
