@@ -5,15 +5,17 @@
 
 let
   # Create a simple wrapper module
-  helloModule = self.lib.wrapModule (
-    { config, ... }:
-    {
-      config.package = config.pkgs.hello;
-      config.flags = {
-        "--greeting" = "initial";
-      };
-    }
-  );
+  helloModule =
+    (self.lib.evalModule (
+      { config, wlib, ... }:
+      {
+        config.package = config.pkgs.hello;
+        imports = [ wlib.modules.default ];
+        config.flags = {
+          "--greeting" = "initial";
+        };
+      }
+    )).config;
 
   # Apply with initial settings
   initialConfig = helloModule.apply {

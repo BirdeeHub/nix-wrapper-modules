@@ -1,72 +1,92 @@
 { lib }:
 let
-  # Helper function to generate args list from flags attrset
-  generateArgsFromFlags =
-    flags: flagSeparator:
-    lib.flatten (
-      lib.mapAttrsToList (
-        name: value:
-        if value == false || value == null then
-          [ ]
-        else if value == { } then
-          [ name ]
-        else if lib.isList value then
-          lib.flatten (
-            map (
-              v:
-              if flagSeparator == " " then
-                [
-                  name
-                  (toString v)
-                ]
-              else
-                [ "${name}${flagSeparator}${toString v}" ]
-            ) value
-          )
-        else if flagSeparator == " " then
-          [
-            name
-            (toString value)
-          ]
-        else
-          [ "${name}${flagSeparator}${toString value}" ]
-      ) flags
-    );
+  all_mod_res = import ./modules.nix { inherit lib wlib; };
+  wlib = {
+    inherit (all_mod_res)
+      wrapperModules
+      modules
+      checks
+      ;
 
-  /**
-    A function to create a wrapper module.
-    returns an attribute set with options and apply function.
+    misc = builtins.removeAttrs all_mod_res [
+      "wrapperModules"
+      "modules"
+      "checks"
+    ];
 
-    Example usage:
-      helloWrapper = wrapModule (wlib: { config, ... }: {
-        options.greeting = lib.mkOption {
-          type = lib.types.str;
-          default = "hello";
+    /**
+      calls nixpkgs.lib.evalModules with the core module imported and wlib added to specialArgs
+
+      wlib.evalModules takes the same arguments as nixpkgs.lib.evalModules
+    */
+    evalModules = import ./core.nix { inherit lib wlib; };
+
+    /**
+      evalModule = module: wlib.evalModules { modules = [ module ]; };
+
+      evalModule returns the direct result of calling evalModules
+
+      It includes only the core options, it does not include anything which maps to wrapper.args
+
+      This split is also necessary because documentation generators
+      need access to .options, and it is feasible someone else may need something as well.
+    */
+    evalModule = module: wlib.evalModules { modules = [ module ]; };
+
+    /**
+      wrapModule = (evalModule wlib.modules.default).config.apply;
+
+      A function to create a wrapper module.
+      returns an attribute set with options and apply function.
+
+      Example usage:
+        helloWrapper = wrapModule ({ config, wlib, ... }: {
+          options.greeting = lib.mkOption {
+            type = lib.types.str;
+            default = "hello";
+          };
+          config.package = config.pkgs.hello;
+          config.flags = {
+            "--greeting" = config.greeting;
+          };
+          # Or use args directly:
+          # config.args = [ "--greeting" config.greeting ];
         };
-        config.package = config.pkgs.hello;
-        config.flags = {
-          "--greeting" = config.greeting;
-        };
-        # Or use args directly:
-        # config.args = [ "--greeting" config.greeting ];
-      };
 
-      helloWrapper.apply {
-        pkgs = pkgs;
-        greeting = "hi";
-      };
-
-      # This will return a derivation that wraps the hello package with the --greeting flag set to "hi".
-  */
-  wrapModule =
-    moduleInterface:
-    let
-      wrapperLib = {
-        types = {
-          inherit file;
+        helloWrapper.wrap {
+          pkgs = pkgs;
+          greeting = "hi";
         };
-      };
-      # pkgs -> module { content, path }
+
+        # This will return a derivation that wraps the hello package with the --greeting flag set to "hi".
+    */
+    wrapModule =
+      module:
+      (wlib.evalModules {
+        modules = [
+          wlib.modules.default
+          module
+        ];
+      }).config;
+
+    /**
+      wrapPackage = (wlib.evalModule wlib.modules.default).config.wrap;
+
+      Takes a module, returns a package.
+    */
+    wrapPackage =
+      module:
+      (wlib.evalModules {
+        modules = [
+          wlib.modules.default
+          module
+        ];
+      }).config.wrapper;
+
+    types = {
+      /**
+        pkgs -> module { content, path }
+      */
       file =
         # we need to pass pkgs here, because writeText is in pkgs
         pkgs:
@@ -91,505 +111,242 @@ let
             };
           }
         );
-      staticModules = [
-        (
-          { config, ... }:
-          {
-            options = {
-              pkgs = lib.mkOption {
-                description = ''
-                  The nixpkgs pkgs instance to use.
-                  We want to have this, so wrapper modules can be system agnostic.
-                '';
-              };
-              package = lib.mkOption {
-                type = lib.types.package;
-                description = ''
-                  The base package to wrap.
-                  This means we inherit all other files from this package
-                  (like man page, /share, ...)
-                '';
-              };
-              extraPackages = lib.mkOption {
-                type = lib.types.listOf lib.types.package;
-                default = [ ];
-                description = ''
-                  Additional packages to add to the wrapper's runtime dependencies.
-                  This is useful if the wrapped program needs additional libraries or tools to function correctly.
-                  These packages will be added to the wrapper's runtime dependencies, ensuring they are available when the wrapped program is executed.
-                '';
-              };
-              flags = lib.mkOption {
-                type = lib.types.attrsOf lib.types.unspecified; # TODO add list handling
-                default = { };
-                description = ''
-                  Flags to pass to the wrapper.
-                  The key is the flag name, the value is the flag value.
-                  If the value is true, the flag will be passed without a value.
-                  If the value is false or null, the flag will not be passed.
-                  If the value is a list, the flag will be passed multiple times with each value.
-                '';
-              };
-              flagSeparator = lib.mkOption {
-                type = lib.types.str;
-                default = " ";
-                description = ''
-                  Separator between flag names and values when generating args from flags.
-                  " " for "--flag value" or "=" for "--flag=value"
-                '';
-              };
-              args = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = generateArgsFromFlags config.flags config.flagSeparator;
-                description = ''
-                  Command-line arguments to pass to the wrapper (like argv in execve).
-                  This is a list of strings representing individual arguments.
-                  If not specified, will be automatically generated from flags.
-                '';
-              };
-              env = lib.mkOption {
-                type = lib.types.attrsOf lib.types.str;
-                default = { };
-                description = ''
-                  Environment variables to set in the wrapper.
-                '';
-              };
-              passthru = lib.mkOption {
-                type = lib.types.attrs;
-                default = { };
-                description = ''
-                  Additional attributes to add to the resulting derivation's passthru.
-                  This can be used to add additional metadata or functionality to the wrapped package.
-                  This will always contain options, config and settings, so these are reserved names and cannot be used here.
-                '';
-              };
-              filesToPatch = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ "share/applications/*.desktop" ];
-                description = ''
-                  List of file paths (glob patterns) relative to package root to patch for self-references.
-                  Desktop files are patched by default to update Exec= and Icon= paths.
-                '';
-              };
-              filesToExclude = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-                description = ''
-                  List of file paths (glob patterns) relative to package root to exclude from the wrapped package.
-                  This allows filtering out unwanted binaries or files.
-                  Example: [ "bin/unwanted-tool" "share/applications/*.desktop" ]
-                '';
-              };
-              wrapper = lib.mkOption {
-                type = lib.types.package;
-                readOnly = true;
-                description = ''
-                  The wrapped package created by wrapPackage. This wraps the configured package
-                  with the specified flags, environment variables, runtime dependencies, and other
-                  options in a portable way.
-                '';
-                default = wrapPackage {
-                  pkgs = config.pkgs;
-                  package = config.package;
-                  runtimeInputs = config.extraPackages;
-                  flags = config.flags;
-                  flagSeparator = config.flagSeparator;
-                  args = config.args;
-                  env = config.env;
-                  filesToPatch = config.filesToPatch;
-                  filesToExclude = config.filesToExclude;
-                  passthru = {
-                    configuration = config;
-                  }
-                  // config.passthru;
-                };
-              };
-              _moduleSettings = lib.mkOption {
-                type = lib.types.raw;
-                internal = true;
-                description = ''
-                  Internal option storing the settings module passed to apply.
-                  Used by apply to re-evaluate with additional modules.
-                '';
-              };
-              apply = lib.mkOption {
-                type = lib.types.functionTo lib.types.raw;
-                readOnly = true;
-                description = ''
-                  Function to extend the current configuration with additional modules.
-                  Re-evaluates the configuration with the original settings plus the new module.
-                '';
-                default =
-                  module:
-                  (evaled.extendModules {
-                    modules = [
-                      config._moduleSettings
-                      module
-                      {
-                        _moduleSettings = lib.mkForce {
-                          imports = [
-                            config._moduleSettings
-                            module
-                          ];
-                        };
-                      }
-                    ];
-                  }).config;
-              };
-              meta = {
-                maintainers = lib.mkOption {
-                  type = lib.types.listOf (
-                    lib.types.submodule (
-                      { name, ... }:
-                      {
-                        options = {
-                          name = lib.mkOption {
-                            type = lib.types.str;
-                            default = name;
-                            description = "name";
-                          };
-                          github = lib.mkOption {
-                            type = lib.types.str;
-                            description = "GitHub username";
-                          };
-                          githubId = lib.mkOption {
-                            type = lib.types.int;
-                            description = "GitHub id";
-                          };
-                          email = lib.mkOption {
-                            type = lib.types.nullOr lib.types.str;
-                            default = null;
-                            description = "email";
-                          };
-                          matrix = lib.mkOption {
-                            type = lib.types.nullOr lib.types.str;
-                            default = null;
-                            description = "Matrix ID";
-                          };
-                        };
-                      }
-                    )
-                  );
-                  default = [ ];
-                };
-                platforms = lib.mkOption {
-                  type = lib.types.listOf (lib.types.enum lib.platforms.all);
-                  default = lib.platforms.all;
-                  description = "Supported platforms";
-                };
-              };
-            };
-          }
-        )
-      ];
-      eval =
-        settings:
-        lib.evalModules {
-          modules = staticModules ++ [
-            moduleInterface
-            settings
-            { _moduleSettings = settings; }
-          ];
-          specialArgs = {
-            wlib = wrapperLib;
-          };
-        };
-      evaled = eval { };
-    in
-    evaled.config;
+    };
 
-  /**
-    Create a wrapped application that preserves all original outputs (man pages, completions, etc.)
+    /**
+      mkWrapperFlag ::
+        Int or AttrSet -> Option
 
-    # Arguments
+      Defines a typed wrapper flag option with enforced arity and default value.
 
-    - `pkgs`: The nixpkgs pkgs instance to use
-    - `package`: The package to wrap
-    - `runtimeInputs`: List of packages to add to PATH (optional)
-    - `env`: Attribute set of environment variables to export (optional)
-    - `flags`: Attribute set of command-line flags to add (optional)
-    - `flagSeparator`: Separator between flag names and values when generating args from flags (optional, defaults to " ")
-    - `args`: List of command-line arguments like argv in execve (optional, auto-generated from flags if not provided)
-    - `preHook`: Shell script to run before executing the command (optional)
-    - `passthru`: Attribute set to pass through to the wrapped derivation (optional)
-    - `aliases`: List of additional names to symlink to the wrapped executable (optional)
-    - `filesToPatch`: List of file paths (glob patterns) to patch for self-references (optional, defaults to ["share/applications/*.desktop"])
-    - `filesToExclude`: List of file paths (glob patterns) to exclude from the wrapped package (optional, defaults to [])
-    - `wrapper`: Custom wrapper function (optional, defaults to exec'ing the original binary with args)
-      - Called with { env, flags, args, envString, flagsString, exePath, preHook }
+      Accepts either a numeric arity (e.g. 0, 1, 2+) or an attribute set with
+      optional fields:
+        - `len`: expected argument length
+        - `default`: default value
+        - any additional attributes to merge into the option definition
 
-    # Example
+      For example:
+        mkWrapperFlag 0
+          => Boolean flag (true/false)
 
-    ```nix
-    wrapPackage {
-      pkgs = pkgs;
-      package = pkgs.curl;
-      runtimeInputs = [ pkgs.jq ];
-      env = {
-        CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-      };
-      flags = {
-        "--silent" = { }; # becomes --silent
-        "--connect-timeout" = "30"; # becomes --connect-timeout 30
-      };
-      # Or use args directly:
-      # args = [ "--silent" "--connect-timeout" "30" ];
-      preHook = ''
-        echo "Making request..." >&2
-      '';
-    }
+        mkWrapperFlag 1
+          => List of strings, each passed as `--flag value`
 
-    # Or with custom wrapper:
-    wrapPackage pkgs.someProgram {
-      wrapper = { exePath, flagsString, envString, preHook, ... }: ''
-        ${envString}
-        ${preHook}
-        echo "Custom logic here"
-        exec ${exePath} ${flagsString} "$@"
-      '';
-    }
-    ```
-  */
-  wrapPackage =
-    {
-      pkgs,
-      package,
-      runtimeInputs ? [ ],
-      env ? { },
-      flags ? { },
-      flagSeparator ? " ",
-      # " " for "--flag value" or "=" for "--flag=value"
-      args ? generateArgsFromFlags flags flagSeparator,
-      preHook ? "",
-      passthru ? { },
-      aliases ? [ ],
-      # List of file paths (glob patterns) relative to package root to patch for self-references (e.g., ["bin/*", "lib/*.sh"])
-      filesToPatch ? [ "share/applications/*.desktop" ],
-      # List of file paths (glob patterns) to exclude from the wrapped package (e.g., ["bin/unwanted-*", "share/doc/*"])
-      filesToExclude ? [ ],
-      wrapper ? (
-        {
-          exePath,
-          flagsString,
-          envString,
-          preHook,
-          ...
-        }:
-        ''
-          ${envString}
-          ${preHook}
-          exec ${exePath}${flagsString} "$@"
-        ''
-      ),
-    }@funcArgs:
-    let
-      # Extract binary name from the exe path
-      exePath = lib.getExe package;
-      binName = baseNameOf exePath;
+        mkWrapperFlag 2+
+          => List of fixed-length lists, passed as
+             `--flag VAR VAL etc.. --flag VAR2 VAL2 etc...`
 
-      # Generate environment variable exports
-      envString =
-        if env == { } then
-          ""
-        else
-          lib.concatStringsSep "\n" (
-            lib.mapAttrsToList (name: value: ''export ${name}="${toString value}"'') env
-          )
-          + "\n";
-
-      # Generate flag arguments with proper line breaks and indentation
-      flagsString =
-        if args == [ ] then
-          ""
-        else
-          " \\\n  " + lib.concatStringsSep " \\\n  " (map lib.escapeShellArg args);
-
-      finalWrapper = wrapper {
-        inherit
-          env
-          flags
-          args
-          envString
-          flagsString
-          exePath
-          preHook
-          ;
-      };
-
-      # Multi-output aware symlink join function with optional file patching
-      multiOutputSymlinkJoin =
-        {
-          name,
-          paths,
-          outputs ? [ "out" ],
-          originalOutputs ? { },
-          passthru ? { },
-          meta ? { },
-          aliases ? [ ],
-          binName ? null,
-          filesToPatch ? [ ],
-          filesToExclude ? [ ],
-          ...
-        }@args:
-        pkgs.stdenv.mkDerivation (
-          {
-            inherit name outputs;
-
-            nativeBuildInputs = lib.optionals (filesToPatch != [ ]) [ pkgs.replace ];
-
-            buildCommand = ''
-              # Symlink all paths to the main output
-              mkdir -p $out
-              for path in ${lib.concatStringsSep " " (map toString paths)}; do
-                ${pkgs.lndir}/bin/lndir -silent "$path" $out
-              done
-
-              # Exclude specified files
-              ${lib.optionalString (filesToExclude != [ ]) ''
-                echo "Excluding specified files..."
-                ${lib.concatMapStringsSep "\n" (pattern: ''
-                  for file in $out/${pattern}; do
-                    if [[ -e "$file" ]]; then
-                      echo "Removing $file"
-                      rm -f "$file"
-                    fi
-                  done
-                '') filesToExclude}
-              ''}
-
-              # Patch specified files to replace references to the original package with the wrapped one
-              ${lib.optionalString (filesToPatch != [ ]) ''
-                echo "Patching self-references in specified files..."
-                oldPath="${package}"
-                newPath="$out"
-
-                # Process each file pattern
-                ${lib.concatMapStringsSep "\n" (pattern: ''
-                  for file in $out/${pattern}; do
-                    if [[ -L "$file" ]]; then
-                      # It's a symlink, we need to resolve it
-                      target=$(readlink -f "$file")
-
-                      # Check if the file contains the old path
-                      if grep -qF "$oldPath" "$target" 2>/dev/null; then
-                        echo "Patching $file"
-                        # Remove symlink and create a real file with patched content
-                        rm "$file"
-                        # Use replace-literal which works for both text and binary files
-                        replace-literal "$oldPath" "$newPath" < "$target" > "$file"
-                        # Preserve permissions
-                        chmod --reference="$target" "$file"
-                      fi
-                    fi
-                  done
-                '') filesToPatch}
-              ''}
-
-              # Create symlinks for aliases
-              ${lib.optionalString (aliases != [ ] && binName != null) ''
-                mkdir -p $out/bin
-                for alias in ${lib.concatStringsSep " " (map lib.escapeShellArg aliases)}; do
-                  ln -sf ${lib.escapeShellArg binName} $out/bin/$alias
-                done
-              ''}
-
-              # Handle additional outputs by symlinking from the original package's outputs
-              ${lib.concatMapStringsSep "\n" (
-                output:
-                if output != "out" && originalOutputs ? ${output} && originalOutputs.${output} != null then
-                  ''
-                    if [[ -n "''${${output}:-}" ]]; then
-                      mkdir -p ${"$" + output}
-                      # Only symlink from the original package's corresponding output
-                      ${pkgs.lndir}/bin/lndir -silent "${originalOutputs.${output}}" ${"$" + output}
-                    fi
-                  ''
-                else
-                  ""
-              ) outputs}
-            '';
-
-            inherit passthru meta;
-          }
-          // (removeAttrs args [
-            "name"
-            "paths"
-            "outputs"
-            "originalOutputs"
-            "passthru"
-            "meta"
-            "aliases"
-            "binName"
-            "filesToPatch"
-            "filesToExclude"
-          ])
-        );
-
-      # Get original package outputs for symlinking
-      originalOutputs =
-        if package ? outputs then
-          lib.listToAttrs (
-            map (output: {
-              name = output;
-              value = if package ? ${output} then package.${output} else null;
-            }) package.outputs
-          )
-        else
-          { };
-
-      # Create the wrapper derivation using our multi-output aware symlink join
-      wrappedPackage = multiOutputSymlinkJoin (
-        {
-          name = package.pname or package.name;
-          paths = [
-            (pkgs.writeShellApplication {
-              name = binName;
-              runtimeInputs = runtimeInputs;
-              text = finalWrapper;
-            })
-            package
-          ];
-          outputs = if package ? outputs then package.outputs else [ "out" ];
-          inherit
-            originalOutputs
-            aliases
-            binName
-            filesToPatch
-            filesToExclude
-            ;
-          passthru =
-            (package.passthru or { })
-            // passthru
-            // {
-              inherit
-                env
-                flags
-                args
-                preHook
-                aliases
-                ;
-              override =
-                overrideArgs:
-                wrapPackage (
-                  funcArgs
-                  // {
-                    package = package.override overrideArgs;
-                  }
-                );
-            };
-          # Pass through original attributes
-          meta = package.meta or { };
-        }
-        // lib.optionalAttrs (package ? version) {
-          inherit (package) version;
-        }
-        // lib.optionalAttrs (package ? pname) {
-          inherit (package) pname;
-        }
+      Used to build declarative flag option sets that map cleanly to wrapper
+      command-line arguments.
+    */
+    mkWrapperFlag =
+      arglen:
+      lib.mkOption {
+        type = wlib.mkWrapperFlagType (arglen.len or arglen);
+        default =
+          arglen.default or (
+            if !builtins.isInt (arglen.len or arglen) then
+              (arglen.len or arglen).emptyValue.value or null
+            else if arglen == 0 then
+              false
+            else
+              [ ]
+          );
+      }
+      // lib.optionalAttrs (builtins.isAttrs arglen) (
+        builtins.removeAttrs arglen [
+          "len"
+          "default"
+        ]
       );
-    in
-    wrappedPackage;
+
+    /**
+      mkWrapperFlagType ::
+        Int -> OptionType
+
+      Constructs a custom `lib.mkOptionType` enforcing the structure of a
+      wrapper flag with a given arity.
+
+      Rules:
+        - 0 → boolean (true includes flag, false omits)
+        - 1 → list of values, each producing `[ flag value ]`
+        - n≥2 → list of lists, each inner list of length n
+
+      The resulting type is used by `mkWrapperFlag` to ensure consistent
+      argument structure at evaluation time.
+
+      Example:
+        mkWrapperFlagType 0  → Bool
+        mkWrapperFlagType 1  → [ "value1" "value2" ]
+        mkWrapperFlagType 2  → [ [ "VAR" "VAL" ] [ "FOO" "BAR" ] ]
+    */
+    mkWrapperFlagType =
+      arglen:
+      lib.mkOptionType {
+        name = "wrapperFlag";
+        descriptionClass = "noun";
+        description =
+          if arglen == 0 then
+            "Wrapper flag (boolean)"
+          else if arglen == 1 then
+            "Wrapper flag (list of values)"
+          else if !builtins.isInt arglen then
+            "Wrapper Flag (" + arglen.description + ")"
+          else
+            "Wrapper flag (list of lists of length ${builtins.toString arglen})";
+        check =
+          v:
+          with builtins;
+          if arglen == 0 then
+            isBool v
+          else if arglen == 1 then
+            isList v
+          else if !isInt arglen then
+            arglen.check v
+          else
+            isList v && all (x: isList x && length x == arglen) v;
+      };
+
+    /**
+      generateArgsFromFlags :: flagSeparator "" -> flags {} -> args [""]
+      The key is the flag name, the value is the flag value.
+      If the value is true, the flag will be passed without a value.
+      If the value is false or null, the flag will not be passed.
+      If the value is a list, the flag will be passed multiple times with each value.
+    */
+    generateArgsFromFlags =
+      flagSeparator: flags:
+      lib.flatten (
+        lib.mapAttrsToList (
+          name: value:
+          if value == false || value == null then
+            [ ]
+          else if value == { } then
+            [ name ]
+          else if lib.isList value then
+            lib.flatten (
+              map (
+                v:
+                if lib.trim flagSeparator == "" then
+                  [
+                    name
+                    (toString v)
+                  ]
+                else
+                  [ "${name}${flagSeparator}${toString v}" ]
+              ) value
+            )
+          else if lib.trim flagSeparator == "" then
+            [
+              name
+              (toString value)
+            ]
+          else
+            [ "${name}${flagSeparator}${toString value}" ]
+        ) flags
+      );
+
+    /**
+      Convert an attribute set of wrapper arguments into a flat list of command-line arguments.
+
+      This is used to translate a `{ flagName = value; }` structure into the format
+      expected by `makeWrapper`, while enforcing arity rules declared in `flags`.
+
+      Type:
+        argOpts2list :: { <flag> = bool or [ string ] or [ [ string ] ], ... } -> [ string ]
+
+      Parameters:
+        argOpt:
+          The actual flag values provided by the user or module.
+          - If arity = 0 → value must be `true` or `false` (true means include the flag).
+          - If arity = 1 → value must be a list, each item produces: [ flag item ]
+          - If arity ≥ 2 → value must be a list of lists, and each inner list's length must match arity.
+
+      Returns:
+        A flattened list of command-line arguments, suitable for passing to makeWrapper.
+
+      Throws:
+        - If a flag in `argOpt` is not defined in `flags`.
+        - If value type doesn't match expected arity.
+        - If list lengths don't match the declared arity.
+
+      Example:
+        argOpt = {
+          "--inherit-argv0" = true;
+          "--unset" = [ "GIT_DIR" ];
+          "--set" = [
+            [ "PATH" "/tmp/bin" ]
+            [ "EDITOR" "vim" ]
+          ];
+        };
+
+        argOpts2list argOpt
+        => [
+          "--inherit-argv0"
+          "--unset" "GIT_DIR"
+          "--set" "PATH" "/tmp/bin"
+          "--set" "EDITOR" "vim"
+        ]
+    */
+    argOpts2list =
+      argOpt:
+      with builtins;
+      lib.flatten (
+        lib.mapAttrsToList (
+          n: v:
+          if isBool v then
+            if v then [ n ] else [ ]
+          else if !isList v then
+            if v != null then
+              [
+                n
+                v
+              ]
+            else
+              [ ]
+          else if isList v then
+            (map (val: [
+              n
+              val
+            ]) v)
+          else
+            [ ]
+        ) argOpt
+      );
+
+    /**
+      getPackageOutputsSet ::
+        Derivation -> AttrSet
+
+      This function is probably not one you will use,
+      but it is used by the default `symlinkScript` module option value.
+
+      Given a package derivation, returns an attribute set mapping each of its
+      output names (e.g. "out", "dev", "doc") to the corresponding output path.
+
+      This is useful when a wrapper or module needs to reference multiple outputs
+      of a single derivation. If the derivation does not define multiple outputs,
+      an empty set is returned.
+
+      Example:
+        getPackageOutputsSet pkgs.git
+        => {
+          out = /nix/store/...-git;
+          man = /nix/store/...-git-man;
+        }
+    */
+    getPackageOutputsSet =
+      package:
+      if package ? outputs then
+        lib.listToAttrs (
+          map (output: {
+            name = output;
+            value = if package ? ${output} then package.${output} else null;
+          }) package.outputs
+        )
+      else
+        { };
+
+  };
 in
-{
-  inherit wrapModule wrapPackage;
-}
+wlib
