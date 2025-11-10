@@ -9,7 +9,7 @@ let
     package = pkgs.hello;
     flags = {
       "--greeting" = "hi";
-      "--verbose" = { };
+      "--verbose" = true;
     };
     flagSeparator = "=";
   };

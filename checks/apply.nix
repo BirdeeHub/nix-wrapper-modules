@@ -20,21 +20,24 @@ let
   # Apply with initial settings
   initialConfig = helloModule.apply {
     inherit pkgs;
-    flags."--verbose" = { };
+    flags."--verbose" = true;
   };
 
   # Extend the configuration
-  extendedConfig = initialConfig.apply {
-    flags."--greeting" = "extended";
-    flags."--extra" = "flag";
-  };
+  extendedConfig = initialConfig.apply (
+    { lib, ... }:
+    {
+      flags."--greeting" = lib.mkForce "extended";
+      flags."--extra" = "flag";
+    }
+  );
 
   # Test mkForce to override a value
   forcedConfig = initialConfig.apply (
     { lib, ... }:
     {
       flags."--greeting" = lib.mkForce "forced";
-      flags."--forced-flag" = { };
+      flags."--forced-flag" = lib.mkForce "forced";
     }
   );
 

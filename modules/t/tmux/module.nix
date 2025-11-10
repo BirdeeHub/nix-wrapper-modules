@@ -53,21 +53,34 @@ in
     sourceSensible = lib.mkOption {
       type = lib.types.bool;
       default = true;
+      description = "Start with defaults from tmuxPlugins.sensible";
     };
     secureSocket = lib.mkOption {
       type = lib.types.bool;
       default = false;
+      description = ''
+        Store tmux socket under {file}`/run`, which is more
+        secure than {file}`/tmp`, but as a downside it doesn't
+        survive user logout.
+      '';
     };
     configBefore = lib.mkOption {
       type = lib.types.lines;
       default = "";
+      description = ''
+        configuration to run before all tmux plugins are sourced
+      '';
     };
     configAfter = lib.mkOption {
       type = lib.types.lines;
       default = "";
+      description = ''
+        configuration to run after all tmux plugins are sourced
+      '';
     };
     plugins = lib.mkOption {
       default = [ ];
+      description = "List of tmux plugins to source.";
       type = lib.types.listOf (
         lib.types.oneOf [
           lib.types.package
@@ -75,14 +88,23 @@ in
             options = {
               plugin = lib.mkOption {
                 type = lib.types.package;
+                description = ''
+                  the tmux plugin to source
+                '';
               };
               configBefore = lib.mkOption {
                 type = lib.types.lines;
                 default = "";
+                description = ''
+                  configuration to run before the plugin is sourced
+                '';
               };
               configAfter = lib.mkOption {
                 type = lib.types.lines;
                 default = "";
+                description = ''
+                  configuration to run after the plugin is sourced
+                '';
               };
             };
           })
@@ -92,6 +114,7 @@ in
     prefix = lib.mkOption {
       type = lib.types.str;
       default = "C-b";
+      description = "Set the prefix key for tmux.";
     };
     updateEnvironment = lib.mkOption {
       type = lib.types.listOf lib.types.str;
@@ -99,6 +122,10 @@ in
         "TERM"
         "TERM_PROGRAM"
       ];
+      description = ''
+      List of environment variables to update when the tmux session is created.
+      set-option -ga update-environment <your list of variables>
+      '';
     };
     setEnvironment = lib.mkOption {
       type = lib.types.attrsOf (
@@ -108,6 +135,10 @@ in
         ]
       );
       default = { };
+      description = ''
+      attrset of environment variables to set when the tmux session is created.
+      set-environment -g ''${key} "''${value}"
+      '';
     };
     displayPanesColour = lib.mkOption {
       type = lib.types.str;
@@ -255,8 +286,7 @@ in
         ''
       }";
     };
-    wrapper.args."--run" =
-      lib.mkIf config.secureSocket ''export TMUX_TMPDIR=''${TMUX_TMPDIR:-''${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}}'';
+    run = lib.mkIf config.secureSocket [ ''export TMUX_TMPDIR=''${TMUX_TMPDIR:-''${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}}'' ];
     package = config.pkgs.tmux;
     meta.maintainers = [ lib.maintainers.birdee ];
   };

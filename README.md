@@ -8,37 +8,52 @@ Then this library is for you!
 
 ## Long-term Goals
 
-Upstream this schema into nixpkgs with an optional module.nix for every package. NixOS modules could then reuse these wrapper modules for consistent configuration across platforms.
+It is the goal of this project to become a hub for everyone to contribute,
+so that we can all enjoy our portable configurations with as little individual strife as possible.
+
+In service of that goal, the moment we have some contributors to speak of,
+the immediate goal would be first to transfer this repo to nix-community.
+
+That way, everyone can feel some shared ownership of the project.
+
+The goal would be eventually to have wrapper modules in nixpkgs, but again, nix-community would be the first step.
 
 ## Why use this?
 
 Watch this excellent Video by Vimjoyer for an explanation:
 
-[![Homeless Dotfiles with Nix Wrappers](https://img.youtube.com/vi/Zzvn9uYjQJY/0.jpg)](https://www.youtube.com/watch?v=Zzvn9uYjQJY)
-
 This repository is very much like the one mentioned at the end, but better!
 
-It has modules that are capable of more, and a more consistent design.
+It has modules that are capable of much more, with a more consistent design.
+
+[![Homeless Dotfiles with Nix Wrappers](https://img.youtube.com/vi/Zzvn9uYjQJY/0.jpg)](https://www.youtube.com/watch?v=Zzvn9uYjQJY)
 
 ## Why fork [lassulus/wrappers](https://github.com/Lassulus/wrappers)?
 
-[I rewrote it with almost complete compatibility, without changing a test, and offered the changes.](https://github.com/Lassulus/wrappers/pull/39)
-
-I know asking someone to accept a rewrite of basically their entire project is a tall order, but the result is a lot better.
-
-The changes were not accepted unfortunately.
-
-Free of compatibility issues, I was able to start out with a consistent design from the start! (and name a few values differently)
-
-For a start, it actually uses `pkgs.makeWrapper`, and you can change that if you want via module option!
-
-Everything you see in that video talking about [lassulus/wrappers](https://github.com/Lassulus/wrappers) will work here.
-
-Except, instead of grabbing the package via `.wrapper` the final package is under `.wrapped` instead.
-
 Yes, I know about this comic: [xkcd 927](https://xkcd.com/927/)
 
-I did try to upstream first. When I did so, many fewer names, and things in general, had been changed.
+I heard that I could wrap programs with the module system, and then reapply more changes after, like override. I was excited.
+
+But the project was tiny, the core was about 600 lines, and there were not many modules yet.
+
+"No problem!" I thought to myself, and began to write a module...
+
+Turns out, most of the options were not even accessible to the module system,
+and were instead only accessible to a secondary builder function.
+
+Whats worse, the whole evaluated result was not accessible, so docgen wasn't going to be a thing without a lot of work.
+
+So, I then rewrote the whole project with almost complete compatibility, without changing a test, and offered the changes.
+
+However, asking someone to accept someone else's rewrite of actually their entire project is a tall order, even if it doesn't break anything existing.
+
+It looked like only small pieces would be accepted, and it would be a shadow of itself.
+
+I wanted this thing to be the best it could be, but it was looking like the full extent of my changes would be a difficult sell for the maintainer to handle reading and maintaining.
+
+Most everything you see in that video will work here too, but this is not intended to be a 1 for 1 compatible library.
+
+Free of compatibility issues, I was able to start out with a consistent design from the start!
 
 ## Overview
 
@@ -82,9 +97,10 @@ This library provides two main components:
 (wlib.evalModule ({ config, wlib, lib, ... }: {
   # You can only grab the final package if you supply pkgs!
   # But if you were making it for someone else, you would want them to do that!
+
   # inherit pkgs;
 
-  imports = [ wlib.modules.default ]; # <-- includes wlib.modules.basic and wlib.modules.makeWrapper
+  imports = [ wlib.modules.default ]; # <-- includes wlib.modules.symlinkScript and wlib.modules.makeWrapper
   options = {
     profile = lib.mkOption {
       type = lib.types.enum [ "fast" "quality" ];
@@ -133,13 +149,19 @@ wrappers.lib.wrapProgram ({ config, wlib, lib, ... }: {
 })
 ```
 
+## alternatives
+
+- [wrapper-manager](https://github.com/viperML/wrapper-manager) by viperML. This project focuses more on a single module system, configuring wrappers and exporting them. This was an inspiration when building this library, but I wanted to have a more granular approach with a single module per package and a collection of community made modules.
+
+- [lassulus/wrappers](https://github.com/Lassulus/wrappers) the inspiration for the `.apply` interface for this library.
+
 ## Technical Details
 
 ### evalModule
 
 Creates a reusable wrapper module with type-safe configuration options via the module system
 
-Takes a module as its argument. To submit a module, this function must be able to evaluate it.
+Takes a module as its argument. To submit a module to this repo, this function must be able to evaluate it.
 
 ### wrapModule Function
 
@@ -166,42 +188,6 @@ Equivalent to:
 ```nix
 wrapModule = (wlib.evalModule wlib.modules.default).config.wrap;
 ```
-
-
-### mkWrapperFlagType and mkWrapperFlag
-
-These functions define typed module options representing wrapper flags.
-
-`mkWrapperFlagType n` creates a Nix type that validates flags expecting `n` arguments per instance.
-
-`mkWrapperFlag n` builds a matching option definition with reasonable defaults (`false` for 0-arity, empty list otherwise).
-
-They help ensure that wrapper argument modules are statically type-checked and compatible with `argOpts2list`.
-
-They are used when defining the module passed to `wrapper.opts`, which controls the options available to `wrapper.args`.
-
-### argOpts2list
-
-Converts a flat attribute set of wrapper argument options into a sequential list of command-line arguments.
-
-Accepts a structure like `{ "--flag" = true; "--set" = [ [ "VAR" "VALUE" ] ]; }` and produces a linearized list suitable for `makeWrapper`.
-
-Supports boolean flags (included or omitted), single-argument flags (lists of strings), and multi-argument flags (lists of fixed-length lists).
-
-This is useful when redefining the `wrapper.func` module option to override the default `pkgs.makeWrapper` based wrapper function.
-
-### generateArgsFromFlags
-
-Generates a list of arguments from a flags attribute set and a configurable flag separator.
-Each key is treated as a flag name, and values determine how the flag appears:
-
-* `true` → flag alone
-* `false` or `null` → omitted
-* list → repeated flags
-* string → flag with value
-  The separator determines spacing (`"--flag value"`) or joining (`"--flag=value"`).
-
-It is the function that maps the `config.flags` module option to something that would work in the `config.args` option.
 
 ### Module System Integration
 
@@ -242,11 +228,50 @@ package = actualPackage.wrap {
 };
 ```
 
-## alternatives
+## Types:
 
-- [wrapper-manager](https://github.com/viperML/wrapper-manager) by viperML. This project focuses more on a single module system, configuring wrappers and exporting them. This was an inspiration when building this library, but I wanted to have a more granular approach with a single module per package and a collection of community made modules.
+Custom types:
 
-# Core Options
+`wlib.types.file`: File type with content and path options
+
+Arguments:
+- `pkgs`: nixpkgs instance
+
+Fields:
+- `content`: File contents as string
+- `path`: Derived path using pkgs.writeText
+
+`wlib.types.dagOf`: 
+
+Arguments:
+- `elemType`: `type`
+
+Accepts an attrset of elements of type elemType
+OR sets of the type `{ data, name ? null, before ? [], after ? [] }`
+
+Can be used in conjunction with `wlib.dag.topoSort`
+
+`wlib.types.dalOf`: 
+
+Arguments:
+- `elemType`: `type`
+
+Accepts a LIST of elements of type elemType
+OR sets of the type `{ data, name ? null, before ? [], after ? [] }`
+
+Can be used in conjunction with `wlib.dag.topoSort`
+
+`wlib.types.fixedList`:
+
+Arguments:
+- `length`: `int`,
+- `elemType`: `type`
+
+It's a list, but it rejects lists of the wrong length.
+
+Still has regular list merge across multiple definitions, best used inside another list
+
+# Core Options (except meta info)
 
 ## package
 
@@ -300,74 +325,6 @@ attribute set of raw value
 *Default:*
 ` { } `
 
-## meta\.maintainers
-
-Maintainers of this wrapper module\.
-
-*Type:*
-list of (submodule)
-
-*Default:*
-` [ ] `
-
-## meta\.maintainers\.\*\.email
-
-email
-
-*Type:*
-null or string
-
-*Default:*
-` null `
-
-## meta\.maintainers\.\*\.github
-
-GitHub username
-
-*Type:*
-string
-
-## meta\.maintainers\.\*\.githubId
-
-GitHub id
-
-*Type:*
-signed integer
-
-## meta\.maintainers\.\*\.matrix
-
-Matrix ID
-
-*Type:*
-null or string
-
-*Default:*
-` null `
-
-## meta\.maintainers\.\*\.name
-
-name
-
-*Type:*
-string
-
-*Default:*
-` "‹name›" `
-
-## meta\.platforms
-
-Supported platforms
-
-*Type:*
-list of (one of `lib.platforms.all`)
-
-
-
-*Default:*
-`lib.platforms.all`
-
-
-
 ## outputs
 
 Override the list of nix outputs that get symlinked into the final package\.
@@ -420,7 +377,7 @@ It is in charge of taking those options, and linking the files into place as req
 function that evaluates to a(n) string
 
 *Default:*
-` <function, args: {config, lndir, wlib, wrapper}> `
+` <function, args: {config, wlib, outputs, binName, wrapper}> `
 
 ## wrap
 
@@ -452,7 +409,7 @@ A function which returns a package\.
 
 Arguments:
 
-` { config, wlib, /* other args from callPackage */ ... } `
+` { config, wlib, outputs, binName, /* other args from callPackage */ ... } `
 
 That package MUST contain “$out/bin/${binName}”
 as the executable to be wrapped\.
@@ -474,7 +431,7 @@ null or (function that evaluates to a(n) package)
 *Default:*
 ` null `
 
-# wlib.modules.default options (abridged)
+# wlib.modules.default options
 
 ## wlib.modules.symlinkScript
 
@@ -516,16 +473,90 @@ list of string
 ]
 ```
 
-## wlib.modules.basic
+## wlib.modules.makeWrapper
 
-## args
+> [!NOTE]
+>
+> a `DAG LIST` or `DAL` is a `list` which accepts either the values directly,
+> or sets containing `{ data, name ? null, before ? [], after ? [] }`
+>
+> Put the name of another entry in before or after, to be inserted before or after it
+>
+> It is very much like a `DAG`, which is also a type offered by this library,
+> like the one offered by home manager, however some of its fields are optional.
+>
+> If a value does not have a name, it can't be targeted by other entries.
 
-Command-line arguments to pass to the wrapper (like argv in execve)\.
-This is a list of strings representing individual arguments\.
-If not specified, will be automatically generated from flags\.
+## add-flag
+
+–add-flag ARG
+
+Prepend the single argument ARG to the invocation of the executable,
+before any command-line arguments\.
 
 *Type:*
-list of string
+DAG LIST of string or package
+
+*Default:*
+` [ ] `
+
+## append-flag
+
+–append-flag ARG
+
+Append the single argument ARG to the invocation of the executable,
+after any command-line arguments\.
+
+*Type:*
+DAG LIST of string or package
+
+*Default:*
+` [ ] `
+
+## argv0
+
+–argv0 NAME
+
+Set the name of the executed process to NAME\.
+If unset or empty, defaults to EXECUTABLE\.
+
+*Type:*
+null or string
+
+*Default:*
+` null `
+
+## argv0type
+
+` argv0 ` overrides this option if not null or unset
+
+` "inherit" `:
+` --inherit-argv0 `
+
+The executable inherits argv0 from the wrapper\.
+Use instead of --argv0 ‘$0’\.
+
+` "resolve" `:
+
+` --resolve-argv0 `
+
+If argv0 does not include a “/” character, resolve it against PATH\.
+
+*Type:*
+one of “resolve”, “inherit”
+
+*Default:*
+` "inherit" `
+
+## chdir
+
+–chdir DIR
+
+Change working directory before running the executable\.
+Use instead of --run “cd DIR”\.
+
+*Type:*
+DAG LIST of string or package
 
 *Default:*
 ` [ ] `
@@ -535,7 +566,19 @@ list of string
 Environment variables to set in the wrapper\.
 
 *Type:*
-attribute set of string
+DAG of string or package
+
+*Default:*
+` { } `
+
+## env-default
+
+Environment variables to set in the wrapper\.
+
+Like env, but only adds the variable if not already set in the environment\.
+
+*Type:*
+DAG of string or package
 
 *Default:*
 ` { } `
@@ -571,10 +614,66 @@ If the value is false or null, the flag will not be passed\.
 If the value is a list, the flag will be passed multiple times with each value\.
 
 *Type:*
-attribute set of unspecified value
+DAG of null or boolean or string or package or list of (string or package)
 
 *Default:*
 ` { } `
+
+## makeWrapper
+
+makeWrapper implementation to use (default pkgs\.makeWrapper)
+
+*Type:*
+null or package
+
+*Default:*
+` null `
+
+## prefix
+
+–prefix ENV SEP VAL
+
+Prefix or suffix ENV with VAL, separated by SEP\.
+
+*Type:*
+DAG LIST of List of length 3
+
+*Default:*
+` [ ] `
+
+## prefix-contents
+
+–prefix-contents ENV SEP FILES
+
+Like --suffix-each, but contents of FILES are read first and used as VALS\.
+
+*Type:*
+DAG LIST of List of length 3
+
+*Default:*
+` [ ] `
+
+## rawWrapperArgs
+
+list of wrapper arguments, escaped with lib\.escapeShellArgs
+
+*Type:*
+DAG LIST of list of (string or package)
+
+*Default:*
+` [ ] `
+
+## run
+
+–run COMMAND
+
+Run COMMAND before executing the main program\.
+
+*Type:*
+DAG LIST of string or package
+
+*Default:*
+` [ ] `
 
 ## runtimeLibraries
 
@@ -587,161 +686,61 @@ list of package
 *Default:*
 ` [ ] `
 
-## wlib.modules.makeWrapper
-
-## wrapArgs\."--add-flag"
-
-–add-flag ARG
-
-Prepend the single argument ARG to the invocation of the executable,
-before any command-line arguments\.
-
-*Type:*
-Wrapper flag (list of values)
-
-*Default:*
-` [ ] `
-
-## wrapArgs\."--append-flag"
-
-–append-flag ARG
-
-Append the single argument ARG to the invocation of the executable,
-after any command-line arguments\.
-
-*Type:*
-Wrapper flag (list of values)
-
-*Default:*
-` [ ] `
-
-## wrapArgs\."--prefix"
-
-–prefix ENV SEP VAL
-
-Prefix or suffix ENV with VAL, separated by SEP\.
-
-*Type:*
-Wrapper flag (list of lists of length 3)
-
-*Default:*
-` [ ] `
-
-## wrapArgs\."--prefix-contents"
-
-–prefix-contents ENV SEP FILES
-
-Like --suffix-each, but contents of FILES are read first and used as VALS\.
-
-*Type:*
-Wrapper flag (list of lists of length 3)
-
-*Default:*
-` [ ] `
-
-## wrapArgs\."--set"
-
-–set VAR VAL
-
-Add VAR with value VAL to the executable’s environment\.
-
-*Type:*
-Wrapper flag (list of lists of length 2)
-
-*Default:*
-` [ ] `
-
-## wrapArgs\."--set-default"
-
-–set-default VAR VAL
-
-Like --set, but only adds VAR if not already set in the environment\.
-
-*Type:*
-Wrapper flag (list of lists of length 2)
-
-*Default:*
-` [ ] `
-
-## wrapArgs\."--unset"
-
-–unset VAR
-
-Remove VAR from the environment\.
-
-*Type:*
-Wrapper flag (list of values)
-
-*Default:*
-` [ ] `
-
-## wrapArgs\."--suffix"
+## suffix
 
 –suffix ENV SEP VAL
 
 Suffix or prefix ENV with VAL, separated by SEP\.
 
 *Type:*
-Wrapper flag (list of lists of length 3)
+DAG LIST of List of length 3
 
 *Default:*
 ` [ ] `
 
-## wrapArgs\."--run"
+## suffix-contents
 
-–run COMMAND
+–suffix-contents ENV SEP FILES
 
-Run COMMAND before executing the main program\.
+Like --prefix-each, but contents of FILES are read first and used as VALS\.
 
 *Type:*
-Wrapper flag (list of values)
+DAG LIST of List of length 3
 
 *Default:*
 ` [ ] `
 
-## wrapArgs\."--argv0"
+## unsafeWrapperArgs
 
-–argv0 NAME
-
-Set the name of the executed process to NAME\.
-If unset or empty, defaults to EXECUTABLE\.
+list of wrapper arguments, concatenated with spaces, which are always after rawWrapperArgs
 
 *Type:*
-Wrapper Flag (null or string)
+DAG LIST of list of (package or string)
 
 *Default:*
-` null `
+` [ ] `
 
-## wrapArgs\.argv0
+## unset
 
-If “set” is provided, ` wrapArgs."--argv0" ` must be provided as well\.
+–unset VAR
 
-The other options require no further configuration\.
-
-Possible values are:
-
-` "set" `:
-
-–argv0 NAME
-
-Set the name of the executed process to NAME\.
-If unset or empty, defaults to EXECUTABLE\.
-If “set” is provided, ` wrapArgs."--argv0" ` must be provided as well\.
-
-` "inherit" `:
-` --inherit-argv0 `
-
-The executable inherits argv0 from the wrapper\.
-Use instead of --argv0 ‘$0’\.
-
-` "resolve" `:
-
-` --resolve-argv0 `
-
-If argv0 does not include a “/” character, resolve it against PATH\.
+Remove VAR from the environment\.
 
 *Type:*
-one of “set”, “resolve”, “inherit”
+DAG LIST of string or package
 
 *Default:*
-` "inherit" `
+` [ ] `
+
+## useBinaryWrapper
+
+changes the makeWrapper implementation from pkgs\.makeWrapper to pkgs\.makeBinaryWrapper
+
+also disables --run, --prefix-contents, and --suffix-contents,
+as they are not supported by pkgs\.makeBinaryWrapper
+
+*Type:*
+boolean
+
+*Default:*
+` false `

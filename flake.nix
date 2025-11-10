@@ -7,7 +7,7 @@
       forAllSystems = f: nixpkgs.lib.genAttrs nixpkgs.lib.platforms.all (system: f system);
     in
     {
-      lib = import ./lib.nix { inherit (nixpkgs) lib; };
+      lib = import ./lib { inherit (nixpkgs) lib; };
       wrapperModules = nixpkgs.lib.mapAttrs (
         _: v: (self.lib.evalModule v).config
       ) self.lib.wrapperModules;

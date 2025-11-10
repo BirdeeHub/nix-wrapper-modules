@@ -188,6 +188,8 @@ let
             {
               wlib,
               config,
+              outputs,
+              binName,
               wrapper,
               lndir,
               ...
@@ -213,7 +215,7 @@ let
                   ''
                 else
                   ""
-              ) config.outputs}
+              ) outputs}
             '';
         };
         wrapper = lib.mkOption {
@@ -237,24 +239,22 @@ let
                     # Extract binary name from the exe path
                     inherit (final.passthru.configuration) package;
                     binName =
-                      if builtins.isString (final.passthru.configuration.binName or null) then
+                      if builtins.isString final.passthru.configuration.binName then
                         final.passthru.configuration.binName
                       else
                         baseNameOf (lib.getExe package);
                     outputs =
                       if final.passthru.configuration.outputs != null then
                         final.passthru.configuration.outputs
-                      else if package ? outputs then
+                      else if package.outputs or null != null then
                         package.outputs
                       else
                         [ "out" ];
                     wrapper =
-                      if final.passthru.configuration.wrapperFunction or null != null then
+                      if final.passthru.configuration.wrapperFunction != null then
                         pkgs.callPackage final.passthru.configuration.wrapperFunction {
-                          config = final.passthru.configuration // {
-                            inherit binName outputs;
-                          };
-                          inherit wlib;
+                          config = final.passthru.configuration;
+                          inherit binName outputs wlib;
                         }
                       else
                         null;
@@ -302,10 +302,13 @@ let
                       source $stdenv/setup
                     ''
                     + pkgs.callPackage final.passthru.configuration.symlinkScript {
-                      config = final.passthru.configuration // {
-                        inherit binName outputs;
-                      };
-                      inherit wrapper wlib;
+                      config = final.passthru.configuration;
+                      inherit
+                        binName
+                        outputs
+                        wrapper
+                        wlib
+                        ;
                     }
                     + ''
 
@@ -328,10 +331,7 @@ let
                       (package.meta or { })
                       //
                         lib.optionalAttrs
-                          (
-                            (final.passthru.configuration.binName or null) != null
-                            && (final.passthru.configuration.binName or "") != ""
-                          )
+                          (final.passthru.configuration.binName != null && final.passthru.configuration.binName != "")
                           {
                             mainProgram = "$out/bin/${binName}";
                           };
