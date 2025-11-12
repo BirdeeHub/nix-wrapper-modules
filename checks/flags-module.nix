@@ -4,18 +4,19 @@
 }:
 
 let
-  helloModule = self.lib.wrapModule (
-    { config, ... }:
+  helloModule = self.lib.evalModule (
+    { config, wlib, ... }:
     {
+      imports = [ wlib.modules.default ];
       config.package = config.pkgs.hello;
       config.flags = {
         "--greeting" = "world";
-        "--silent" = { };
+        "--silent" = true;
       };
     }
   );
 
-  wrappedPackage = (helloModule.apply { inherit pkgs; }).wrapper;
+  wrappedPackage = (helloModule.config.apply { inherit pkgs; }).wrapper;
 
 in
 pkgs.runCommand "module-flags-test" { } ''

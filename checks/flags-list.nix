@@ -13,7 +13,7 @@ let
         "file2.txt"
         "file3.txt"
       ];
-      "--verbose" = { };
+      "--verbose" = true;
     };
     flagSeparator = " ";
   };

@@ -4,14 +4,13 @@
   outputs =
     { self, nixpkgs }:
     let
-      forAllSystems = f: nixpkgs.lib.genAttrs nixpkgs.lib.platforms.all (system: f system);
+      forAllSystems = nixpkgs.lib.genAttrs nixpkgs.lib.platforms.all;
     in
     {
-      lib = import ./lib.nix { lib = nixpkgs.lib; };
-      wrapperModules = import ./modules.nix {
-        lib = nixpkgs.lib;
-        wlib = self.lib;
-      };
+      lib = import ./lib { inherit (nixpkgs) lib; };
+      wrapperModules = nixpkgs.lib.mapAttrs (
+        _: v: (self.lib.evalModule v).config
+      ) self.lib.wrapperModules;
       formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
       checks = forAllSystems (
         system:
@@ -33,27 +32,15 @@
             )
           );
 
-          # Load checks from modules/**/check.nix
-          moduleFiles = builtins.readDir ./modules;
-          importModuleCheck =
-            name: type:
-            let
-              checkPath = ./modules + "/${name}/check.nix";
-              # Check if current system is in the module's supported platforms
-              isSupported = builtins.elem system self.wrapperModules.${name}.meta.platforms;
-            in
-            if type == "directory" && builtins.pathExists checkPath && isSupported then
-              {
-                name = "module-${name}";
-                value = import checkPath {
-                  inherit pkgs;
-                  self = self;
-                };
-              }
-            else
-              null;
+          importModuleCheck = name: value: {
+            name = "module-${name}";
+            value = import value {
+              inherit pkgs;
+              self = self;
+            };
+          };
           checksFromModules = builtins.listToAttrs (
-            nixpkgs.lib.filter (x: x != null) (nixpkgs.lib.mapAttrsToList importModuleCheck moduleFiles)
+            nixpkgs.lib.mapAttrsToList importModuleCheck self.lib.checks
           );
         in
         checksFromDir // checksFromModules

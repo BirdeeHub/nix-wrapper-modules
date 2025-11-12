@@ -5,34 +5,39 @@
 
 let
   # Create a simple wrapper module
-  helloModule = self.lib.wrapModule (
-    { config, ... }:
-    {
-      config.package = config.pkgs.hello;
-      config.flags = {
-        "--greeting" = "initial";
-      };
-    }
-  );
+  helloModule =
+    (self.lib.evalModule (
+      { config, wlib, ... }:
+      {
+        config.package = config.pkgs.hello;
+        imports = [ wlib.modules.default ];
+        config.flags = {
+          "--greeting" = "initial";
+        };
+      }
+    )).config;
 
   # Apply with initial settings
   initialConfig = helloModule.apply {
     inherit pkgs;
-    flags."--verbose" = { };
+    flags."--verbose" = true;
   };
 
   # Extend the configuration
-  extendedConfig = initialConfig.apply {
-    flags."--greeting" = "extended";
-    flags."--extra" = "flag";
-  };
+  extendedConfig = initialConfig.apply (
+    { lib, ... }:
+    {
+      flags."--greeting" = lib.mkForce "extended";
+      flags."--extra" = "flag";
+    }
+  );
 
   # Test mkForce to override a value
   forcedConfig = initialConfig.apply (
     { lib, ... }:
     {
       flags."--greeting" = lib.mkForce "forced";
-      flags."--forced-flag" = { };
+      flags."--forced-flag" = lib.mkForce "forced";
     }
   );
 

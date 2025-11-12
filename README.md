@@ -1,4 +1,4 @@
-# wrappers
+# nix-wrapper-modules
 
 A Nix library to create wrapped executables via the module system.
 
@@ -6,22 +6,73 @@ Are you annoyed by rewriting modules for every platform? nixos, home-manager, ni
 
 Then this library is for you!
 
-[xkcd 927](https://xkcd.com/927/)
-
-##
+## Why use this?
 
 Watch this excellent Video by Vimjoyer for an explanation:
 
+This repository is very much like the one mentioned at the end.
+
+However it has modules that are capable of much more, with a more consistent, flexible, and capable design.
+
 [![Homeless Dotfiles with Nix Wrappers](https://img.youtube.com/vi/Zzvn9uYjQJY/0.jpg)](https://www.youtube.com/watch?v=Zzvn9uYjQJY)
 
+## Why rewrite [lassulus/wrappers](https://github.com/Lassulus/wrappers)?
+
+Yes, I know about this comic: [xkcd 927](https://xkcd.com/927/)
+
+I heard that I could wrap programs with the module system, and then reapply more changes after, like override. I was excited.
+
+But the project was tiny, there were not many modules yet.
+
+"No problem!" I thought to myself, and began to write a module...
+
+Turns out there were actually several problems.
+
+The first, was that a significant amount of the options were not even accessible to the module system,
+and were instead only accessible to a secondary builder function.
+
+There were many more things that were going to make it hard to use. So, I set about the task of fixing it.
+
+However, when I began, the core was only about 700 lines of code.
+
+Asking someone to accept someone else's rewrite of their _entire_ project is a tall order, even if it doesn't break anything existing.
+
+I wanted this thing to be the best it could be, but it was looking like the full extent of my changes would be a difficult sell for the maintainer to handle reading and maintaining.
+
+It looked like only small pieces would be accepted, and at some point I gained a very clear vision of what I wanted.
+
+It turns out what I wanted was significantly different from what that project was.
+
+I rewrote it several times, and finally found what I feel to be the right set of capabilities and options.
+
+Most everything you see in that video will work here too, but this is not intended to be a 1 for 1 compatible library.
+
+Free of compatibility issues, I was able to start out with a consistent design from the start!
+
+This repo is as close to 100% module-based as it could be.
+
+All in all, I added over 3.5k lines of code and removed over 1k from the project, which was quite small to begin with. So, it is definitely now its own thing!
+
+## Long-term Goals
+
+It is the ideal of this project to become a hub for everyone to contribute,
+so that we can all enjoy our portable configurations with as little individual strife as possible.
+
+In service of that ideal, the immediate goal would be to transfer this repo to nix-community the moment that becomes an option.
+
+Eventually I hope to have wrapper modules in nixpkgs, but again, nix-community would be the first step.
+
+## Short-term Goals
+
+Help us add more modules!
 
 ## Overview
 
 This library provides two main components:
 
-- `lib.wrapPackage`: Low-level function to wrap packages with additional flags, environment variables, and runtime dependencies
-- `lib.wrapModule`: High-level function to create reusable wrapper modules with type-safe configuration options
-- `wrapperModules`: Pre-built wrapper modules for common packages (mpv, notmuch, etc.)
+- `lib.evalModule`: Function to create reusable wrapper modules with type-safe configuration options
+  - And related, `lib.wrapPackage`: an alias for `evalModule` which returns the package directly and pre-imports the `wlib.modules.default` module for convenience
+- `wrapperModules`: Pre-built wrapper modules for common packages (`tmux`, `wezterm`, etc.)
 
 ## Usage
 
@@ -29,11 +80,11 @@ This library provides two main components:
 
 ```nix
 {
-  inputs.wrappers.url = "github:lassulus/wrappers";
+  inputs.wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
 
   outputs = { self, nixpkgs, wrappers }: {
     packages.x86_64-linux.default =
-      (wrappers.wrapperModules.mpv.apply {
+      wrappers.wrapperModules.mpv.wrap {
         pkgs = nixpkgs.legacyPackages.x86_64-linux;
         scripts = [ pkgs.mpvScripts.mpris ];
         "mpv.conf".content = ''
@@ -44,33 +95,8 @@ This library provides two main components:
           WHEEL_UP seek 10
           WHEEL_DOWN seek -10
         '';
-      }).wrapper;
+      };
   };
-}
-```
-
-### Using wrapPackage Directly
-
-```nix
-{ pkgs, wrappers, ... }:
-
-wrappers.lib.wrapPackage {
-  inherit pkgs;
-  package = pkgs.curl;
-  runtimeInputs = [ pkgs.jq ];
-  env = {
-    CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-  };
-  flags = {
-    "--silent" = {};
-    "--connect-timeout" = "30";
-  };
-  # Or use args directly for more control:
-  # args = [ "--silent" "--connect-timeout" "30" ];
-  flagSeparator = "=";  # Use --flag=value instead of --flag value (default is " ")
-  preHook = ''
-    echo "Making request..." >&2
-  '';
 }
 ```
 
@@ -79,7 +105,13 @@ wrappers.lib.wrapPackage {
 ```nix
 { wlib, lib }:
 
-wlib.wrapModule ({ config, wlib, ... }: {
+(wlib.evalModule ({ config, wlib, lib, ... }: {
+  # You can only grab the final package if you supply pkgs!
+  # But if you were making it for someone else, you would want them to do that!
+
+  # inherit pkgs;
+
+  imports = [ wlib.modules.default ]; # <-- includes wlib.modules.symlinkScript and wlib.modules.makeWrapper
   options = {
     profile = lib.mkOption {
       type = lib.types.enum [ "fast" "quality" ];
@@ -100,151 +132,72 @@ wlib.wrapModule ({ config, wlib, ... }: {
   config.env = {
     FFMPEG_OUTPUT_DIR = config.outputDir;
   };
+})) # .config.wrapper to grab the final package! Only works if pkgs was supplied.
+```
+
+`wrapProgram` comes with `wlib.modules.default` already included, and outputs the package directly!
+
+```nix
+{ pkgs, wrappers, ... }:
+
+wrappers.lib.wrapProgram ({ config, wlib, lib, ... }: {
+  inherit pkgs; # you can only grab the final package if you supply pkgs!
+  package = pkgs.curl;
+  extraPackages = [ pkgs.jq ];
+  env = {
+    CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+  };
+  flags = {
+    "--silent" = true;
+    "--connect-timeout" = "30";
+  };
+  flagSeparator = "=";  # Use --flag=value instead of --flag value (default is " ")
+  runShell = [
+  ''
+    echo "Making request..." >&2
+  ''
+  ];
 })
 ```
 
-## Technical Details
+## Extending Configurations
 
-### wrapPackage Function
+The `.eval` function allows you to extend an already-applied configuration with additional modules, similar to `extendModules` in NixOS.
 
-Arguments:
-- `pkgs`: nixpkgs instance
-- `package`: Base package to wrap
-- `runtimeInputs`: List of packages added to PATH (default: `[]`)
-- `env`: Attribute set of environment variables (default: `{}`)
-- `flags`: Attribute set of command-line flags (default: `{}`)
-  - Value `{}`: Flag without argument (e.g., `--verbose`)
-  - Value `"string"`: Flag with argument (e.g., `--output "file.txt"`)
-  - Value `false` or `null`: Flag omitted
-- `flagSeparator`: Separator between flag name and value when generating args from flags (default: `" "`, can be `"="`)
-- `args`: List of command-line arguments like argv in execve (default: auto-generated from `flags`)
-  - Example: `[ "--silent" "--connect-timeout" "30" ]`
-  - If provided, overrides automatic generation from `flags`
-- `preHook`: Shell script executed before the command (default: `""`)
-- `passthru`: Additional attributes for the derivation's passthru (default: `{}`)
-- `aliases`: List of additional symlink names for the executable (default: `[]`)
-- `filesToPatch`: List of file paths (glob patterns) relative to package root to patch for self-references (default: `["share/applications/*.desktop"]`)
-  - Example: `["bin/*", "lib/*.sh"]` to replace original package paths with wrapped package paths
-  - Desktop files are patched by default to update Exec= and Icon= paths
-- `wrapper`: Custom wrapper function (optional, overrides default exec wrapper)
+The `.apply` function works the same way, but automatically grabs `.config` from the result of `.eval` for you.
 
-The function:
-- Preserves all outputs from the original package (man pages, completions, etc.)
-- Uses `lndir` for symlinking to maintain directory structure
-- Generates a shell wrapper script with proper escaping
-- Handles multi-output derivations correctly
-
-### wrapModule Function
-
-Creates a reusable wrapper module with:
-- Type-safe configuration options via the module system
-- `options`: Exposed options for documentation generation
-- `apply`: Function to instantiate the wrapper with settings, returning a config object
-  - Access the wrapped package via the `wrapper` attribute of the returned config
-
-Built-in options (always available):
-- `pkgs`: nixpkgs instance (required)
-- `package`: Base package to wrap
-- `extraPackages`: Additional runtime dependencies
-- `flags`: Command-line flags (attribute set)
-- `flagSeparator`: Separator between flag name and value (default: `" "`)
-- `args`: Command-line arguments list (auto-generated from `flags` if not provided)
-- `env`: Environment variables
-- `passthru`: Additional passthru attributes
-- `filesToPatch`: List of file paths (glob patterns) to patch for self-references (default: `["share/applications/*.desktop"]`)
-- `filesToExclude`: List of file paths (glob patterns) to exclude from the wrapped package (default: `[]`)
-- `wrapper`: The resulting wrapped package (read-only, auto-generated from other options)
-- `apply`: Function to extend the configuration with additional modules (read-only)
-
-Custom types:
-- `wlib.types.file`: File type with `content` and `path` options
-  - `content`: File contents as string
-  - `path`: Derived path using `pkgs.writeText`
-
-### Module System Integration
-
-The wrapper module system integrates with NixOS module evaluation:
-- Uses `lib.evalModules` for configuration evaluation
-- Supports all standard module features (imports, conditionals, mkIf, etc.)
-- Provides `config` for accessing evaluated configuration
-- Provides `options` for introspection and documentation
-
-### Extending Configurations
-
-The `apply` function allows you to extend an already-applied configuration with additional modules, similar to `extendModules` in NixOS:
+The `.wrap` function works the same way, but automatically grabs `.config.wrapper` (the final package) from the result of `.eval` for you.
 
 ```nix
 # Apply initial configuration
-initialConfig = wrappers.wrapperModules.mpv.apply {
+initialConfig = (wrappers.wrapperModules.tmux.eval {
   pkgs = pkgs;
-  scripts = [ pkgs.mpvScripts.mpris ];
-  "mpv.conf".content = ''
-    vo=gpu
-  '';
-};
+  plugins = [ pkgs.tmuxPlugins.onedark-theme ];
+}).config;
 
 # Extend with additional configuration
-extendedConfig = initialConfig.apply {
-  scripts = [ pkgs.mpvScripts.thumbnail ];
-  "mpv.conf".content = ''
-    profile=gpu-hq
-  '';
+extendedConfig = initialConfig.eval {
+  clock24 = false;
 };
 
 # Access the wrapper
-package = extendedConfig.wrapper;
-```
+actualPackage = extendedConfig.config.wrapper;
 
-The `apply` function re-evaluates the module with both the original settings and the new module, allowing you to override or add to the existing configuration.
+# Extend it again!
+apackage = (actualPackage.eval {
+  vimVisualKeys = true;
+  modeKeys = "vi";
+  statusKeys = "vi";
+}).config.wrapper;
 
-## Example Modules
-
-### mpv Module
-
-Wraps mpv with configuration file support and script management:
-
-```nix
-(wrappers.wrapperModules.mpv.apply {
-  pkgs = pkgs;
-  scripts = [ pkgs.mpvScripts.mpris pkgs.mpvScripts.thumbnail ];
-  "mpv.conf".content = ''
-    vo=gpu
-    profile=gpu-hq
-  '';
-  "mpv.input".content = ''
-    RIGHT seek 5
-    LEFT seek -5
-  '';
-  extraFlags = {
-    "--save-position-on-quit" = {};
-  };
-}).wrapper
-```
-
-### notmuch Module
-
-Wraps notmuch with INI-based configuration:
-
-```nix
-(wrappers.wrapperModules.notmuch.apply {
-  pkgs = pkgs;
-  config = {
-    database = {
-      path = "/home/user/Mail";
-      mail_root = "/home/user/Mail";
-    };
-    user = {
-      name = "John Doe";
-      primary_email = "john@example.com";
-    };
-  };
-}).wrapper
+# and again!
+packageAgain = apackage.wrap {
+  prefix = "C-Space";
+};
 ```
 
 ## alternatives
 
 - [wrapper-manager](https://github.com/viperML/wrapper-manager) by viperML. This project focuses more on a single module system, configuring wrappers and exporting them. This was an inspiration when building this library, but I wanted to have a more granular approach with a single module per package and a collection of community made modules.
 
-## Long-term Goals
-
-Upstream this schema into nixpkgs with an optional module.nix for every package. NixOS modules could then reuse these wrapper modules for consistent configuration across platforms.
+- [lassulus/wrappers](https://github.com/Lassulus/wrappers) the inspiration for the `.apply` interface for this library.

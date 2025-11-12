@@ -14,6 +14,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge main into PR branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git fetch origin main
+          if ! git merge origin/main; then
+            echo "Merge failed due to conflicts. Please rebase your branch on main."
+            exit 1
+          fi
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main

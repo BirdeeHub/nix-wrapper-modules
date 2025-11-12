@@ -7,7 +7,7 @@ let
   wrappedPackage = self.lib.wrapPackage {
     inherit pkgs;
     package = pkgs.hello;
-    args = [
+    addFlag = [
       "--greeting"
       "hi"
       "--verbose"
