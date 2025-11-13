@@ -9,10 +9,6 @@
 }:
 let
   corelist = builtins.attrNames (wlib.evalModule { }).options;
-  # TODO: make the replace do what you expect
-  # for some reason if you actually fix the link rather than "" it fixes (breaks) it again
-  pathTransform = builtins.replaceStrings [ "${../.}" ] [ "" ];
-  transformOptions = lib.mapAttrs (n: v: if n == "declarations" then map pathTransform v else v);
   evaluate_helpers =
     mp:
     (wlib.evalModules {
@@ -39,7 +35,6 @@ let
       result = runCommand "core-wrapper-docs" { } (
         let
           coreopts = nixosOptionsDoc {
-            inherit transformOptions;
             options =
               let
                 opts = (
@@ -67,7 +62,9 @@ let
         ''
           cat ${./core.md} > $out
           echo >> $out
-          cat ${coreopts.optionsCommonMark} >> $out
+          cat ${coreopts.optionsCommonMark} | \
+            sed 's|file://${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
+            sed 's|${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
         ''
       );
     in
@@ -92,7 +89,6 @@ let
     name: mod:
     let
       optionsDoc = nixosOptionsDoc {
-        inherit transformOptions;
         options = builtins.removeAttrs (evaluate mod) corelist; # TODO: find a way to toggle with and without the difference between corelist and to_remove in mdbook
       };
     in
@@ -100,7 +96,9 @@ let
       echo '# `wlib.wrapperModules.${name}`' > $out
       echo >> $out
       echo >> $out
-      cat ${optionsDoc.optionsCommonMark} >> $out
+      cat ${optionsDoc.optionsCommonMark} | \
+        sed 's|file://${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
+        sed 's|${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
     ''
   ) wlib.wrapperModules;
 
@@ -135,7 +133,6 @@ let
     name: mod:
     let
       optionsDoc = nixosOptionsDoc {
-        inherit transformOptions;
         options = builtins.removeAttrs (evaluate_helpers mod) corelist;
       };
     in
@@ -149,7 +146,9 @@ let
           ""
       }
       echo >> $out
-      cat ${optionsDoc.optionsCommonMark} >> $out
+      cat ${optionsDoc.optionsCommonMark} | \
+        sed 's|file://${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
+        sed 's|${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
     ''
   ) wlib.modules;
 
