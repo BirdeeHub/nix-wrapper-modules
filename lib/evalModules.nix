@@ -248,9 +248,7 @@ let
           type = lib.types.package;
           readOnly = true;
           description = ''
-            The wrapped package created by wrapPackage. This wraps the configured package
-            with the specified flags, environment variables, runtime dependencies, and other
-            options in a portable way.
+            The final wrapped package.
 
             Accessing this value without defining `pkgs` option,
             either directly, or via some other means like `.wrap`,
