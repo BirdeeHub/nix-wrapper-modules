@@ -165,6 +165,8 @@
     default = wlib.escapeShellArgWithEnv;
     description = ''
       The function to use to escape shell arguments before concatenation
+
+      default: `wlib.escapeShellArgWithEnv`
     '';
   };
   config.wrapperFunction = lib.mkDefault (
