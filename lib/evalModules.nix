@@ -250,6 +250,8 @@ let
           description = ''
             The final wrapped package.
 
+            You may still call `.eval` and the rest on the package again afterwards.
+
             Accessing this value without defining `pkgs` option,
             either directly, or via some other means like `.wrap`,
             will cause an error.
