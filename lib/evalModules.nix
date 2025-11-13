@@ -175,6 +175,9 @@ let
             Whether to call $stdenv/setup to set up the environment before the symlinkScript
 
             If any phases are enabled, also runs the enabled phases after the symlinkScript command has ran.
+
+            NOTE: often you may prefer to set `extraDrvAttrs.phases = [ ... "buildPhase" etc ... ];` instead,
+            to override this choice in a more fine-grained manner
           '';
         };
         symlinkScript = lib.mkOption {
