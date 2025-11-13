@@ -20,14 +20,18 @@
       wrapperModules = {
         default = wrapper.config;
       };
-      packages = forAllSystems (system: let
-        pkgs = import nixpkgs { inherit system; };
-      in {
-        default = wrapper.config.wrap { inherit pkgs; };
-        hello-from-system = wrapper.config.wrap {
-          inherit pkgs;
-          greeting = "hello from ${pkgs.stdenv.hostPlatform.system}";
-        };
-      });
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        {
+          default = wrapper.config.wrap { inherit pkgs; };
+          hello-from-system = wrapper.config.wrap {
+            inherit pkgs;
+            greeting = "hello from ${pkgs.stdenv.hostPlatform.system}";
+          };
+        }
+      );
     };
 }
