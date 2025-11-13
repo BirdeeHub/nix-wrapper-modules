@@ -22,7 +22,8 @@ let
           type = lib.types.package;
           description = ''
             The base package to wrap.
-            This means we inherit all other files from this package
+            This means `config.symlinkScript` will be responsible
+            for inheriting all other files from this package
             (like man page, /share, ...)
           '';
         };
