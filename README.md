@@ -64,7 +64,7 @@ Eventually I hope to have wrapper modules in nixpkgs, but again, nix-community w
 
 ## Short-term Goals
 
-Help us add more modules!
+Help us add more modules! Contributors are what makes projects like these amazing!
 
 ## Overview
 
