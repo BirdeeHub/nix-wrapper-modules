@@ -173,6 +173,7 @@ let
     (builtins.concatStringsSep "\n")
   ];
 
+
   combined = pkgs.runCommand "book_src" { } ''
     mkdir -p $out/src
     cp ${./book.toml} $out/book.toml
@@ -180,7 +181,7 @@ let
     cp ${./helper-modules.md} $out/src/helper-modules.md
     cp ${./wrapper-modules.md} $out/src/wrapper-modules.md
     cp ${./lib-intro.md} $out/src/lib-intro.md
-    cp ${../README.md} $out/src/home.md
+    cat ${../README.md} | sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' >> $out/src/home.md
     echo '# Summary' > $out/src/SUMMARY.md
     echo >> $out/src/SUMMARY.md
     echo '- [Intro](./home.md)' >> $out/src/SUMMARY.md

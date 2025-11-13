@@ -1,4 +1,4 @@
-# nix-wrapper-modules
+# [nix-wrapper-modules](https://birdeehub.github.io/nix-wrapper-modules/)
 
 A Nix library to create wrapped executables via the module system.
 
