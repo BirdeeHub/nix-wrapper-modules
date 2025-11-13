@@ -65,7 +65,9 @@ let
           };
         in
         ''
-          cat ${coreopts.optionsCommonMark} > $out
+          cat ${./core.md} > $out
+          echo >> $out
+          cat ${coreopts.optionsCommonMark} >> $out
         ''
       );
     in
