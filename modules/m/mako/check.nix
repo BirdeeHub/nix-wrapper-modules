@@ -14,7 +14,12 @@ let
     }).wrapper;
 
 in
-pkgs.runCommand "mpv-test" { } ''
-  "${mpvWrapped}/bin/mako" --help | grep -q "mako"
-  touch $out
-''
+if builtins.elem pkgs.system self.wrapperModules.mako.meta.platforms then
+  pkgs.runCommand "mpv-test" { } ''
+    "${mpvWrapped}/bin/mako" --help | grep -q "mako"
+    touch $out
+  ''
+else
+  pkgs.runCommand "mpv-test-disabled" { } ''
+    touch $out
+  ''
