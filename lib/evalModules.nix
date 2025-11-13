@@ -46,8 +46,7 @@ let
           description = ''
             The name of the binary output by `wrapperFunction`.
             If not specified, the name of the package will be used.
-            If set as an empty string, aliases will not be made,
-            and wrapperFunction may behave unpredictably, depending on its implementation.
+            If set as an empty string, wrapperFunction may behave unpredictably, depending on its implementation.
           '';
         };
         outputs = lib.mkOption {
@@ -158,6 +157,12 @@ let
             as the executable to be wrapped.
             (unless you also override `symlinkScript`)
 
+            `binName` is the value of `config.binName` if non-null, otherwise it is given a default value via `baseNameOf` `lib.getExe`
+
+            The value of `config.binName` is left as the user of the module set it, so that you can know who is giving you the value.
+
+            The same is true of the `outputs` argument.
+
             The usual implementation is imported via `wlib.modules.makeWrapperBase`
 
             `wlib.modules.makeWrapper` and `wlib.modules.default` include that module automatically.
@@ -192,6 +197,14 @@ let
             ```
             The function is to return a string which will be added to the buildCommand of the wrapper.
             It is in charge of taking those options, and linking the files into place as requested.
+
+            `binName` is the value of `config.binName` if non-null, otherwise it is given a default value via `baseNameOf` `lib.getExe` on the `config.package` value
+
+            The value of `config.binName` is left as the user of the module set it, so that you can know who is giving you the value.
+
+            The same is true of the `outputs` argument.
+
+            `wrapper` is the result of calling `wrapperFunction`, or null if one was not provided.
           '';
           default =
             {
