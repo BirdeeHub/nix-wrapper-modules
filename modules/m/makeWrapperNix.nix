@@ -160,6 +160,13 @@
       Values may contain environment variable references using `$` to expand at runtime
     '';
   };
+  options.escapingFunction = lib.mkOption {
+    type = lib.types.functionTo lib.types.str;
+    default = wlib.escapeShellArgWithEnv;
+    description = ''
+      The function to use to escape shell arguments before concatenation
+    '';
+  };
   config.wrapperFunction = lib.mkDefault (
     {
       config,
@@ -171,7 +178,7 @@
       ...
     }:
     let
-      arg0 = if config.argv0 == null then "\"$0\"" else wlib.escapeShellArgWithEnv config.argv0;
+      arg0 = if config.argv0 == null then "\"$0\"" else config.escapingFunction config.argv0;
       generateArgsFromFlags =
         flagSeparator: dag_flags:
         wlib.dag.sortAndUnwrap {
@@ -219,9 +226,9 @@
           mapIfOk =
             v:
             if builtins.isList v.data then
-              builtins.concatStringsSep " " (map wlib.escapeShellArgWithEnv v.data)
+              builtins.concatStringsSep " " (map config.escapingFunction v.data)
             else
-              wlib.escapeShellArgWithEnv v.data;
+              config.escapingFunction v.data;
         }
       );
       postFlagStr = builtins.concatStringsSep " " (
@@ -230,17 +237,17 @@
           mapIfOk =
             v:
             if builtins.isList v.data then
-              builtins.concatStringsSep " " (map wlib.escapeShellArgWithEnv v.data)
+              builtins.concatStringsSep " " (map config.escapingFunction v.data)
             else
-              wlib.escapeShellArgWithEnv v.data;
+              config.escapingFunction v.data;
         }
       );
 
       shellcmdsdal =
-        wlib.dag.lmap (var: "unset ${lib.escapeShellArgWithEnv var}") config.unsetVar
+        wlib.dag.lmap (var: "unset ${config.escapingFunction var}") config.unsetVar
         ++ lib.optionals (config.env != { }) (
           wlib.dag.sortAndUnwrap {
-            dag = wlib.dag.gmap (n: v: "export " + wlib.escapeShellArgWithEnv "${n}=${toString v}") config.env;
+            dag = wlib.dag.gmap (n: v: "export " + config.escapingFunction "${n}=${toString v}") config.env;
           }
         )
         ++ wlib.dag.lmap (
@@ -251,7 +258,7 @@
             sep = elemAt tuple 1;
             val = elemAt tuple 2;
           in
-          "export " + wlib.escapeShellArgWithEnv "${env}=${val}${sep}${env}"
+          "export " + config.escapingFunction "${env}=${val}${sep}${env}"
         ) config.prefixVar
         ++ wlib.dag.lmap (
           tuple:
@@ -261,7 +268,7 @@
             sep = elemAt tuple 1;
             val = elemAt tuple 2;
           in
-          "export " + wlib.escapeShellArgWithEnv "${env}=${env}${sep}${val}"
+          "export " + config.escapingFunction "${env}=${env}${sep}${val}"
         ) config.suffixVar
         ++ config.runShell;
 
