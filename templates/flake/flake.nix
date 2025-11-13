@@ -1,0 +1,33 @@
+{
+  description = "Flake exporting a configured package using wlib.evalModule";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
+  inputs.wrappers.inputs.nixpkgs.follows = "nixpkgs";
+  outputs =
+    {
+      self,
+      nixpkgs,
+      wrappers,
+      ...
+    }@inputs:
+    let
+      forAllSystems = with nixpkgs.lib; genAttrs platforms.all;
+      module = ./module.nix;
+      wrapper = wrappers.lib.evalModule module;
+    in
+    {
+      overlays.default = final: prev: { hello = wrapper.config.wrap { pkgs = prev; }; };
+      wrapperModules = {
+        default = wrapper.config;
+      };
+      packages = forAllSystems (system: let
+        pkgs = import nixpkgs { inherit system; };
+      in {
+        default = wrapper.config.wrap { inherit pkgs; };
+        hello-from-system = wrapper.config.wrap {
+          inherit pkgs;
+          greeting = "hello from ${pkgs.stdenv.hostPlatform.system}";
+        };
+      });
+    };
+}

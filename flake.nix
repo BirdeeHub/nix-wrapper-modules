@@ -12,6 +12,7 @@
         _: v: (self.lib.evalModule v).config
       ) self.lib.wrapperModules;
       formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
+      templates = import ./templates;
       checks = forAllSystems (
         system:
         let
