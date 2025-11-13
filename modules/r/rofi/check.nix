@@ -12,6 +12,7 @@ let
     }).wrapper;
 
 in
+if builtins.elem pkgs.system self.wrapperModules.rofi.meta.platforms then
 pkgs.runCommand "rofi-test" { } ''
   # Rofi attempts to create some directories when first ran which doesn't work in a nix build
   export XDG_CACHE_HOME=/tmp
@@ -33,3 +34,4 @@ pkgs.runCommand "rofi-test" { } ''
 
   touch $out
 ''
+else pkgs.runCommand "rofi-test-disabled" { } "touch $out"
