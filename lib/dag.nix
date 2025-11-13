@@ -221,6 +221,9 @@ in
     entryAfter, and entryBefore to a topologically sorted list of
     entries.
 
+    Alternatively, it can take a `dal` (dependency list) instead.
+    Which is a list of such entries.
+
     Internally this function uses the `topoSort` function in
     `<nixpkgs/lib/lists.nix>` and its value is accordingly.
 
@@ -417,6 +420,8 @@ in
 
   /**
     Convenience function for resolving a DAG or DAL and getting the result in a sorted list of DAG entries
+
+    Unless you make use of mapIfOk, the result is still a DAL, but sorted.
 
     Arguments:
     ```nix
