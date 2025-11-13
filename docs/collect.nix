@@ -173,7 +173,6 @@ let
     (builtins.concatStringsSep "\n")
   ];
 
-
   combined = pkgs.runCommand "book_src" { } ''
     mkdir -p $out/src
     cp ${./book.toml} $out/book.toml
