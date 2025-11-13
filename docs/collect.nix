@@ -110,13 +110,22 @@ let
     '';
     makeWrapper = ''
       An implementation of the `makeWrapper` interface via type safe module options.
+
+      Imported by `wlib.modules.default`
     '';
     makeWrapperBase = ''
       Takes dependency lists of wrapper arguments of escaped and unescaped varieties,
       and sorts them according to their listed dependencies, if any.
+
+      Imported by `wlib.modules.makeWrapper`
     '';
     symlinkScript = ''
       Adds extra options compared to the default `symlinkScript` option value.
+
+      Imported by `wlib.modules.default`
+    '';
+    default = ''
+      This module imports both `wlib.modules.makeWrapper` and `wlib.modules.symlinkScript` for convenience
     '';
   };
 
