@@ -421,7 +421,11 @@ let
       ++ [
         { _moduleSettings = { }; }
       ];
-      specialArgs = (evalArgs.specialArgs or { }) // {
+      specialArgs = {
+        modulesPath = ../modules;
+      }
+      // (evalArgs.specialArgs or { })
+      // {
         inherit wlib;
       };
     }
