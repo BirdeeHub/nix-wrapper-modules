@@ -46,11 +46,14 @@ in
   config.flags = {
     "--config" = config."--config".path;
   };
-  config.extraDrvAttrs = {
-    # mako doesnt like fixupPhase
-    # we don't need them anyway
-    phases = [ ];
-  };
+  config.extraDrvAttrs.phases = [
+    "buildPhase"
+    "checkPhase"
+    "installPhase"
+    "installCheckPhase"
+    # "fixupPhase" # mako doesnt like fixupPhase
+    "distPhase"
+  ];
 
   config.package = lib.mkDefault config.pkgs.mako;
 
