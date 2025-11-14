@@ -36,27 +36,12 @@ let
         let
           coreopts = nixosOptionsDoc {
             options =
-              let
-                opts = (
-                  builtins.removeAttrs
-                    (wlib.evalModule {
-                      inherit pkgs;
-                      package = pkgs.hello;
-                    }).options
-                    [ "_module" ]
-                );
-              in
-              opts
-              // {
-                meta = opts.meta // {
-                  platforms = opts.meta.platforms // {
-                    # mimic an option but dont show the whole damn systems list
-                    type = lib.types.listOf lib.types.str;
-                    default = [ "... lib.platforms.all ..." ];
-                    example = ''[ "x86_64-linux" "aarch64-linux" ]'';
-                  };
-                };
-              };
+              builtins.removeAttrs
+                (wlib.evalModule {
+                  inherit pkgs;
+                  package = pkgs.hello;
+                }).options
+                [ "_module" ];
           };
         in
         ''

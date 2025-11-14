@@ -139,8 +139,15 @@ let
             default = [ ];
           };
           platforms = lib.mkOption {
-            type = lib.types.listOf (lib.types.enum lib.platforms.all);
+            type = (lib.types.listOf (lib.types.enum lib.platforms.all)) // {
+              description = "list of strings from enum of lib.platforms.all";
+            };
+            example = [
+              "x86_64-linux"
+              "aarch64-linux"
+            ];
             default = lib.platforms.all;
+            defaultText = "lib.platforms.all";
             description = "Supported platforms";
           };
         };
