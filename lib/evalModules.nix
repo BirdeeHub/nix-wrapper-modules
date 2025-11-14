@@ -9,6 +9,7 @@ let
       ...
     }:
     {
+      _file = ./evalModules.nix;
       options = {
         pkgs = lib.mkOption {
           description = ''
