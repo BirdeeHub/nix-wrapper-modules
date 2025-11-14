@@ -76,10 +76,12 @@
 
     More flexible than `wlib.types.wrapperFlags`, allows single items, or lists of items of varied length
   */
-  wrapperFlag = wlib.types.dalOf (lib.types.oneOf [
-    wlib.types.stringable
-    (lib.types.listOf wlib.types.stringable)
-  ]);
+  wrapperFlag = wlib.types.dalOf (
+    lib.types.oneOf [
+      wlib.types.stringable
+      (lib.types.listOf wlib.types.stringable)
+    ]
+  );
 
   /**
     File type with content and path options
