@@ -344,6 +344,7 @@
         {
           name = "NIX_PATH_ADDITIONS";
           data = lib.optionals (config.extraPackages != [ ]) [
+            "--suffix"
             "PATH"
             ":"
             "${lib.makeBinPath config.extraPackages}"
@@ -354,6 +355,7 @@
         {
           name = "NIX_LIB_ADDITIONS";
           data = [
+            "--suffix"
             "LD_LIBRARY_PATH"
             ":"
             "${lib.makeLibraryPath config.extraPackages}"
