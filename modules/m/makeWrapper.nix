@@ -88,12 +88,7 @@
     '';
   };
   options.addFlag = lib.mkOption {
-    type =
-      with lib.types;
-      wlib.types.dalOf (oneOf [
-        wlib.types.stringable
-        (listOf wlib.types.stringable)
-      ]);
+    type = wlib.types.wrapperFlag;
     default = [ ];
     description = ''
       Wrapper for
@@ -114,12 +109,7 @@
     '';
   };
   options.appendFlag = lib.mkOption {
-    type =
-      with lib.types;
-      wlib.types.dalOf (oneOf [
-        wlib.types.stringable
-        (listOf wlib.types.stringable)
-      ]);
+    type = wlib.types.wrapperFlag;
     default = [ ];
     description = ''
       --append-flag ARG
