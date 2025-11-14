@@ -5,12 +5,7 @@
 }:
 {
   options.rawWrapperArgs = lib.mkOption {
-    type =
-      with lib.types;
-      wlib.types.dalOf (oneOf [
-        wlib.types.stringable
-        (listOf wlib.types.stringable)
-      ]);
+    type = wlib.types.wrapperFlag;
     default = [ ];
     description = ''
       DAG list (DAL) or `dependency list` of wrapper arguments, escaped with `lib.escapeShellArgs`
@@ -32,12 +27,7 @@
     '';
   };
   options.unsafeWrapperArgs = lib.mkOption {
-    type =
-      with lib.types;
-      wlib.types.dalOf (oneOf [
-        wlib.types.stringable
-        (listOf wlib.types.stringable)
-      ]);
+    type = wlib.types.wrapperFlag;
     default = [ ];
     description = ''
       DAG list (DAL) or `dependency list` of wrapper arguments, concatenated with spaces

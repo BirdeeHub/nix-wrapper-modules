@@ -20,12 +20,7 @@
     '';
   };
   options.addFlag = lib.mkOption {
-    type =
-      with lib.types;
-      wlib.types.dalOf (oneOf [
-        wlib.types.stringable
-        (listOf wlib.types.stringable)
-      ]);
+    type = wlib.types.wrapperFlag;
     default = [ ];
     description = ''
       This option takes a list. To group them more strongly,
@@ -41,12 +36,7 @@
     '';
   };
   options.appendFlag = lib.mkOption {
-    type =
-      with lib.types;
-      wlib.types.dalOf (oneOf [
-        wlib.types.stringable
-        (listOf wlib.types.stringable)
-      ]);
+    type = wlib.types.wrapperFlag;
     default = [ ];
     description = ''
       like flags and addFlag, except appends after the runtime user's arguments
