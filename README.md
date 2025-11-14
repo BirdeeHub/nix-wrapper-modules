@@ -53,6 +53,14 @@ This repo is as close to 100% module-based as it could be.
 
 All in all, I added over 3.5k lines of code and removed over 1k from the project, which was quite small to begin with. So, it is definitely now its own thing!
 
+### Summary:
+
+Why use this over the other version?
+
+This one was designed around giving you absolute control over the _derivation_ you are wrapping from **within** the module system, and defining modules for making the experience making wrapper modules great.
+
+The other one was designed around a module system which can supply some but not all the arguments of some separate builder function designed to be called separately, which itself does not give full control over the derivation.
+
 ## Long-term Goals
 
 It is the ideal of this project to become a hub for everyone to contribute,
