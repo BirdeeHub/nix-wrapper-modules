@@ -39,7 +39,7 @@ let
         };
         extraDrvAttrs = lib.mkOption {
           default = { };
-          type = lib.types.attrsOf lib.types.raw;
+          type = lib.types.attrsOf lib.types.anything;
           description = ''Extra attributes to add to the resulting derivation.'';
         };
         binName = lib.mkOption {
@@ -59,7 +59,7 @@ let
           '';
         };
         wrap = lib.mkOption {
-          type = lib.types.functionTo lib.types.raw;
+          type = lib.types.functionTo lib.types.package;
           readOnly = true;
           description = ''
             Function to extend the current configuration with additional modules.

@@ -13,7 +13,7 @@
       description = "The wezterm config file. provide `.content`, or `.path`";
     };
     luaInfo = lib.mkOption {
-      type = lib.types.attrsOf lib.types.raw;
+      type = lib.types.attrsOf lib.types.anything;
       default = { };
       description = ''
         anything other than uncalled nix functions can be put into this option, 
