@@ -65,7 +65,7 @@ let
           '';
         };
         outputs = lib.mkOption {
-          type = lib.types.nullOr (lib.types.listOf lib.types.str);
+          type = lib.types.listOf lib.types.str;
           default = config.package.outputs or [ "out" ];
           description = ''
             Override the list of nix outputs that get symlinked into the final package.
