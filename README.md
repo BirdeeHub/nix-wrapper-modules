@@ -32,7 +32,7 @@ And even for `buildCommand` you can still change its contents entirely if desire
 
 This allows you to easily modify your module with extra files and scripts or whatever else you may need!
 
-Maybe you want your `tmux` wrapper to also output a launcher script into a new session? You can do that in, for example, a `postBuild` hook, and you can supply it from within the module system! And you can even use `"${placeholder "out"}"` in it!
+Maybe you want your `tmux` wrapper to also output a launcher script into a new session? You can do that in, for example, a `postBuild` hook, and you can supply it [from within the module system](https://birdeehub.github.io/nix-wrapper-modules/core.html#extradrvattrs)! And you can even use `"${placeholder "out"}"` in it!
 
 In addition, the way it is implemented allows for the creation of helper modules that wrap derivations in all sorts of ways, which you could import instead of `wlib.modules.default` if you wanted. We could have similar modules for wrapping projects via bubblewrap or into docker containers with the same ease with which this library orchestrates regular wrapper scripts.
 
