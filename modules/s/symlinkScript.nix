@@ -38,6 +38,7 @@
       wlib,
       wrapper,
       outputs,
+      exePath,
       binName,
       # other args from callPackage
       lib,

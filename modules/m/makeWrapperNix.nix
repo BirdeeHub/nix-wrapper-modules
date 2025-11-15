@@ -163,6 +163,7 @@
     {
       config,
       wlib,
+      exePath,
       binName,
       outputs,
       writeShellScriptBin,
@@ -274,7 +275,9 @@
     in
     writeShellScriptBin binName ''
       ${builtins.concatStringsSep "\n" shellcmds}
-      exec -a ${arg0} ${config.package}/bin/${binName} ${preFlagStr} "$@" ${postFlagStr}
+      exec -a ${arg0} ${
+        if exePath == "" || exePath == null then "${config.package}" else "${config.package}/${exePath}"
+      } ${preFlagStr} "$@" ${postFlagStr}
     ''
   );
 }

@@ -62,6 +62,7 @@
     {
       config,
       wlib,
+      exePath,
       binName,
       outputs,
       pkgs,
@@ -76,7 +77,7 @@
       (
         let
           baseArgs = lib.escapeShellArgs [
-            "${config.package}/bin/${binName}"
+            (if exePath == "" || exePath == null then "${config.package}" else "${config.package}/${exePath}")
             "${placeholder "out"}/bin/${binName}"
           ];
           finalArgs = lib.pipe config.rawWrapperArgs [

@@ -46,9 +46,22 @@ let
           type = lib.types.nullOr lib.types.str;
           default = null;
           description = ''
-            The name of the binary output by `wrapperFunction`.
-            If not specified, the name of the package will be used.
-            If set as an empty string, wrapperFunction may behave unpredictably, depending on its implementation.
+            The name of the binary output by `wrapperFunction` to `$out/bin`
+
+            If not specified, the default name from the package will be used.
+
+            If set as an empty string, `symlinkScript` or `wrapperFunction` may behave unpredictably, depending on its implementation.
+          '';
+        };
+        exePath = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = ''
+            The relative path to the executable to wrap. i.e. `bin/exename`
+
+            If not specified, the path gained from calling `lib.getExe` on `config.package` and subtracting the path to the package will be used.
+
+            If set as an empty string, `symlinkScript` or `wrapperFunction` may behave unpredictably, depending on its implementation.
           '';
         };
         outputs = lib.mkOption {
@@ -160,17 +173,19 @@ let
 
             Arguments:
 
-            `{ config, wlib, outputs, binName, /* other args from callPackage */ ... }`
+            `{ config, wlib, outputs, exePath, binName, /* other args from callPackage */ ... }`
 
             That package returned must contain `"$out/bin/''${binName}"`
             as the executable to be wrapped.
             (unless you also override `symlinkScript`)
 
+            The relative path from within `config.package` to link to that location will be provided as `exePath`
+
             `binName` is the value of `config.binName` if non-null, otherwise it is given a default value via `baseNameOf` `lib.getExe`
 
             The value of `config.binName` is left as the user of the module set it, so that you can know who is giving you the value.
 
-            The same is true of the `outputs` argument.
+            The same is true of the `outputs` and `exePath` argument.
 
             The usual implementation is imported via `wlib.modules.makeWrapperBase`
 
@@ -202,6 +217,7 @@ let
               wlib,
               config,
               outputs,
+              exePath,
               binName,
               wrapper,
               ... # <- anything you can get from pkgs.callPackage
@@ -214,7 +230,7 @@ let
 
             The value of `config.binName` is left as the user of the module set it, so that you can know who is giving you the value.
 
-            The same is true of the `outputs` argument.
+            The same is true of the `outputs` and `exePath` argument.
 
             `wrapper` is the result of calling `wrapperFunction`, or null if one was not provided.
           '';
@@ -223,6 +239,7 @@ let
               wlib,
               config,
               outputs,
+              exePath,
               binName,
               wrapper,
               lib,
@@ -282,6 +299,11 @@ let
                         final.passthru.configuration.binName
                       else
                         baseNameOf (lib.getExe package);
+                    exePath =
+                      if builtins.isString final.passthru.configuration.exePath then
+                        final.passthru.configuration.exePath
+                      else
+                        lib.removePrefix "/" (lib.removePrefix "${package}" (lib.getExe package));
                     outputs =
                       if final.passthru.configuration.outputs != null then
                         final.passthru.configuration.outputs
@@ -293,7 +315,12 @@ let
                       if final.passthru.configuration.wrapperFunction != null then
                         pkgs.callPackage final.passthru.configuration.wrapperFunction {
                           config = final.passthru.configuration;
-                          inherit binName outputs wlib;
+                          inherit
+                            binName
+                            outputs
+                            wlib
+                            exePath
+                            ;
                         }
                       else
                         null;
@@ -349,6 +376,7 @@ let
                           outputs
                           wrapper
                           wlib
+                          exePath
                           ;
                       }
                       + (
