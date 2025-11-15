@@ -167,7 +167,7 @@ apackage = (actualPackage.eval {
 # and again! `.wrap` gives us back the package directly
 # all 3 forms take modules as an argument
 packageAgain = apackage.wrap ({config, ...}: {
-  # list definitions extend each when declared across modules by default!
+  # list definitions append when declared across modules by default!
   plugins = [ config.pkgs.tmuxPlugins.fzf-tmux-url ];
 });
 ```
