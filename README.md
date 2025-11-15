@@ -152,14 +152,14 @@ extendedConfig = initialConfig.apply {
 # Access the wrapper!
 # apply is useful because we don't need to give it `pkgs` but it gives us
 # top level access to `.wrapper`, `.wrap`, `.apply`, and `.eval`
-# without having to grab .config ourselves
+# without having to grab `.config` ourselves
 actualPackage = extendedConfig.wrap { inherit pkgs; };
-# since we didn't supply pkgs yet, we must pass it before getting the new value of `.wrapper` from `.wrap`
+# since we didn't supply `pkgs` yet, we must pass it before getting the new value of `.wrapper` from `.wrap`
 
 # Extend it again! You can call them on the package too!
 apackage = (actualPackage.eval {
   prefix = "C-Space";
-}).config.wrapper; # <-- .wrapper to access the package direcly
+}).config.wrapper; # <-- `.wrapper` to access the package direcly
 
 # and again! `.wrap` gives us back the package directly
 # all 3 forms take modules as an argument
