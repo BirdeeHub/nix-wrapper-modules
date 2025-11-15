@@ -172,8 +172,16 @@ let
             A function which returns a package.
 
             Arguments:
-
-            `{ config, wlib, outputs, exePath, binName, /* other args from callPackage */ ... }`
+            ```
+            {
+              config,
+              wlib,
+              outputs,
+              exePath,
+              binName,
+              ... # <- anything you can get from pkgs.callPackage
+            }
+            ```
 
             That package returned must contain `"$out/bin/''${binName}"`
             as the executable to be wrapped.
