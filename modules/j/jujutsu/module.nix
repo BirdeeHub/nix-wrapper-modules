@@ -12,6 +12,7 @@ in
   options = {
     settings = lib.mkOption {
       type = tomlFmt.type;
+      default = { };
       description = ''
         Configuration for jujutsu.
         See <https://jj-vcs.github.io/jj/latest/config/>
