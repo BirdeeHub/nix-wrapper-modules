@@ -22,6 +22,18 @@
   options.addFlag = lib.mkOption {
     type = wlib.types.wrapperFlag;
     default = [ ];
+    example = [
+      "-v"
+      "-f"
+      [
+        "--config"
+        "\${./storePath.cfg}"
+      ]
+      [
+        "-s"
+        "idk"
+      ]
+    ];
     description = ''
       This option takes a list. To group them more strongly,
       option may take a list of lists as well.
@@ -38,6 +50,18 @@
   options.appendFlag = lib.mkOption {
     type = wlib.types.wrapperFlag;
     default = [ ];
+    example = [
+      "-v"
+      "-f"
+      [
+        "--config"
+        "\${./storePath.cfg}"
+      ]
+      [
+        "-s"
+        "idk"
+      ]
+    ];
     description = ''
       like flags and addFlag, except appends after the runtime user's arguments
 
@@ -64,6 +88,9 @@
         ])
       );
     default = { };
+    example = {
+      "--config" = "\${./nixPath}";
+    };
     description = ''
       Flags to pass to the wrapper.
       The key is the flag name, the value is the flag value.
@@ -92,6 +119,9 @@
   options.env = lib.mkOption {
     type = wlib.types.dagOf wlib.types.stringable;
     default = { };
+    example = {
+      "XDG_DATA_HOME" = "/somewhere/on/your/machine";
+    };
     description = ''
       Environment variables to set in the wrapper.
 
@@ -118,8 +148,7 @@
     description = ''
       Run COMMAND before executing the main program.
 
-      This option takes a list. To group them more strongly,
-      option may take a list of lists as well.
+      This option takes a list.
 
       Any entry can instead be of type `{ data, name ? null, before ? [], after ? [] }`
 
@@ -131,6 +160,18 @@
   options.prefixVar = lib.mkOption {
     type = wlib.types.wrapperFlags 3;
     default = [ ];
+    example = [
+      [
+        "PATH"
+        "SEP"
+        "VAL"
+      ]
+      [
+        "PATH"
+        "SEP"
+        "VAL"
+      ]
+    ];
     description = ''
       [ "ENV" "SEP" "VAL" ]
 
@@ -142,6 +183,18 @@
   options.suffixVar = lib.mkOption {
     type = wlib.types.wrapperFlags 3;
     default = [ ];
+    example = [
+      [
+        "PATH"
+        "SEP"
+        "VAL"
+      ]
+      [
+        "PATH"
+        "SEP"
+        "VAL"
+      ]
+    ];
     description = ''
       [ "ENV" "SEP" "VAL" ]
 

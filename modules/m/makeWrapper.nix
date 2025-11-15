@@ -67,8 +67,7 @@
 
       Run COMMAND before executing the main program.
 
-      This option takes a list. To group them more strongly,
-      option may take a list of lists as well.
+      This option takes a list.
 
       Any entry can instead be of type `{ data, name ? null, before ? [], after ? [] }`
 
