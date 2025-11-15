@@ -20,6 +20,24 @@ However it has modules that are capable of much more, with a more consistent, fl
 
 Yes, I know about this comic: [xkcd 927](https://xkcd.com/927/)
 
+This one was designed around giving you absolute control over the _derivation_ your wrapper is creating from **within** the module system, and defining modules for making the experience making wrapper modules great.
+
+The other one was designed around a module system which can supply some but not all the arguments of some separate builder function designed to be called separately, which itself does not give full control over the derivation.
+
+In short, this repo is more what it claims to be. A generalized and effective module system for creating wrapper derivations, and offers far more abilities to that effect to the module system itself.
+
+In fact, the only attribute of the final derivation you cannot directly override is `buildCommand`.
+
+And even for `buildCommand` you can still change its contents entirely if desired, although I think you will find `wlib.modules.default` provides very sensible defaults and that you will not need to do this yourself often.
+
+This allows you to easily modify your module with extra files and scripts or whatever else you may need!
+
+Maybe you want your `tmux` wrapper to also output a launcher script into a new session? You can do that in, for example, a `postBuild` hook, and you can supply it from within the module system! And you can even use `"${placeholder "out"}"` in it!
+
+In addition, the way it is implemented allows for the creation of helper modules that wrap derivations in all sorts of ways, which you could import instead of `wlib.modules.default` if you wanted. We could have similar modules for wrapping projects via bubblewrap or into docker containers with the same ease with which this library orchestrates regular wrapper scripts.
+
+#### Exposition (you can skip the rest of this section):
+
 I heard that I could wrap programs with the module system, and then reapply more changes after, like override. I was excited.
 
 But the project was tiny, there were not many modules yet.
@@ -52,14 +70,6 @@ Free of compatibility issues, I was able to start out with a consistent design f
 This repo is as close to 100% module-based as it could be.
 
 All in all, I added over 3.5k lines of code and removed over 1k from the project, which was quite small to begin with. So, it is definitely now its own thing!
-
-### Summary:
-
-Why use this over the other version?
-
-This one was designed around giving you absolute control over the _derivation_ your wrapper is creating from **within** the module system, and defining modules for making the experience making wrapper modules great.
-
-The other one was designed around a module system which can supply some but not all the arguments of some separate builder function designed to be called separately, which itself does not give full control over the derivation.
 
 ## Long-term Goals
 
