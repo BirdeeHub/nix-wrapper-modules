@@ -458,7 +458,7 @@ let
         { _moduleSettings = { }; }
       ];
       specialArgs = {
-        modulesPath = ../modules;
+        modulesPath = ../.;
       }
       // (evalArgs.specialArgs or { })
       // {
