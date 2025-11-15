@@ -332,25 +332,25 @@ let
                           ""
                       )
                       + pkgs.callPackage final.passthru.configuration.symlinkScript {
+                        config = final.passthru.configuration;
                         inherit
                           wlib
                           binName
                           outputs
                           exePath
                           ;
-                        config = final.passthru.configuration;
                         wrapper =
                           if final.passthru.configuration.wrapperFunction == null then
                             null
                           else
                             pkgs.callPackage final.passthru.configuration.wrapperFunction {
+                              config = final.passthru.configuration;
                               inherit
                                 wlib
                                 binName
                                 outputs
                                 exePath
                                 ;
-                              config = final.passthru.configuration;
                             };
                       }
                       + (
