@@ -29,12 +29,12 @@ let
           '';
         };
         passthru = lib.mkOption {
-          type = lib.types.attrs;
+          type = lib.types.attrsOf lib.types.anything;
           default = { };
           description = ''
             Additional attributes to add to the resulting derivation's passthru.
             This can be used to add additional metadata or functionality to the wrapped package.
-            This will always contain options, config and settings, so these are reserved names and cannot be used here.
+            Anything added under the attribute name `configuration` will be ignored, as that value is used internally.
           '';
         };
         extraDrvAttrs = lib.mkOption {
