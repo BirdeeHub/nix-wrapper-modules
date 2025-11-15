@@ -16,7 +16,7 @@ However it has modules that are capable of much more, with a more consistent, fl
 
 [![Homeless Dotfiles with Nix Wrappers](https://img.youtube.com/vi/Zzvn9uYjQJY/0.jpg)](https://www.youtube.com/watch?v=Zzvn9uYjQJY)
 
-## Why rewrite [lassulus/wrappers](https://github.com/Lassulus/wrappers)?
+### Why rewrite [lassulus/wrappers](https://github.com/Lassulus/wrappers)?
 
 Yes, I know about this comic: [xkcd 927](https://xkcd.com/927/)
 
