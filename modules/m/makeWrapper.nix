@@ -90,7 +90,18 @@
   options.addFlag = lib.mkOption {
     type = wlib.types.wrapperFlag;
     default = [ ];
-    example = [ "-v" "-f" [ "--config" "\${./storePath.cfg}" ] [ "-s" "idk" ] ];
+    example = [
+      "-v"
+      "-f"
+      [
+        "--config"
+        "\${./storePath.cfg}"
+      ]
+      [
+        "-s"
+        "idk"
+      ]
+    ];
     description = ''
       Wrapper for
 
@@ -112,7 +123,18 @@
   options.appendFlag = lib.mkOption {
     type = wlib.types.wrapperFlag;
     default = [ ];
-    example = [ "-v" "-f" [ "--config" "\${./storePath.cfg}" ] [ "-s" "idk" ] ];
+    example = [
+      "-v"
+      "-f"
+      [
+        "--config"
+        "\${./storePath.cfg}"
+      ]
+      [
+        "-s"
+        "idk"
+      ]
+    ];
     description = ''
       --append-flag ARG
 
@@ -133,8 +155,16 @@
     type = wlib.types.wrapperFlags 3;
     default = [ ];
     example = [
-      [ "PATH" "SEP" "VAL" ]
-      [ "PATH" "SEP" "VAL" ]
+      [
+        "PATH"
+        "SEP"
+        "VAL"
+      ]
+      [
+        "PATH"
+        "SEP"
+        "VAL"
+      ]
     ];
     description = ''
       --prefix ENV SEP VAL
@@ -146,8 +176,16 @@
     type = wlib.types.wrapperFlags 3;
     default = [ ];
     example = [
-      [ "PATH" "SEP" "VAL" ]
-      [ "PATH" "SEP" "VAL" ]
+      [
+        "PATH"
+        "SEP"
+        "VAL"
+      ]
+      [
+        "PATH"
+        "SEP"
+        "VAL"
+      ]
     ];
     description = ''
       --suffix ENV SEP VAL
@@ -159,8 +197,16 @@
     type = wlib.types.wrapperFlags 3;
     default = [ ];
     example = [
-      [ "PATH" "SEP" "FILE" ]
-      [ "PATH" "SEP" "FILE" ]
+      [
+        "PATH"
+        "SEP"
+        "FILE"
+      ]
+      [
+        "PATH"
+        "SEP"
+        "FILE"
+      ]
     ];
     description = ''
       --prefix-contents ENV SEP FILES
@@ -172,8 +218,16 @@
     type = wlib.types.wrapperFlags 3;
     default = [ ];
     example = [
-      [ "PATH" "SEP" "FILE" ]
-      [ "PATH" "SEP" "FILE" ]
+      [
+        "PATH"
+        "SEP"
+        "FILE"
+      ]
+      [
+        "PATH"
+        "SEP"
+        "FILE"
+      ]
     ];
     description = ''
       --suffix-contents ENV SEP FILES

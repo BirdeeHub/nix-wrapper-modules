@@ -7,7 +7,27 @@
   options.rawWrapperArgs = lib.mkOption {
     type = wlib.types.wrapperFlag;
     default = [ ];
-    example = [ "--inherit-argv0" [ "--add-flag" "--config" "--add-flag" "\${./storePath.cfg}" ] { name = "target"; data = "--add-flag"; } [ "-s" "idk" ] { after = [ "target" ]; data = "moved_to_after_target"; } ];
+    example = [
+      "--inherit-argv0"
+      [
+        "--add-flag"
+        "--config"
+        "--add-flag"
+        "\${./storePath.cfg}"
+      ]
+      {
+        name = "target";
+        data = "--add-flag";
+      }
+      [
+        "-s"
+        "idk"
+      ]
+      {
+        after = [ "target" ];
+        data = "moved_to_after_target";
+      }
+    ];
     description = ''
       DAG list (DAL) or `dependency list` of wrapper arguments, escaped with `lib.escapeShellArgs`
 
@@ -30,7 +50,27 @@
   options.unsafeWrapperArgs = lib.mkOption {
     type = wlib.types.wrapperFlag;
     default = [ ];
-    example = [ "--inherit-argv0" [ "--add-flag" "--config" "--add-flag" "\${./storePath.cfg}" ] { name = "target"; data = "--add-flag"; } [ "-s" "idk" ] { after = [ "target" ]; data = "moved_to_after_target"; } ];
+    example = [
+      "--inherit-argv0"
+      [
+        "--add-flag"
+        "--config"
+        "--add-flag"
+        "\${./storePath.cfg}"
+      ]
+      {
+        name = "target";
+        data = "--add-flag";
+      }
+      [
+        "-s"
+        "idk"
+      ]
+      {
+        after = [ "target" ];
+        data = "moved_to_after_target";
+      }
+    ];
     description = ''
       DAG list (DAL) or `dependency list` of wrapper arguments, concatenated with spaces
 
