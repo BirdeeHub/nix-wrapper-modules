@@ -159,6 +159,8 @@ They will get you started with a module file and the default one also gives you 
 
 `wrapProgram` comes with `wlib.modules.default` already included, and outputs the package directly!
 
+Use this for quickly creating a custom wrapped program within your configuration!
+
 ```nix
 { pkgs, wrappers, ... }:
 
