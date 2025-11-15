@@ -94,6 +94,10 @@ This library provides two main components:
 
 ## Usage
 
+Note: there are also template(s) you can access via `nix flake init -t github:Birdeehub/nix-wrapper-modules`
+
+They will get you started with a module file and the default one also gives you a flake which imports it, for quickly testing it out!
+
 ### Using Pre-built Wrapper Modules
 
 ```nix
