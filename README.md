@@ -154,7 +154,8 @@ extendedConfig = initialConfig.apply {
 # top level access to `.wrapper`, `.wrap`, `.apply`, and `.eval`
 # without having to grab `.config` ourselves
 actualPackage = extendedConfig.wrap { inherit pkgs; };
-# since we didn't supply `pkgs` yet, we must pass it before getting the new value of `.wrapper` from `.wrap`
+# since we didn't supply `pkgs` yet, we must pass it
+# before getting the new value of `.wrapper` from `.wrap`
 
 # Extend it again! You can call them on the package too!
 apackage = (actualPackage.eval {
