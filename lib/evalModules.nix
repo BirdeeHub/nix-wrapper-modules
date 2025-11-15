@@ -303,7 +303,7 @@ let
                           }
                         );
                     };
-                    name = package.name or package.pname or binName;
+                    name = package.pname or package.name or binName;
                     pname = package.pname or package.name or binName;
                     inherit outputs;
                     meta =
