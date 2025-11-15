@@ -90,6 +90,7 @@
   options.addFlag = lib.mkOption {
     type = wlib.types.wrapperFlag;
     default = [ ];
+    example = [ "-v" "-f" [ "--config" "\${./storePath.cfg}" ] [ "-s" "idk" ] ];
     description = ''
       Wrapper for
 
@@ -111,6 +112,7 @@
   options.appendFlag = lib.mkOption {
     type = wlib.types.wrapperFlag;
     default = [ ];
+    example = [ "-v" "-f" [ "--config" "\${./storePath.cfg}" ] [ "-s" "idk" ] ];
     description = ''
       --append-flag ARG
 
@@ -130,6 +132,10 @@
   options.prefixVar = lib.mkOption {
     type = wlib.types.wrapperFlags 3;
     default = [ ];
+    example = [
+      [ "PATH" "SEP" "VAL" ]
+      [ "PATH" "SEP" "VAL" ]
+    ];
     description = ''
       --prefix ENV SEP VAL
 
@@ -139,6 +145,10 @@
   options.suffixVar = lib.mkOption {
     type = wlib.types.wrapperFlags 3;
     default = [ ];
+    example = [
+      [ "PATH" "SEP" "VAL" ]
+      [ "PATH" "SEP" "VAL" ]
+    ];
     description = ''
       --suffix ENV SEP VAL
 
@@ -148,6 +158,10 @@
   options.prefixContents = lib.mkOption {
     type = wlib.types.wrapperFlags 3;
     default = [ ];
+    example = [
+      [ "PATH" "SEP" "FILE" ]
+      [ "PATH" "SEP" "FILE" ]
+    ];
     description = ''
       --prefix-contents ENV SEP FILES
 
@@ -157,6 +171,10 @@
   options.suffixContents = lib.mkOption {
     type = wlib.types.wrapperFlags 3;
     default = [ ];
+    example = [
+      [ "PATH" "SEP" "FILE" ]
+      [ "PATH" "SEP" "FILE" ]
+    ];
     description = ''
       --suffix-contents ENV SEP FILES
 
@@ -174,6 +192,9 @@
         ])
       );
     default = { };
+    example = {
+      "--config" = "\${./nixPath}";
+    };
     description = ''
       Flags to pass to the wrapper.
       The key is the flag name, the value is the flag value.
@@ -220,6 +241,9 @@
   options.env = lib.mkOption {
     type = wlib.types.dagOf wlib.types.stringable;
     default = { };
+    example = {
+      "XDG_DATA_HOME" = "/somewhere/on/your/machine";
+    };
     description = ''
       Environment variables to set in the wrapper.
 
@@ -234,6 +258,9 @@
   options.envDefault = lib.mkOption {
     type = wlib.types.dagOf wlib.types.stringable;
     default = { };
+    example = {
+      "XDG_DATA_HOME" = "/only/if/not/set";
+    };
     description = ''
       Environment variables to set in the wrapper.
 
