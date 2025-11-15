@@ -288,8 +288,6 @@ let
                       ;
                   in
                   {
-                    name = package.pname or package.name;
-                    inherit outputs;
                     passthru = passthru // {
                       wrap = final.passthru.configuration.wrap;
                       apply = final.passthru.configuration.apply;
@@ -305,7 +303,18 @@ let
                           }
                         );
                     };
-                    nativeBuildInputs = final.passthru.configuration.extraDrvAttrs.nativeBuildInputs or [ ];
+                    name = package.name or package.pname or binName;
+                    pname = package.pname or package.name or binName;
+                    inherit outputs;
+                    meta =
+                      (package.meta or { })
+                      // lib.optionalAttrs (binName != baseNameOf (lib.getExe package)) {
+                        mainProgram = "$out/bin/${binName}";
+                      };
+                    version =
+                      package.version or final.meta.version or package.revision or final.meta.revision or package.rev
+                        or final.meta.rev or package.release or final.meta.release or package.releaseDate
+                          or final.meta.releaseDate or "master";
                     phases = [
                       "buildPhase"
                       "checkPhase"
@@ -375,21 +384,10 @@ let
                         else
                           ""
                       );
-                    meta =
-                      (package.meta or { })
-                      // lib.optionalAttrs (binName != baseNameOf (lib.getExe package)) {
-                        mainProgram = "$out/bin/${binName}";
-                      };
-                    version =
-                      package.version or final.meta.version or package.revision or final.meta.revision or package.rev
-                        or final.meta.rev or package.release or final.meta.release or package.releaseDate
-                          or final.meta.releaseDate or "master";
-                    pname = package.pname or package.name or binName;
                   }
                   // builtins.removeAttrs passthru.configuration.extraDrvAttrs [
                     "passthru"
                     "buildCommand"
-                    "nativeBuildInputs"
                     "outputs"
                   ]
                 );
