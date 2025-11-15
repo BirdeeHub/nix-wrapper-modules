@@ -104,13 +104,10 @@
     {
       config,
       wlib,
-      exePath,
-      binName,
-      outputs,
       pkgs,
       ...
     }:
-    pkgs.runCommand "${binName}-wrapped"
+    pkgs.runCommand "${config.binName}-wrapped"
       {
         nativeBuildInputs = [
           (if config.makeWrapper != null then config.makeWrapper else pkgs.makeWrapper)
@@ -119,8 +116,8 @@
       (
         let
           baseArgs = lib.escapeShellArgs [
-            (if exePath == "" || exePath == null then "${config.package}" else "${config.package}/${exePath}")
-            "${placeholder "out"}/bin/${binName}"
+            (if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}")
+            "${placeholder "out"}/bin/${config.binName}"
           ];
           finalArgs = lib.pipe config.rawWrapperArgs [
             (wlib.dag.lmap (v: if builtins.isList v then lib.escapeShellArgs v else lib.escapeShellArg v))
@@ -134,7 +131,7 @@
             )
           ];
         in
-        if binName == "" || binName == null then
+        if config.binName == "" then
           "mkdir -p $out"
         else
           "makeWrapper ${baseArgs} ${builtins.concatStringsSep " " finalArgs}"

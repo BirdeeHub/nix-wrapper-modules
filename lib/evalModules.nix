@@ -43,8 +43,8 @@ let
           description = ''Extra attributes to add to the resulting derivation.'';
         };
         binName = lib.mkOption {
-          type = lib.types.nullOr lib.types.str;
-          default = null;
+          type = lib.types.str;
+          default = baseNameOf (lib.getExe config.package);
           description = ''
             The name of the binary output by `wrapperFunction` to `$out/bin`
 
@@ -54,8 +54,8 @@ let
           '';
         };
         exePath = lib.mkOption {
-          type = lib.types.nullOr lib.types.str;
-          default = null;
+          type = lib.types.str;
+          default = lib.removePrefix "/" (lib.removePrefix "${config.package}" (lib.getExe config.package));
           description = ''
             The relative path to the executable to wrap. i.e. `bin/exename`
 
@@ -66,7 +66,7 @@ let
         };
         outputs = lib.mkOption {
           type = lib.types.nullOr (lib.types.listOf lib.types.str);
-          default = null;
+          default = config.package.outputs or [ "out" ];
           description = ''
             Override the list of nix outputs that get symlinked into the final package.
           '';
@@ -176,24 +176,15 @@ let
             {
               config,
               wlib,
-              outputs,
-              exePath,
-              binName,
               ... # <- anything you can get from pkgs.callPackage
             }
             ```
 
-            That package returned must contain `"$out/bin/''${binName}"`
+            The relative path to the thing to wrap from within `config.package` is `config.exePath`
+
+            That package returned should contain `"$out/bin/''${config.binName}"`
             as the executable to be wrapped.
             (unless you also override `symlinkScript`)
-
-            The relative path from within `config.package` to link to that location will be provided as `exePath`
-
-            `binName` is the value of `config.binName` if non-null, otherwise it is given a default value via `baseNameOf` `lib.getExe`
-
-            The value of `config.binName` is left as the user of the module set it, so that you can know who is giving you the value.
-
-            The same is true of the `outputs` and `exePath` argument.
 
             The usual implementation is imported via `wlib.modules.makeWrapperBase`
 
@@ -224,21 +215,13 @@ let
             {
               wlib,
               config,
-              outputs,
-              exePath,
-              binName,
               wrapper,
               ... # <- anything you can get from pkgs.callPackage
             }:
             ```
             The function is to return a string which will be added to the buildCommand of the wrapper.
-            It is in charge of taking those options, and linking the files into place as requested.
 
-            `binName` is the value of `config.binName` if non-null, otherwise it is given a default value via `baseNameOf` `lib.getExe` on the `config.package` value
-
-            The value of `config.binName` is left as the user of the module set it, so that you can know who is giving you the value.
-
-            The same is true of the `outputs` and `exePath` argument.
+            It is in charge of linking `wrapper` and `config.outputs` to the final package.
 
             `wrapper` is the result of calling `wrapperFunction`, or null if one was not provided.
           '';
@@ -246,9 +229,6 @@ let
             {
               wlib,
               config,
-              outputs,
-              exePath,
-              binName,
               wrapper,
               lib,
               lndir,
@@ -275,7 +255,7 @@ let
                   ''
                 else
                   ""
-              ) outputs}
+              ) config.outputs}
             '';
         };
         wrapper = lib.mkOption {
@@ -300,38 +280,12 @@ let
                 pkgs.stdenv.mkDerivation (
                   final:
                   let
-                    # Extract binary name from the exe path
-                    inherit (final.passthru.configuration) package;
-                    binName =
-                      if builtins.isString final.passthru.configuration.binName then
-                        final.passthru.configuration.binName
-                      else
-                        baseNameOf (lib.getExe package);
-                    exePath =
-                      if builtins.isString final.passthru.configuration.exePath then
-                        final.passthru.configuration.exePath
-                      else
-                        lib.removePrefix "/" (lib.removePrefix "${package}" (lib.getExe package));
-                    outputs =
-                      if final.passthru.configuration.outputs != null then
-                        final.passthru.configuration.outputs
-                      else if package.outputs or null != null then
-                        package.outputs
-                      else
-                        [ "out" ];
-                    wrapper =
-                      if final.passthru.configuration.wrapperFunction != null then
-                        pkgs.callPackage final.passthru.configuration.wrapperFunction {
-                          config = final.passthru.configuration;
-                          inherit
-                            binName
-                            outputs
-                            wlib
-                            exePath
-                            ;
-                        }
-                      else
-                        null;
+                    inherit (final.passthru.configuration)
+                      package
+                      binName
+                      outputs
+                      exePath
+                      ;
                   in
                   {
                     name = package.pname or package.name;
@@ -378,14 +332,26 @@ let
                           ""
                       )
                       + pkgs.callPackage final.passthru.configuration.symlinkScript {
-                        config = final.passthru.configuration;
                         inherit
+                          wlib
                           binName
                           outputs
-                          wrapper
-                          wlib
                           exePath
                           ;
+                        config = final.passthru.configuration;
+                        wrapper =
+                          if final.passthru.configuration.wrapperFunction == null then
+                            null
+                          else
+                            pkgs.callPackage final.passthru.configuration.wrapperFunction {
+                              inherit
+                                wlib
+                                binName
+                                outputs
+                                exePath
+                                ;
+                              config = final.passthru.configuration;
+                            };
                       }
                       + (
                         if final.passthru.configuration.sourceStdenv then
@@ -411,12 +377,9 @@ let
                       );
                     meta =
                       (package.meta or { })
-                      //
-                        lib.optionalAttrs
-                          (final.passthru.configuration.binName != null && final.passthru.configuration.binName != "")
-                          {
-                            mainProgram = "$out/bin/${binName}";
-                          };
+                      // lib.optionalAttrs (binName != baseNameOf (lib.getExe package)) {
+                        mainProgram = "$out/bin/${binName}";
+                      };
                     version =
                       package.version or final.meta.version or package.revision or final.meta.revision or package.rev
                         or final.meta.rev or package.release or final.meta.release or package.releaseDate

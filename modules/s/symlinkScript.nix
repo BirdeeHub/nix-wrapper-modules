@@ -37,9 +37,6 @@
       config,
       wlib,
       wrapper,
-      outputs,
-      exePath,
-      binName,
       # other args from callPackage
       lib,
       lndir,
@@ -51,6 +48,8 @@
         aliases
         filesToPatch
         filesToExclude
+        binName
+        outputs
         ;
       originalOutputs = wlib.getPackageOutputsSet package;
     in
@@ -112,7 +111,7 @@
       ''}
 
       # Create symlinks for aliases
-      ${lib.optionalString (aliases != [ ] && binName != null && binName != "") ''
+      ${lib.optionalString (aliases != [ ] && binName != "") ''
         mkdir -p $out/bin
         for alias in ${lib.concatStringsSep " " (map lib.escapeShellArg aliases)}; do
           ln -sf ${lib.escapeShellArg binName} $out/bin/$alias

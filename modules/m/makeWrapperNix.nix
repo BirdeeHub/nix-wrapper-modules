@@ -216,9 +216,6 @@
     {
       config,
       wlib,
-      exePath,
-      binName,
-      outputs,
       writeShellScriptBin,
       lib,
       ...
@@ -326,10 +323,10 @@
       );
 
     in
-    writeShellScriptBin binName ''
+    writeShellScriptBin config.binName ''
       ${builtins.concatStringsSep "\n" shellcmds}
       exec -a ${arg0} ${
-        if exePath == "" || exePath == null then "${config.package}" else "${config.package}/${exePath}"
+        if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
       } ${preFlagStr} "$@" ${postFlagStr}
     ''
   );
