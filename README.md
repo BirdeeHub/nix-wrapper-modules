@@ -122,6 +122,45 @@ They will get you started with a module file and the default one also gives you 
 }
 ```
 
+## Extending Configurations
+
+The `.eval` function allows you to extend an already-applied configuration with additional modules, similar to `extendModules` in NixOS.
+
+The `.apply` function works the same way, but automatically grabs `.config` from the result of `.eval` for you,
+so you can have `.wrap` and `.apply` more easily available without evaluating.
+
+The `.wrap` function works the same way, but automatically grabs `.config.wrapper` (the final package) from the result of `.eval` for you.
+
+The package (via `passthru`) and the modules under `.config` both offer all 3 functions.
+
+```nix
+# Apply initial configuration
+initialConfig = (wrappers.wrapperModules.tmux.eval {
+  pkgs = pkgs;
+  plugins = [ pkgs.tmuxPlugins.onedark-theme ];
+}).config;
+
+# Extend with additional configuration
+extendedConfig = initialConfig.eval {
+  clock24 = false;
+};
+
+# Access the wrapper
+actualPackage = extendedConfig.config.wrapper;
+
+# Extend it again!
+apackage = (actualPackage.eval {
+  vimVisualKeys = true;
+  modeKeys = "vi";
+  statusKeys = "vi";
+}).config.wrapper;
+
+# and again!
+packageAgain = apackage.wrap {
+  prefix = "C-Space";
+};
+```
+
 ### Creating Custom Wrapper Modules
 
 ```nix
@@ -182,45 +221,6 @@ wrappers.lib.wrapProgram ({ config, wlib, lib, ... }: {
   ''
   ];
 })
-```
-
-## Extending Configurations
-
-The `.eval` function allows you to extend an already-applied configuration with additional modules, similar to `extendModules` in NixOS.
-
-The `.apply` function works the same way, but automatically grabs `.config` from the result of `.eval` for you,
-so you can have `.wrap` and `.apply` more easily available without evaluating.
-
-The `.wrap` function works the same way, but automatically grabs `.config.wrapper` (the final package) from the result of `.eval` for you.
-
-The package (via `passthru`) and the modules under `.config` both offer all 3 functions.
-
-```nix
-# Apply initial configuration
-initialConfig = (wrappers.wrapperModules.tmux.eval {
-  pkgs = pkgs;
-  plugins = [ pkgs.tmuxPlugins.onedark-theme ];
-}).config;
-
-# Extend with additional configuration
-extendedConfig = initialConfig.eval {
-  clock24 = false;
-};
-
-# Access the wrapper
-actualPackage = extendedConfig.config.wrapper;
-
-# Extend it again!
-apackage = (actualPackage.eval {
-  vimVisualKeys = true;
-  modeKeys = "vi";
-  statusKeys = "vi";
-}).config.wrapper;
-
-# and again!
-packageAgain = apackage.wrap {
-  prefix = "C-Space";
-};
 ```
 
 ## alternatives
