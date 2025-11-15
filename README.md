@@ -156,15 +156,15 @@ extendedConfig = initialConfig.apply {
 actualPackage = extendedConfig.wrapper;
 
 # Extend it again! You can call them on the package too!
-# all 3 forms take modules as an argument
-apackage = (actualPackage.eval ({config, ...}: {
-  plugins = [ config.pkgs.tmuxPlugins.onedark-theme ];
-})).config.wrapper;
+apackage = (actualPackage.eval {
+  prefix = "C-Space";
+}).config.wrapper;
 
 # and again! `.wrap` gives us back the package directly
-packageAgain = apackage.wrap {
-  prefix = "C-Space";
-};
+# all 3 forms take modules as an argument
+packageAgain = apackage.wrap ({config, ...}: {
+  plugins = [ config.pkgs.tmuxPlugins.onedark-theme ];
+});
 ```
 
 ### Creating Custom Wrapper Modules
