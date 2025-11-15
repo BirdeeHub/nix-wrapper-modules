@@ -1,14 +1,14 @@
 { lib, wlib }:
 let
-  all_mod_res = import ../modules { inherit lib wlib; };
+  wrapper_mod_res = import ../wrapperModules { inherit lib wlib; };
+  helper_mod_res = import ../modules { inherit lib wlib; };
 in
 {
-  inherit (all_mod_res)
-    wrapperModules
-    checks
-    ;
+  inherit (wrapper_mod_res) wrapperModules;
 
-  modules = (all_mod_res.modules or { }) // {
+  checks = wrapper_mod_res.checks or { } // helper_mod_res.checks or { };
+
+  modules = (helper_mod_res.modules or { }) // {
     default = {
       imports = [
         wlib.modules.symlinkScript

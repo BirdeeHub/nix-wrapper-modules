@@ -4,9 +4,14 @@ Please add some modules to the `modules/` directory to help everyone out!
 
 That way, your module can be available for others to enjoy as well!
 
-When making one, you must define a `modules/<first_letter>/<your_package_name>/module.nix` file
+There are 2 kinds of modules. One kind which defines the `package` option, and one kind which does not.
 
-It must contain a single, unevaluated module.
+If you are making a wrapper module, i.e. one which defines the `package` argument, and thus wraps a package,
+then you must define a `wrapperModules/<first_letter>/<your_package_name>/wrapper.nix` file.
+
+It must contain a single, unevaluated module. In other words, it must be importable without calling it first to return the module.
+
+If you are making a helper module, i.e. one which does not define the `package` argument, then you must define a `modules/<your_module_name>/module.nix` file.
 
 All options must have descriptions, so that documentation can be generated and people can know how to use it!
 
