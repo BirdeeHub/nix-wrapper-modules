@@ -80,7 +80,7 @@ In service of that ideal, the immediate goal would be to transfer this repo to n
 
 Eventually I hope to have wrapper modules in nixpkgs, but again, nix-community would be the first step.
 
-## Short-term Goals
+### Short-term Goals
 
 Help us add more modules! Contributors are what makes projects like these amazing!
 
@@ -122,7 +122,7 @@ They will get you started with a module file and the default one also gives you 
 }
 ```
 
-## Extending Configurations
+### Extending Configurations
 
 The `.eval` function allows you to extend an already-applied configuration with additional modules, similar to `extendModules` in NixOS.
 
