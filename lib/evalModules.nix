@@ -309,7 +309,7 @@ let
                     meta =
                       (package.meta or { })
                       // lib.optionalAttrs (binName != baseNameOf (lib.getExe package)) {
-                        mainProgram = "$out/bin/${binName}";
+                        mainProgram = binName;
                       };
                     version =
                       package.version or final.meta.version or package.revision or final.meta.revision or package.rev
