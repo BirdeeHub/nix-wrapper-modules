@@ -135,27 +135,33 @@ The package (via `passthru`) and the modules under `.config` both offer all 3 fu
 
 ```nix
 # Apply initial configuration
+# you can use `.eval` `.apply` or `.wrap` for this.
 initialConfig = (wrappers.wrapperModules.tmux.eval {
-  pkgs = pkgs;
-  plugins = [ pkgs.tmuxPlugins.onedark-theme ];
+  # but if you don't plan to provide pkgs yet, you can't use `.wrap` or `.wrapper` yet.
+  config.pkgs = pkgs;
+  config.clock24 = false;
 }).config;
 
-# Extend with additional configuration
-extendedConfig = initialConfig.eval {
-  clock24 = false;
-};
-
-# Access the wrapper
-actualPackage = extendedConfig.config.wrapper;
-
-# Extend it again!
-apackage = (actualPackage.eval {
-  vimVisualKeys = true;
+# Extend with additional configuration!
+extendedConfig = initialConfig.apply {
   modeKeys = "vi";
   statusKeys = "vi";
-}).config.wrapper;
+  vimVisualKeys = true;
+};
 
-# and again!
+# Access the wrapper!
+# apply is useful because we don't need to give it `pkgs` but it gives us
+# top level access to `.wrapper`, `.wrap`, `.apply`, and `.eval`
+# without having to grab .config ourselves
+actualPackage = extendedConfig.wrapper;
+
+# Extend it again! You can call them on the package too!
+# all 3 forms take modules as an argument
+apackage = (actualPackage.eval ({config, ...}: {
+  plugins = [ config.pkgs.tmuxPlugins.onedark-theme ];
+})).config.wrapper;
+
+# and again! `.wrap` gives us back the package directly
 packageAgain = apackage.wrap {
   prefix = "C-Space";
 };
