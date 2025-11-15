@@ -136,11 +136,13 @@ The package (via `passthru`) and the modules under `.config` both offer all 3 fu
 ```nix
 # Apply initial configuration
 # you can use `.eval` `.apply` or `.wrap` for this.
-initialConfig = (wrappers.wrapperModules.tmux.eval {
+initialConfig = (wrappers.wrapperModules.tmux.eval ({config, ...}{
   # but if you don't plan to provide pkgs yet, you can't use `.wrap` or `.wrapper` yet.
   # config.pkgs = pkgs;
+  # but we can still use `config.pkgs` before that inside!
+  config.plugins = [ config.pkgs.tmuxPlugins.onedark-theme ];
   config.clock24 = false;
-}).config;
+})).config;
 
 # Extend with additional configuration!
 extendedConfig = initialConfig.apply {
@@ -165,7 +167,8 @@ apackage = (actualPackage.eval {
 # and again! `.wrap` gives us back the package directly
 # all 3 forms take modules as an argument
 packageAgain = apackage.wrap ({config, ...}: {
-  plugins = [ config.pkgs.tmuxPlugins.onedark-theme ];
+  # list definitions extend each when declared across modules by default!
+  plugins = [ config.pkgs.tmuxPlugins.fzf-tmux-url ];
 });
 ```
 
