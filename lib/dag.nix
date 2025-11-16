@@ -51,7 +51,7 @@ let
       + (builtins.concatStringsSep "`, `" (builtins.attrNames settings.extraOptions))
       + "`) "
     else
-      " ";
+      "";
   dagEntryOf =
     settings: isDal: elemType:
     let
