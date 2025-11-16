@@ -181,7 +181,7 @@ packageAgain = apackage.wrap ({config, ...}: {
   # You can only grab the final package if you supply pkgs!
   # But if you were making it for someone else, you would want them to do that!
 
-  # inherit pkgs;
+  # config.pkgs = pkgs;
 
   imports = [ wlib.modules.default ]; # <-- includes wlib.modules.symlinkScript and wlib.modules.makeWrapper
   options = {
