@@ -7,7 +7,7 @@
     Accepts a LIST of elements
 
     The elements should be of type `elemType`
-    or sets of the type `{ data, name ? null, before ? [], after ? [], ... }`
+    or sets of the type `{ data, name ? null, before ? [], after ? [] }`
     where the `data` field is of type `elemType`
 
     If a name is not given, it cannot be targeted by other values.
@@ -23,7 +23,7 @@
     Accepts an attrset of elements
 
     The elements should be of type `elemType`
-    or sets of the type `{ data, name ? null, before ? [], after ? [], ... }`
+    or sets of the type `{ data, name ? null, before ? [], after ? [] }`
     where the `data` field is of type `elemType`
 
     `name` defaults to the key in the set.
@@ -37,8 +37,8 @@
   */
   stringable = lib.mkOptionType {
     name = "stringable";
-    description = "str | path | v ? outPath";
-    check = x: builtins.isString x || x ? outPath || builtins.isPath x;
+    description = "str|path|drv";
+    check = x: builtins.isString x || builtins.isPath x || x ? outPath;
   };
 
   /**

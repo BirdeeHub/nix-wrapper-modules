@@ -19,6 +19,7 @@ let
     tail
     length
     isString
+    isBool
     mapAttrs
     filter
     isList
@@ -43,14 +44,24 @@ let
     dalWith
     topoSort
     ;
+  mkExtraFieldsMsg =
+    settings:
+    if builtins.isAttrs (settings.extraOptions or null) then
+      "(with extra fields `"
+      + (builtins.concatStringsSep "`, `" (builtins.attrNames settings.extraOptions))
+      + "`) "
+    else
+      " ";
   dagEntryOf =
-    isStrict: isDal: elemType:
+    settings: isDal: elemType:
     let
+      isStrict = if isBool (settings.strict or true) then settings.strict or true else true;
+      extraOptions = if isAttrs (settings.extraOptions or { }) then settings.extraOptions or { } else { };
       submoduleType = types.submodule (
-        { name, ... }:
+        { config, name, ... }:
         (if isStrict then { } else { freeformType = types.attrsOf types.raw; })
         // {
-          options = {
+          options = extraOptions // {
             name = mkOption {
               type = types.nullOr types.str;
               default = if isDal then null else name;
@@ -65,21 +76,39 @@ let
               default = [ ];
             };
           };
-          config = mkIf (elemType.name == "submodule" && !isDal) {
-            data._module.args.dagName = name;
+          config = mkIf (elemType.name == "submodule") {
+            data._module.args.dagName = if isDal then config.name else name;
           };
         }
       );
+      knownKeys = [
+        "name"
+        "data"
+        "before"
+        "after"
+      ]
+      ++ attrNames extraOptions;
+      extrasWithoutDefaults = attrNames (filterAttrs (n: v: !v ? default) extraOptions);
+      checkMergeDef =
+        def:
+        if !isStrict then
+          isEntry def.value && all (k: def.value ? ${k}) extrasWithoutDefaults
+        else
+          isEntry def.value
+          && all (k: elem k knownKeys && (extraOptions.${k}.type.check or (x: true)) def.value.${k}) (
+            attrNames def.value
+          )
+          && all (k: def.value ? ${k}) extrasWithoutDefaults;
       maybeConvert =
         def:
-        if isEntry def.value then
+        if checkMergeDef def then
           def.value
         else
           entryAnywhere (if def ? priority then mkOrder def.priority def.value else def.value);
     in
     mkOptionType {
       name = "dagEntryOf";
-      description = "DAG entry of ${elemType.description}";
+      description = "DAG entry ${mkExtraFieldsMsg settings}of ${elemType.description}";
       # leave the checking to the submodule type
       merge =
         loc: defs:
@@ -101,7 +130,7 @@ in
     Accepts an attrset of elements
 
     The elements should be of type `elemType`
-    or sets of the type `{ data, name ? null, before ? [], after ? [], ... }`
+    or sets of the type `{ data, name ? null, before ? [], after ? [] }`
     where the `data` field is of type `elemType`
 
     `name` defaults to the key in the set.
@@ -114,23 +143,30 @@ in
     "actual" attribute name a new submodule argument is provided with
     the name `dagName`.
   */
-  dagOf = dagWith { strict = false; };
+  dagOf = dagWith { };
 
   /**
-    dagOf allows extra values beyond just after before data and name to be present.
+    Arguments:
+    - `settings`: `{ strict ? true, extraOptions ? {} }`
+    - `elemType`: `type`
 
     dagWith accepts an attrset as its first parameter BEFORE elemType.
-    You may include `{ strict = true; }` to make it refuse to recognize sets with extra values.
+
+    You may include `{ strict = false; }` to make it recognize sets
+    with arbitrary extra values beyond just `data`, `name`, `before`, and `after`.
+
+    You may include `{ extraOptions = { lib.mkOption ... }; }`
+    to add extra fields to the dagEntryOf type to have extra type checked values,
+    even if strict is true
   */
   dagWith =
     settings: elemType:
     let
-      strict = settings.strict or false;
-      attrEquivalent = types.attrsOf (dagEntryOf strict false elemType);
+      attrEquivalent = types.attrsOf (dagEntryOf settings false elemType);
     in
     mkOptionType rec {
       name = "dagOf";
-      description = "DAG of ${elemType.description}";
+      description = "DAG ${mkExtraFieldsMsg settings}of ${elemType.description}";
       inherit (attrEquivalent) check merge emptyValue;
       inherit (elemType) getSubModules;
       getSubOptions = prefix: elemType.getSubOptions (prefix ++ [ "<name>" ]);
@@ -154,7 +190,7 @@ in
     Accepts a LIST of elements
 
     The elements should be of type `elemType`
-    or sets of the type `{ data, name ? null, before ? [], after ? [], ... }`
+    or sets of the type `{ data, name ? null, before ? [], after ? [] }`
     where the `data` field is of type `elemType`
 
     If a name is not given, it cannot be targeted by other values.
@@ -167,23 +203,30 @@ in
     "actual" attribute name a new submodule argument is provided with
     the name `dagName`.
   */
-  dalOf = dalWith { strict = false; };
+  dalOf = dalWith { };
 
   /**
-    dalOf allows extra values beyond just after before data and name to be present.
+    Arguments:
+    - `settings`: `{ strict ? true, extraOptions ? {} }`
+    - `elemType`: `type`
 
     dalWith accepts an attrset as its first parameter BEFORE elemType.
-    You may include `{ strict = true; }` to make it refuse to recognize sets with extra values.
+
+    You may include `{ strict = false; }` to make it recognize sets
+    with arbitrary extra values beyond just `data`, `name`, `before`, and `after`.
+
+    You may include `{ extraOptions = { lib.mkOption ... }; }`
+    to add extra fields to the dagEntryOf type to have extra type checked values,
+    even if strict is true
   */
   dalWith =
     settings: elemType:
     let
-      strict = settings.strict or false;
-      listEquivalent = types.listOf (dagEntryOf strict true elemType);
+      listEquivalent = types.listOf (dagEntryOf settings true elemType);
     in
     mkOptionType rec {
       name = "dalOf";
-      description = "DAG LIST of ${elemType.description}";
+      description = "DAG LIST ${mkExtraFieldsMsg settings}of ${elemType.description}";
       inherit (listEquivalent) check merge emptyValue;
       inherit (elemType) getSubModules getSubOptions;
       substSubModules = m: dalWith settings (elemType.substSubModules m);
@@ -209,10 +252,15 @@ in
 
   /**
     determines whether a value is of the attrset type and all values are dag entries
+
+    Allows entries to have extra values
   */
   isDag = dag: isAttrs dag && all isEntry (attrValues dag);
+
   /**
     determines whether a value is of the list type and all values are dag entries
+
+    Allows entries to have extra values
   */
   isDal = dal: isList dal && all isEntry dal;
 
