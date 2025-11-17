@@ -7,6 +7,14 @@
 #
 #  - the addition of the function `entryBefore` indicating a "wanted
 #    by" relationship.
+#
+# The main differences from this version and the home-manager version are
+#
+# - It has a list form as well
+#
+# - It allows extra fields to be added to what an entry is,
+#   in either a type-safe, or freeform way.
+#
 { wlib, lib }:
 let
   inherit (builtins)
