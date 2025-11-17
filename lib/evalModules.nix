@@ -292,7 +292,7 @@ let
                         wrapPackageInternal (
                           final.passthru
                           // {
-                            config = final.passthru.configuration // {
+                            configuration = final.passthru.configuration // {
                               package = package.override overrideArgs;
                             };
                           }
