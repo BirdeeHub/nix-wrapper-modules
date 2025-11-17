@@ -335,4 +335,5 @@
     in
     "echo ${lib.escapeShellArg wrapstr} > $out/bin/${config.binName}"
   );
+  config.meta.maintainers = lib.mkDefault [ lib.maintainers.birdee ];
 }

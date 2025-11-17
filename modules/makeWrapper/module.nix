@@ -494,5 +494,6 @@
         if config.useBinaryWrapper then config.pkgs.makeBinaryWrapper else config.pkgs.makeWrapper;
       rawWrapperArgs = lib.mkIf config.wrapperArgEscaping finalArgs;
       unsafeWrapperArgs = lib.mkIf (!config.wrapperArgEscaping) finalArgs;
+      meta.maintainers = lib.mkDefault [ lib.maintainers.birdee ];
     };
 }

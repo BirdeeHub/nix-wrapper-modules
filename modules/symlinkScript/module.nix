@@ -130,4 +130,5 @@
 
     ''
   );
+  config.meta.maintainers = lib.mkDefault [ lib.maintainers.birdee ];
 }

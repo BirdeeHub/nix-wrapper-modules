@@ -132,4 +132,5 @@
     else
       "makeWrapper ${baseArgs} ${builtins.concatStringsSep " " finalArgs}"
   );
+  config.meta.maintainers = lib.mkDefault [ lib.maintainers.birdee ];
 }
