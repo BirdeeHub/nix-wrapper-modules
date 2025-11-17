@@ -1,4 +1,5 @@
 {
+  config,
   wlib,
   lib,
   ...
@@ -100,41 +101,35 @@
       as doing so will disable fields it does not support as well.
     '';
   };
+  config.extraDrvAttrs.nativeBuildInputs = [
+    (if config.makeWrapper != null then config.makeWrapper else config.pkgs.makeWrapper)
+  ];
   config.wrapperFunction = lib.mkDefault (
     {
       config,
       wlib,
-      pkgs,
       ...
     }:
-    pkgs.runCommand "${config.binName}-wrapped"
-      {
-        nativeBuildInputs = [
-          (if config.makeWrapper != null then config.makeWrapper else pkgs.makeWrapper)
-        ];
-      }
-      (
-        let
-          baseArgs = lib.escapeShellArgs [
-            (if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}")
-            "${placeholder "out"}/bin/${config.binName}"
-          ];
-          finalArgs = lib.pipe config.rawWrapperArgs [
-            (wlib.dag.lmap (v: if builtins.isList v then lib.escapeShellArgs v else lib.escapeShellArg v))
-            (v: v ++ config.unsafeWrapperArgs)
-            (
-              dag:
-              wlib.dag.sortAndUnwrap {
-                inherit dag;
-                mapIfOk = v: v.data;
-              }
-            )
-          ];
-        in
-        if config.binName == "" then
-          "mkdir -p $out"
-        else
-          "makeWrapper ${baseArgs} ${builtins.concatStringsSep " " finalArgs}"
-      )
+    let
+      baseArgs = lib.escapeShellArgs [
+        (if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}")
+        "${placeholder "out"}/bin/${config.binName}"
+      ];
+      finalArgs = lib.pipe config.rawWrapperArgs [
+        (wlib.dag.lmap (v: if builtins.isList v then lib.escapeShellArgs v else lib.escapeShellArg v))
+        (v: v ++ config.unsafeWrapperArgs)
+        (
+          dag:
+          wlib.dag.sortAndUnwrap {
+            inherit dag;
+            mapIfOk = v: v.data;
+          }
+        )
+      ];
+    in
+    if config.binName == "" then
+      ""
+    else
+      "makeWrapper ${baseArgs} ${builtins.concatStringsSep " " finalArgs}"
   );
 }

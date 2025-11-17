@@ -53,21 +53,16 @@
         ;
       originalOutputs = wlib.getPackageOutputsSet package;
     in
-    ''
-      # Symlink all paths to the main output
-      mkdir -p $out
-      for path in ${
-        lib.concatStringsSep " " (
-          map toString (
-            (lib.optional (wrapper != null) wrapper)
-            ++ [
-              package
-            ]
-          )
-        )
-      }; do
-        ${lndir}/bin/lndir -silent "$path" $out
-      done
+    "mkdir -p $out \n"
+    + (
+      if builtins.isString wrapper then
+        wrapper
+      else
+        "${lndir}/bin/lndir -silent \"${toString wrapper}\" $out"
+    )
+    + ''
+
+      ${lndir}/bin/lndir -silent "${toString package}" $out
 
       # Exclude specified files
       ${lib.optionalString (filesToExclude != [ ]) ''
