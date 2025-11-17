@@ -10,19 +10,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.PAT }}
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-      - name: Update flake.lock
-        uses: DeterminateSystems/update-flake-lock@main
+      - name: Update main lockfile
+        run: |
+          nix flake update
+      - name: Update docs lockfile
+        run: |
+          nix flake update --flake ./docs
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.PAT }}
-          pr-title: "chore(deps): update flake.lock" # Title of PR to be created
-          pr-labels: |                  # Labels to be set on the PR
-            dependencies
-            automated
-          commit-msg: "chore(deps): update flake.lock"
-      - uses: reitermarkus/automerge@v2
-        with:
-          token: ${{ secrets.PAT }}
-          merge-method: squash
-          pull-request: ${{ github.event.inputs.pull-request }}
+          branch: 'update-flake-lock'
+          delete-branch: true
+          commit-message: "chore(deps): update flake.lock files"
+          base: main
+          title: "chore(deps): update flake.lock files"
+          body: "This PR updates the Nix flake.lock files automatically."
+          labels: "dependencies,automated"
