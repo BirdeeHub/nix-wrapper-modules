@@ -29,7 +29,7 @@ let
           '';
         };
         passthru = lib.mkOption {
-          type = lib.types.attrsOf lib.types.anything;
+          type = wlib.types.attrsRecursive;
           default = { };
           description = ''
             Additional attributes to add to the resulting derivation's passthru.
@@ -39,7 +39,7 @@ let
         };
         extraDrvAttrs = lib.mkOption {
           default = { };
-          type = lib.types.attrsOf lib.types.anything;
+          type = wlib.types.attrsRecursive;
           description = ''Extra attributes to add to the resulting derivation.'';
         };
         binName = lib.mkOption {
@@ -166,11 +166,9 @@ let
           };
         };
         wrapperFunction = lib.mkOption {
-          type = with lib.types; nullOr (functionTo package);
+          type = with lib.types; nullOr (functionTo raw);
           default = null;
           description = ''
-            A function which returns a package.
-
             Arguments:
             ```
             {
@@ -180,15 +178,11 @@ let
             }
             ```
 
+            The result of this function is passed DIRECTLY to the value of the `symlinkScript` function.
+
             The relative path to the thing to wrap from within `config.package` is `config.exePath`
 
-            That package returned should contain `"$out/bin/''${config.binName}"`
-            as the executable to be wrapped.
-            (unless you also override `symlinkScript`)
-
-            The usual implementation is imported via `wlib.modules.makeWrapperBase`
-
-            `wlib.modules.makeWrapper` and `wlib.modules.default` include that module automatically.
+            You should wrap the package and place the wrapper at `"$out/bin/''${config.binName}"`
           '';
         };
         sourceStdenv = lib.mkOption {
@@ -223,7 +217,11 @@ let
 
             It is in charge of linking `wrapper` and `config.outputs` to the final package.
 
-            `wrapper` is the result of calling `wrapperFunction`, or null if one was not provided.
+            `wrapper` is the unchecked result of calling `wrapperFunction`, or null if one was not provided.
+
+            The builtin implementation, and also the `wlib.modules.symlinkScript` module,
+            accept either a string to prepend to the returned `buildCommand` string,
+            or a derivation to link with lndir
           '';
           default =
             {
@@ -238,9 +236,9 @@ let
               path = if wrapper != null then wrapper else config.package;
               originalOutputs = wlib.getPackageOutputsSet config.package;
             in
-            ''
-              mkdir -p $out
-              ${lndir}/bin/lndir -silent "${path}" $out
+            "mkdir -p $out \n"
+            + (if builtins.isString wrapper then wrapper else "${lndir}/bin/lndir -silent \"${path}\" $out")
+            + ''
 
               # Handle additional outputs by symlinking from the original package's outputs
               ${lib.concatMapStringsSep "\n" (

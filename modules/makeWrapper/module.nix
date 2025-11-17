@@ -155,14 +155,14 @@
     default = [ ];
     example = [
       [
-        "PATH"
-        "SEP"
-        "VAL"
+        "LD_LIBRARY_PATH"
+        ":"
+        "\${lib.makeLibraryPath (with config.pkgs; [ ... ])}"
       ]
       [
         "PATH"
-        "SEP"
-        "VAL"
+        ":"
+        "\${lib.makeBinPath (with config.pkgs; [ ... ])}"
       ]
     ];
     description = ''
@@ -176,14 +176,14 @@
     default = [ ];
     example = [
       [
-        "PATH"
-        "SEP"
-        "VAL"
+        "LD_LIBRARY_PATH"
+        ":"
+        "\${lib.makeLibraryPath (with config.pkgs; [ ... ])}"
       ]
       [
         "PATH"
-        "SEP"
-        "VAL"
+        ":"
+        "\${lib.makeBinPath (with config.pkgs; [ ... ])}"
       ]
     ];
     description = ''
@@ -197,20 +197,20 @@
     default = [ ];
     example = [
       [
-        "PATH"
+        "ENV"
         "SEP"
-        "FILE"
+        "FILES"
       ]
       [
-        "PATH"
+        "ENV"
         "SEP"
-        "FILE"
+        "FILES"
       ]
     ];
     description = ''
       --prefix-contents ENV SEP FILES
 
-      Like `--suffix-each`, but contents of FILES are read first and used as VALS.
+      FILES will be read, then the contents appended to ENV, separated by SEP
     '';
   };
   options.suffixContents = lib.mkOption {
@@ -218,20 +218,20 @@
     default = [ ];
     example = [
       [
-        "PATH"
+        "ENV"
         "SEP"
-        "FILE"
+        "FILES"
       ]
       [
-        "PATH"
+        "ENV"
         "SEP"
-        "FILE"
+        "FILES"
       ]
     ];
     description = ''
       --suffix-contents ENV SEP FILES
 
-      Like `--prefix-each`, but contents of FILES are read first and used as VALS.
+      FILES will be read, then the contents appended to ENV, separated by SEP
     '';
   };
   options.flags = lib.mkOption {

@@ -38,7 +38,7 @@
   stringable = lib.mkOptionType {
     name = "stringable";
     description = "str|path|drv";
-    check = x: builtins.isString x || builtins.isPath x || x ? outPath;
+    check = lib.isStringLike;
   };
 
   /**
@@ -119,4 +119,52 @@
         };
       }
     );
+
+  /**
+    Like lib.types.anything, but allows contained lists to also be merged
+  */
+  attrsRecursive = lib.mkOptionType {
+    name = "attrsRecursive";
+    description = "attrsRecursive";
+    descriptionClass = "noun";
+    check = value: true;
+    merge =
+      loc: defs:
+      let
+        getType =
+          value:
+          if lib.isAttrs value && lib.isStringLike value then "stringCoercibleSet" else builtins.typeOf value;
+
+        # Returns the common type of all definitions, throws an error if they
+        # don't have the same type
+        commonType = lib.foldl' (
+          type: def:
+          if getType def.value == type then
+            type
+          else
+            throw "The option `${lib.showOption loc}' has conflicting option types in ${lib.showFiles (lib.getFiles defs)}"
+        ) (getType (lib.head defs).value) defs;
+
+        mergeFunction =
+          {
+            # Recursively merge attribute sets
+            set = (lib.types.attrsOf wlib.types.attrsRecursive).merge;
+            # merge lists
+            list = (lib.types.listOf wlib.types.attrsRecursive).merge;
+            # This is the type of packages, only accept a single definition
+            stringCoercibleSet = lib.mergeOneOption;
+            lambda =
+              loc: defs: arg:
+              wlib.types.attrsRecursive.merge (loc ++ [ "<function body>" ]) (
+                map (def: {
+                  file = def.file;
+                  value = def.value arg;
+                }) defs
+              );
+            # Otherwise fall back to only allowing all equal definitions
+          }
+          .${commonType} or lib.mergeEqualOption;
+      in
+      mergeFunction loc defs;
+  };
 }

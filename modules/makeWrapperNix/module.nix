@@ -1,5 +1,4 @@
 {
-  config,
   wlib,
   lib,
   ...
@@ -162,18 +161,20 @@
     default = [ ];
     example = [
       [
-        "PATH"
-        "SEP"
-        "VAL"
+        "LD_LIBRARY_PATH"
+        ":"
+        "\${lib.makeLibraryPath (with config.pkgs; [ ... ])}"
       ]
       [
         "PATH"
-        "SEP"
-        "VAL"
+        ":"
+        "\${lib.makeBinPath (with config.pkgs; [ ... ])}"
       ]
     ];
     description = ''
-      [ "ENV" "SEP" "VAL" ]
+      [
+        [ "ENV" "SEP" "VAL" ]
+      ]
 
       Prefix ENV with VAL, separated by SEP.
 
@@ -185,18 +186,20 @@
     default = [ ];
     example = [
       [
-        "PATH"
-        "SEP"
-        "VAL"
+        "LD_LIBRARY_PATH"
+        ":"
+        "\${lib.makeLibraryPath (with config.pkgs; [ ... ])}"
       ]
       [
         "PATH"
-        "SEP"
-        "VAL"
+        ":"
+        "\${lib.makeBinPath (with config.pkgs; [ ... ])}"
       ]
     ];
     description = ''
-      [ "ENV" "SEP" "VAL" ]
+      [
+        [ "ENV" "SEP" "VAL" ]
+      ]
 
       Suffix ENV with VAL, separated by SEP.
 
@@ -216,8 +219,8 @@
     {
       config,
       wlib,
-      writeShellScriptBin,
       lib,
+      bash,
       ...
     }:
     let
@@ -322,12 +325,14 @@
         }
       );
 
+      wrapstr = ''
+        #!${bash}/bin/bash
+        ${builtins.concatStringsSep "\n" shellcmds}
+        exec -a ${arg0} ${
+          if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
+        } ${preFlagStr} "$@" ${postFlagStr}
+      '';
     in
-    writeShellScriptBin config.binName ''
-      ${builtins.concatStringsSep "\n" shellcmds}
-      exec -a ${arg0} ${
-        if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
-      } ${preFlagStr} "$@" ${postFlagStr}
-    ''
+    "echo ${lib.escapeShellArg wrapstr} > $out/bin/${config.binName}"
   );
 }
