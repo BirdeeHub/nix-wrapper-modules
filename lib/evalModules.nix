@@ -100,20 +100,17 @@ let
           '';
           default =
             module:
-            evaled.extendModules {
-              modules = [
-                config._moduleSettings
-                module
-                {
-                  _moduleSettings = lib.mkForce {
-                    imports = [
-                      config._moduleSettings
-                      module
-                    ];
-                  };
-                }
-              ];
-            };
+            let
+              next = config.__extend {
+                modules = [
+                  module
+                  {
+                    __extend = next.extendModules;
+                  }
+                ];
+              };
+            in
+            next;
         };
         meta = {
           maintainers = lib.mkOption {
@@ -397,12 +394,19 @@ let
               }
             );
         };
-        _moduleSettings = lib.mkOption {
-          type = lib.types.raw;
+        __extend = lib.mkOption {
+          type = lib.types.mkOptionType {
+            name = "lastWins";
+            description = "All definitions (of the same priority) override the previous one";
+            check = lib.isFunction;
+            # merge is ordered latest first within the same priority
+            merge = loc: defs: (builtins.head defs).value;
+            emptyValue = _: { };
+          };
           internal = true;
           description = ''
-            Internal option storing the settings module passed to apply.
-            Used by apply to re-evaluate with additional modules.
+            Internal option storing the `.extendModules` function at each re-evaluation.
+            Used by `.eval` to re-evaluate with additional modules.
           '';
         };
       };
@@ -414,7 +418,7 @@ let
       ]
       ++ (evalArgs.modules or [ ])
       ++ [
-        { _moduleSettings = { }; }
+        { __extend = evaled.extendModules; }
       ];
       specialArgs = {
         modulesPath = ../.;
