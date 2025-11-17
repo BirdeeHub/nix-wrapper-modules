@@ -36,7 +36,10 @@ in
           ]
           ++ (evalArgs.modules or [ ])
           ++ [
-            { __extend = res.extendModules; }
+            {
+              _file = ./core.nix;
+              __extend = res.extendModules;
+            }
           ];
           specialArgs = {
             modulesPath = ../.;

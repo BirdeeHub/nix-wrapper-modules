@@ -382,6 +382,7 @@
             modules = [
               module
               {
+                _file = ./core.nix;
                 __extend = res.extendModules;
               }
             ];
