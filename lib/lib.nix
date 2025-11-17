@@ -26,7 +26,32 @@ in
 
     `wlib.evalModules` takes the same arguments as `nixpkgs.lib.evalModules`
   */
-  evalModules = import ./evalModules.nix { inherit lib wlib; };
+  evalModules =
+    evalArgs:
+    let
+      res =
+        lib.evalModules {
+          modules = [
+            ./core.nix
+          ]
+          ++ (evalArgs.modules or [ ])
+          ++ [
+            { __extend = res.extendModules; }
+          ];
+          specialArgs = {
+            modulesPath = ../.;
+          }
+          // (evalArgs.specialArgs or { })
+          // {
+            inherit wlib;
+          };
+        }
+        // (builtins.removeAttrs evalArgs [
+          "modules"
+          "specialArgs"
+        ]);
+    in
+    res;
 
   /**
     `evalModule = module: wlib.evalModules { modules = [ module ]; };`
