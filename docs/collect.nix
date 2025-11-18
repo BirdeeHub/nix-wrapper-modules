@@ -8,28 +8,88 @@
   ...
 }:
 let
-  corelist = builtins.attrNames (wlib.evalModule { }).options;
-  evaluate_helpers =
-    mp:
-    (wlib.evalModules {
-      modules = [
-        { _module.check = false; }
-        mp
-        {
-          inherit pkgs;
-          package = pkgs.hello;
-        }
-      ];
-    }).options;
-  evaluate =
-    mp:
-    (wlib.evalModules {
-      modules = [
-        { _module.check = false; }
-        mp
-        { inherit pkgs; }
-      ];
-    }).options;
+  # This gets you a list of each module, and those they import
+  getGraph = import ./eval-graph.nix {
+    inherit pkgs wlib;
+    rootPath = ../.;
+  };
+  corelist = builtins.attrNames (wlib.evalModule {}).options;
+  buildModuleDocs =
+    prefix: descriptions: name: module:
+    let
+      graph = getGraph module;
+      maineval = wlib.evalModules {
+        modules = [
+          { _module.check = false; }
+          module
+          {
+            inherit pkgs;
+            package = lib.mkOrder 0 pkgs.hello;
+          }
+        ];
+      };
+      package = maineval.config.package;
+      get_options =
+        key: mod:
+        builtins.removeAttrs
+          (wlib.evalModules {
+            modules = [
+              { _module.check = false; }
+              {
+                disabledModules = map (v: v.key) (builtins.filter (v: v.key != key || builtins.match ".*:anon-[0-9]+" == null) graph);
+                imports = [ mod ];
+                config.pkgs = pkgs;
+                config.package = lib.mkOrder 0 package;
+              }
+            ];
+          }).options
+          corelist;
+      options = map (v: get_options v.key v.file) graph;
+      optdocs = map (v: (nixosOptionsDoc { options = v; }).optionsCommonMark) options;
+      commands = map (v: /* bash */ ''
+        cat ${v} | \
+          sed 's|file://${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
+          sed 's|${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
+      '') optdocs;
+    in
+    pkgs.runCommand "${name}-${prefix}-docs" { } (''
+      echo '# `wlib.${prefix}.${name}`' > $out
+      echo >> $out
+      echo ${lib.escapeShellArg (descriptions.${name} or "")} >> $out
+      echo >> $out
+    ''
+    + (builtins.concatStringsSep " " commands));
+
+  module_desc = {
+    makeWrapperNix = ''
+      A partial and experimental pure nix implementation of the `makeWrapper` interface
+
+      Allows expansion of variables at runtime in flags and environment variable values
+    '';
+    makeWrapper = ''
+      An implementation of the `makeWrapper` interface via type safe module options.
+
+      Imported by `wlib.modules.default`
+    '';
+    makeWrapperBase = ''
+      Takes dependency lists of wrapper arguments of escaped and unescaped varieties,
+      and sorts them according to their listed dependencies, if any.
+
+      Imported by `wlib.modules.makeWrapper`
+    '';
+    symlinkScript = ''
+      Adds extra options compared to the default `symlinkScript` option value.
+
+      Imported by `wlib.modules.default`
+    '';
+    default = ''
+      This module imports both `wlib.modules.makeWrapper` and `wlib.modules.symlinkScript` for convenience
+    '';
+  };
+
+  module_docs = builtins.mapAttrs (buildModuleDocs "modules" module_desc) wlib.modules;
+  wrapper_docs = builtins.mapAttrs (buildModuleDocs "wrapperModules" {}) wlib.wrapperModules;
+
   coredocs =
     let
       result = runCommand "core-wrapper-docs" { } (
@@ -39,7 +99,7 @@ let
               builtins.removeAttrs
                 (wlib.evalModule {
                   inherit pkgs;
-                  package = pkgs.hello;
+                  package = lib.mkOrder 0 pkgs.hello;
                 }).options
                 [ "_module" ];
           };
@@ -69,74 +129,6 @@ let
     '';
   };
 
-  to_remove = builtins.attrNames (wlib.evalModule { imports = [ wlib.modules.default ]; }).options;
-  wrapperdocs = builtins.mapAttrs (
-    name: mod:
-    let
-      optionsDoc = nixosOptionsDoc {
-        options = builtins.removeAttrs (evaluate mod) corelist; # TODO: find a way to toggle with and without the difference between corelist and to_remove in mdbook
-      };
-    in
-    runCommand "${name}-wrapper-docs" { } ''
-      echo '# `wlib.wrapperModules.${name}`' > $out
-      echo >> $out
-      echo >> $out
-      cat ${optionsDoc.optionsCommonMark} | \
-        sed 's|file://${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
-        sed 's|${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
-    ''
-  ) wlib.wrapperModules;
-
-  module_desc = {
-    makeWrapperNix = ''
-      A partial and experimental pure nix implementation of the `makeWrapper` interface
-
-      Allows expansion of variables at runtime in flags and environment variable values
-    '';
-    makeWrapper = ''
-      An implementation of the `makeWrapper` interface via type safe module options.
-
-      Imported by `wlib.modules.default`
-    '';
-    makeWrapperBase = ''
-      Takes dependency lists of wrapper arguments of escaped and unescaped varieties,
-      and sorts them according to their listed dependencies, if any.
-
-      Imported by `wlib.modules.makeWrapper`
-    '';
-    symlinkScript = ''
-      Adds extra options compared to the default `symlinkScript` option value.
-
-      Imported by `wlib.modules.default`
-    '';
-    default = ''
-      This module imports both `wlib.modules.makeWrapper` and `wlib.modules.symlinkScript` for convenience
-    '';
-  };
-
-  moduledocs = builtins.mapAttrs (
-    name: mod:
-    let
-      optionsDoc = nixosOptionsDoc {
-        options = builtins.removeAttrs (evaluate_helpers mod) corelist;
-      };
-    in
-    runCommand "${name}-wrapper-docs" { } ''
-      echo '# `wlib.modules.${name}`' > $out
-      echo >> $out
-      ${
-        if builtins.isString (module_desc.${name} or null) then
-          "echo " + lib.escapeShellArg module_desc.${name} + " >> $out"
-        else
-          ""
-      }
-      echo >> $out
-      cat ${optionsDoc.optionsCommonMark} | \
-        sed 's|file://${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
-        sed 's|${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
-    ''
-  ) wlib.modules;
-
   mkCopyCmds = lib.flip lib.pipe [
     (lib.mapAttrsToList (
       n: v: {
@@ -161,14 +153,16 @@ let
   combined = pkgs.runCommand "book_src" { } ''
     mkdir -p $out/src
     cp ${./book.toml} $out/book.toml
-    ${mkCopyCmds (coredocs // wrapperdocs // moduledocs // libdocs)}
+    ${mkCopyCmds (coredocs // wrapper_docs // module_docs // libdocs)}
     cp ${./helper-modules.md} $out/src/helper-modules.md
     cp ${./wrapper-modules.md} $out/src/wrapper-modules.md
     cp ${./lib-intro.md} $out/src/lib-intro.md
+    cp ${./getting-started.md} $out/src/getting-started.md
     cat ${../README.md} | sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' >> $out/src/home.md
     echo '# Summary' > $out/src/SUMMARY.md
     echo >> $out/src/SUMMARY.md
     echo '- [Intro](./home.md)' >> $out/src/SUMMARY.md
+    echo '- [Getting Started](./getting-started.md)' >> $out/src/SUMMARY.md
     echo '- [Core Options Set](./core.md)' >> $out/src/SUMMARY.md
     echo '- [`wlib.modules.default`](./default.md)' >> $out/src/SUMMARY.md
     echo '- [Lib Functions](./lib-intro.md)' >> $out/src/SUMMARY.md
@@ -176,9 +170,9 @@ let
     echo '  - [`wlib.dag`](./dag.md)' >> $out/src/SUMMARY.md
     echo '  - [`wlib.types`](./types.md)' >> $out/src/SUMMARY.md
     echo '- [Helper Modules](./helper-modules.md)' >> $out/src/SUMMARY.md
-    ${mkSubLinks (builtins.removeAttrs moduledocs [ "default" ])}
+    ${mkSubLinks (builtins.removeAttrs module_docs [ "default" ])}
     echo '- [Wrapper Modules](./wrapper-modules.md)' >> $out/src/SUMMARY.md
-    ${mkSubLinks wrapperdocs}
+    ${mkSubLinks wrapper_docs}
   '';
   book = pkgs.runCommand "book_drv" { } ''
     mkdir -p $out

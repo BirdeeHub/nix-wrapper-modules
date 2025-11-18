@@ -6,70 +6,94 @@ Are you annoyed by rewriting modules for every platform? nixos, home-manager, ni
 
 Then this library is for you!
 
-## Why use this?
+## What is this for?
 
-Watch this excellent Video by Vimjoyer for an explanation:
+When configuring programs using nix, one of the highlights for most is the module system.
 
-This repository is very much like the one mentioned at the end.
+The main "configuration.nix" file of NixOS and "home.nix" for home-manager contain all sorts of shortlist options. For a while, it's great!
 
-However it has modules that are capable of much more, with a more consistent, flexible, and capable design.
+But then you need to use your configuration somewhere else. Pulling in your home-manager configuration on some other machine is usually overkill, takes too long, and is often a destructive action, as it will link files into the home directory and move the old files.
 
-[![Homeless Dotfiles with Nix Wrappers](https://img.youtube.com/vi/Zzvn9uYjQJY/0.jpg)](https://www.youtube.com/watch?v=Zzvn9uYjQJY)
+You don't want to pull in your entire home environment, you just needed to do some pair programming and wanted to use some of your tools, not destroy your co-workers dotfiles. Can't you make like, a shell, or a derivation or something and use that directly?
 
-### Why rewrite [lassulus/wrappers](https://github.com/Lassulus/wrappers)?
+In addition, you often have some modules that might be duplicated because NixOS or home-manager options can be different. And you can't use any of that in a shell. It is starting to wear on you a bit.
 
-Yes, I know about this comic: [xkcd 927](https://xkcd.com/927/)
+So you hear about this thing called "wrapping" a package. This means, writing a script that launches the program with specific arguments or variables set, and installing that instead.
 
-This one was designed around giving you absolute control over the _derivation_ your wrapper is creating from **within** the module system, and defining modules for making the experience making wrapper modules great.
+Then, you could have your configured tools as derivations you can just install via any means nix has of installing something.
 
-The other one was designed around a module system which can supply some but not all the arguments of some separate builder function designed to be called separately, which itself does not give full control over the derivation.
+Nix makes this concept very powerful, as you can create files and pull in other programs without installing them globally.
 
-In short, this repo is more what it claims to be. A generalized and effective module system for creating wrapper derivations, and offers far more abilities to that effect to the module system itself.
+Your first attempt, you might write something that looks like this:
 
-In fact, the only attribute of the final derivation you cannot directly override is `buildCommand`.
+```nix
+pkgs.writeShellScriptBin "alacritty" (let
+  tomlcfg = pkgs.writeText "alacritty.toml" ''
+    [terminal.shell]
+    program = "${pkgs.zsh}/bin/zsh"
+    args = [ "-l" ]
+  '';
+in ''
+  exec ${pkgs.alacritty}/bin/alacritty --config-file ${tomlcfg} "$@"
+'')
+```
 
-And even for `buildCommand` you can still change its contents entirely if desired, although I think you will find `wlib.modules.default` provides very sensible defaults and that you will not need to do this yourself often.
+This is good! Kinda. If you install it, it will install the wrapper script instead of the program, and the script tells it where the config is! And it doesn't need home-manager or NixOS!
 
-This allows you to easily modify your module with extra files and scripts or whatever else you may need!
+But on closer inspection, its missing a lot. What if this were a package with a few more things you could launch? Where is the desktop file? Man pages?
 
-Maybe you want your `tmux` wrapper to also output a launcher script into a new session? You can do that in, for example, a `postBuild` hook, and you can supply it [from within the module system](https://birdeehub.github.io/nix-wrapper-modules/core.html#extradrvattrs)! And you can even use `"${placeholder "out"}"` in it!
+So, your next attempt might look more like this:
 
-In addition, the way it is implemented allows for the creation of helper modules that wrap derivations in all sorts of ways, which you could import instead of `wlib.modules.default` if you wanted. We could have similar modules for wrapping projects via bubblewrap or into docker containers with the same ease with which this library orchestrates regular wrapper scripts.
+```nix
+pkgs.symlinkJoin (let
+  tomlcfg = pkgs.writeText "alacritty.toml" ''
+    [terminal.shell]
+    program = "${pkgs.zsh}/bin/zsh"
+    args = [ "-l" ]
+  '';
+in {
+  name = "alacritty";
+  paths = [ pkgs.alacritty ];
+  nativeBuildInputs = [ pkgs.makeWrapper ];
+  postBuild = ''
+    wrapProgram $out/bin/alacritty --inherit-argv0 --add-flag --config-file --add-flag ${tomlcfg}
+  '';
+})
+```
 
-#### Exposition (you can skip the rest of this section):
+Ok. So maybe that isn't your second try. But you get there eventually.
 
-I heard that I could wrap programs with the module system, and then reapply more changes after, like override. I was excited.
+This is a little closer to how stuff like nixvim works, if you have heard of it. It just has a lot more on top of that.
 
-But the project was tiny, there were not many modules yet.
+But even this has problems. If you want to have any sensible ability to override this later, for example, you will need to add that ability yourself.
 
-"No problem!" I thought to myself, and began to write a module...
+You also now have a desktop file that might point to the wrong place. And if all you wanted to do was set a setting or 2 and move on, all of that will still be necessary to deal with.
 
-Turns out there were actually several problems.
+You eventually are reduced to going to the source code of a bunch of modules in nixpkgs or home-manager and copy pasting what they did into your wrapper.
 
-The first, was that a significant amount of the options were not even accessible to the module system,
-and were instead only accessible to a secondary builder function.
+What if I told you, you can solve all those problems, and gain a really nice, consistent, and flexible way to do this, and make sure it can always be overridden later?
 
-There were many more things that were going to make it hard to use. So, I set about the task of fixing it.
+And it uses something you already know! The module system!
 
-However, when I began, the core was only about 700 lines of code.
+```nix
+inputs.nix-wrapper-modules.wrapperModules.alacritty.wrap {
+  inherit pkgs;
+  settings.terminal.shell.program = "${pkgs.zsh}/bin/zsh";
+  settings.terminal.shell.args = [ "-l" ];
+}
+```
 
-Asking someone to accept someone else's rewrite of their _entire_ project is a tall order, even if it doesn't break anything existing.
+The above snippet does everything the prior 2 examples did, and then some!
 
-I wanted this thing to be the best it could be, but it was looking like the full extent of my changes would be a difficult sell for the maintainer to handle reading and maintaining.
+That's a full module, but just for that package, and the result is a fully portable derivation, just like the wrapper scripts above!
 
-It looked like only small pieces would be accepted, and at some point I gained a very clear vision of what I wanted.
+And you can call `.wrap` on it as many times as you want! You can define your own options to easily toggle things for your different use cases and re-export it in a flake and change them on import, etc.
 
-It turns out what I wanted was significantly different from what that project was.
+There are included modules for several programs already, but there are rich and easy to use options defined for creating your own modules as well!
 
-I rewrote it several times, and finally found what I feel to be the right set of capabilities and options.
+If you make one, you are encouraged to submit it here for others to use if you wish!
 
-Most everything you see in that video will work here too, but this is not intended to be a 1 for 1 compatible library.
-
-Free of compatibility issues, I was able to start out with a consistent design from the start!
-
-This repo is as close to 100% module-based as it could be.
-
-All in all, I added over 3.5k lines of code and removed over 1k from the project, which was quite small to begin with. So, it is definitely now its own thing!
+For more information on how to do this, check out the getting started documentation, and the descriptions of the module options you have at your disposal!
 
 ## Long-term Goals
 
@@ -84,158 +108,71 @@ Eventually I hope to have wrapper modules in nixpkgs, but again, nix-community w
 
 Help us add more modules! Contributors are what makes projects like these amazing!
 
-## Overview
+---
 
-This library provides two main components:
+### Why rewrite [lassulus/wrappers](https://github.com/Lassulus/wrappers)?
 
-- `lib.evalModule`: Function to create reusable wrapper modules with type-safe configuration options
-  - And related, `lib.wrapPackage`: an alias for `evalModule` which returns the package directly and pre-imports the `wlib.modules.default` module for convenience
-- `wrapperModules`: Pre-built wrapper modules for common packages (`tmux`, `wezterm`, etc.)
+For those paying attention to the recent nix news, they may have heard of a similar project recently.
 
-## Usage
+This excellent video by Vimjoyer was made, which mentions the project this one is inspired by at the end.
 
-Note: there are also template(s) you can access via `nix flake init -t github:Birdeehub/nix-wrapper-modules`
+The video got that repository a good amount of attention. And the idea of the `.apply` interface was quite good.
 
-They will get you started with a module file and the default one also gives you a flake which imports it, for quickly testing it out!
+But that project also leaves a lot to be desired.
 
-### Using Pre-built Wrapper Modules
+This one has modules that are capable of much more, with a more flexible, and capable design.
 
-```nix
-{
-  inputs.wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
+Most of the video is still applicable though! So, if you still find yourself confused as to what problem this repository is solving, please watch it!
 
-  outputs = { self, nixpkgs, wrappers }: {
-    packages.x86_64-linux.default =
-      wrappers.wrapperModules.mpv.wrap {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux;
-        scripts = [ pkgs.mpvScripts.mpris ];
-        "mpv.conf".content = ''
-          vo=gpu
-          hwdec=auto
-        '';
-        "mpv.input".content = ''
-          WHEEL_UP seek 10
-          WHEEL_DOWN seek -10
-        '';
-      };
-  };
-}
-```
+[![Homeless Dotfiles with Nix Wrappers](https://img.youtube.com/vi/Zzvn9uYjQJY/0.jpg)](https://www.youtube.com/watch?v=Zzvn9uYjQJY)
 
-### Extending Configurations
+Yes, I know about this comic: [xkcd 927](https://xkcd.com/927/)
 
-The `.eval` function allows you to extend an already-applied configuration with additional modules, similar to `extendModules` in NixOS.
+This repository was designed around giving you absolute control over the _derivation_ your wrapper is creating from **within** the module system, and defining modules for making the experience making wrapper modules great.
 
-The `.apply` function works the same way, but automatically grabs `.config` from the result of `.eval` for you,
-so you can have `.wrap` and `.apply` more easily available without evaluating.
+The other repository was designed around a module system which can supply some but not all the arguments of some separate builder function designed to be called separately, which itself does not give full control over the derivation.
 
-The `.wrap` function works the same way, but automatically grabs `.config.wrapper` (the final package) from the result of `.eval` for you.
+In short, this repo is more what it claims to be. A generalized and effective module system for creating wrapper derivations, and offers far more abilities to that effect to the module system itself.
 
-The package (via `passthru`) and the modules under `.config` both offer all 3 functions.
+In fact, the only attribute of the final derivation you cannot directly override is `buildCommand`.
 
-```nix
-# Apply initial configuration
-# you can use `.eval` `.apply` or `.wrap` for this.
-initialConfig = (wrappers.wrapperModules.tmux.eval ({config, ...}{
-  # but if you don't plan to provide pkgs yet, you can't use `.wrap` or `.wrapper` yet.
-  # config.pkgs = pkgs;
-  # but we can still use `config.pkgs` before that inside!
-  config.plugins = [ config.pkgs.tmuxPlugins.onedark-theme ];
-  config.clock24 = false;
-})).config;
+And even for `buildCommand` you can still change its contents entirely if desired, although I think you will find `wlib.modules.default` provides very sensible defaults and that you will not need to do this yourself often.
 
-# Extend with additional configuration!
-extendedConfig = initialConfig.apply {
-  modeKeys = "vi";
-  statusKeys = "vi";
-  vimVisualKeys = true;
-};
+This allows you to easily modify your module with extra files and scripts or whatever else you may need!
 
-# Access the wrapper!
-# apply is useful because we don't need to give it `pkgs` but it gives us
-# top level access to `.wrapper`, `.wrap`, `.apply`, and `.eval`
-# without having to grab `.config` ourselves
-actualPackage = extendedConfig.wrap { inherit pkgs; };
-# since we didn't supply `pkgs` yet, we must pass it `pkgs`
-# before we are given the new value of `.wrapper` from `.wrap`
+Maybe you want your `tmux` wrapper to also output a launcher script that rejoins a session, or creates one? You can do that using this project with, for example, a `postBuild` hook just like in a derivation, and you can even use `"${placeholder "out"}"` in it!
 
-# Extend it again! You can call them on the package too!
-apackage = (actualPackage.eval {
-  prefix = "C-Space";
-}).config.wrapper; # <-- `.wrapper` to access the package direcly
+But you can supply it [from within the module system](https://birdeehub.github.io/nix-wrapper-modules/core.html#extradrvattrs)! You could define an option to customize its behavior later!
 
-# and again! `.wrap` gives us back the package directly
-# all 3 forms take modules as an argument
-packageAgain = apackage.wrap ({config, ...}: {
-  # list definitions append when declared across modules by default!
-  plugins = [ config.pkgs.tmuxPlugins.fzf-tmux-url ];
-});
-```
+In addition, the way it is implemented allows for the creation of helper modules that wrap derivations in all sorts of ways, which you could import instead of `wlib.modules.default` if you wanted. We could have similar modules for wrapping projects via bubblewrap or into docker containers with the same ease with which this library orchestrates regular wrapper scripts.
 
-### Creating Custom Wrapper Modules
+In short, while both projects have surface level similarities, you would be leaving a lot on the table to not use this one instead!
 
-```nix
-{ wlib, lib }:
+#### Exposition (aka: why is this not a PR):
 
-(wlib.evalModule ({ config, wlib, lib, ... }: {
-  # You can only grab the final package if you supply pkgs!
-  # But if you were making it for someone else, you would want them to do that!
+I heard that I could wrap programs with the module system, and then reapply more changes after, like override. I was excited.
 
-  # config.pkgs = pkgs;
+But the project was tiny, there were not many modules yet.
 
-  imports = [ wlib.modules.default ]; # <-- includes wlib.modules.symlinkScript and wlib.modules.makeWrapper
-  options = {
-    profile = lib.mkOption {
-      type = lib.types.enum [ "fast" "quality" ];
-      default = "fast";
-      description = "Encoding profile to use";
-    };
-    outputDir = lib.mkOption {
-      type = lib.types.str;
-      default = "./output";
-      description = "Directory for output files";
-    };
-  };
+"No problem!" I thought to myself, and began to write a module...
 
-  config.package = config.pkgs.ffmpeg;
-  config.flags = {
-    "-preset" = if config.profile == "fast" then "veryfast" else "slow";
-  };
-  config.env = {
-    FFMPEG_OUTPUT_DIR = config.outputDir;
-  };
-})) # .config.wrapper to grab the final package! Only works if pkgs was supplied.
-```
+Turns out there were actually several problems.
 
-`wrapProgram` comes with `wlib.modules.default` already included, and outputs the package directly!
+The first, was that a significant amount of the options were not even accessible to the module system,
+and were instead only accessible to a secondary builder function.
 
-Use this for quickly creating a custom wrapped program within your configuration!
+There were many more things that were going to make it hard to use. It couldn't even handle adding a second launcher script to my `tmux` derivation.
 
-```nix
-{ pkgs, wrappers, ... }:
+So, I set about the task of fixing it. However, when I began, the core was only about 700 lines of code, with comments.
 
-wrappers.lib.wrapProgram ({ config, wlib, lib, ... }: {
-  inherit pkgs; # you can only grab the final package if you supply pkgs!
-  package = pkgs.curl;
-  extraPackages = [ pkgs.jq ];
-  env = {
-    CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-  };
-  flags = {
-    "--silent" = true;
-    "--connect-timeout" = "30";
-  };
-  flagSeparator = "=";  # Use --flag=value instead of --flag value (default is " ")
-  runShell = [
-  ''
-    echo "Making request..." >&2
-  ''
-  ];
-})
-```
+Asking someone to accept someone else's rewrite of their _entire_ project is a tall order, even if it doesn't break anything existing. Especially when that rewrite was necessarily large due to fixing core architectural problems.
 
-## alternatives
+I wanted this thing to be the best it could be, but it was looking like the full extent of what needed to be done would be a difficult sell for the maintainer to handle reading and maintaining.
 
-- [wrapper-manager](https://github.com/viperML/wrapper-manager) by viperML. This project focuses more on a single module system, configuring wrappers and exporting them. This is something with a more granular approach with a single module per package and a collection of community made modules.
+It looked like only small pieces would be accepted, and at some point I gained a very clear vision of what I wanted.
 
-- [lassulus/wrappers](https://github.com/Lassulus/wrappers) the inspiration for the `.apply` interface for this library.
+It turns out what I wanted was significantly different from what that project was.
+
+I rewrote it several times, and finally found what I feel to be the right set of capabilities and options.
+
+Most things you see in the linked video above will work here too, but this is not intended to be a 1 for 1 compatible library, despite having a few shared option names.
