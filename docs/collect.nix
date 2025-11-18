@@ -37,7 +37,7 @@ let
               { _module.check = false; }
               {
                 disabledModules = map (v: v.key) (
-                  builtins.filter (v: v.key != key || builtins.match ".*:anon-[0-9]+" == null) graph
+                  builtins.filter (v: v.key != key && builtins.match ".*:anon-[0-9]+" v.key == null) graph
                 );
                 imports = [ mod ];
                 config.pkgs = pkgs;
