@@ -93,7 +93,7 @@ There are included modules for several programs already, but there are rich and 
 
 If you make one, you are encouraged to submit it here for others to use if you wish!
 
-For more information on how to do this, check out the getting started documentation, and the descriptions of the module options you have at your disposal!
+For more information on how to do this, check out the [getting started](https://birdeehub.github.io/nix-wrapper-modules/getting-started.html) documentation, and the descriptions of the module options you have at your disposal!
 
 ## Long-term Goals
 
