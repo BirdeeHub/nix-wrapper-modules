@@ -150,4 +150,6 @@ In short, while both projects have surface level similarities, you would be leav
 
 I did originally try to contribute my changes, but for numerous reasons, this did not work out.
 
-Contributing to a project by entirely rewriting it and then trying to get that accepted is not a good way to get changes to happen. But nothing short of that would have made sense, because the architecture was the problem, and the core of the project, which I was altering, was under 700 lines at the time.
+The original changes suggested were not as sweeping as the changes made when rewriting it for this repository.
+
+That being said, contributing to a project by entirely rewriting it and then trying to get that accepted is not a good way to get changes to happen. But nothing short of that would have made sense, because the architecture was the problem, and the core of the project, which I was altering, was under 700 lines at the time.
