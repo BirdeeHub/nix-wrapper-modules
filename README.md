@@ -56,7 +56,7 @@ in {
   paths = [ pkgs.alacritty ];
   nativeBuildInputs = [ pkgs.makeWrapper ];
   postBuild = ''
-    wrapProgram $out/bin/alacritty --inherit-argv0 --add-flag --config-file --add-flag ${tomlcfg}
+    wrapProgram $out/bin/alacritty --add-flag --config-file --add-flag ${tomlcfg}
   '';
 })
 ```
