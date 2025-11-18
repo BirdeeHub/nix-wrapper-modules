@@ -353,7 +353,9 @@
       readOnly = true;
       description = ''
         Function to extend the current configuration with additional modules.
-        Re-evaluates the configuration with the original settings plus the new module.
+        Can accept a single module, or a list of modules.
+        Re-evaluates the configuration with the original settings plus the new module(s).
+
         Returns the updated package.
       '';
       default = module: (config.eval module).config.wrapper;
@@ -363,7 +365,10 @@
       readOnly = true;
       description = ''
         Function to extend the current configuration with additional modules.
-        Re-evaluates the configuration with the original settings plus the new module.
+        Can accept a single module, or a list of modules.
+        Re-evaluates the configuration with the original settings plus the new module(s).
+
+        Returns `.config` from the `lib.evalModules` result
       '';
       default = module: (config.eval module).config;
     };
@@ -372,15 +377,16 @@
       readOnly = true;
       description = ''
         Function to extend the current configuration with additional modules.
-        Re-evaluates the configuration with the original settings plus the new module.
-        Returns the raw evaluated module.
+        Can accept a single module, or a list of modules.
+        Re-evaluates the configuration with the original settings plus the new module(s).
+
+        Returns the raw `lib.evalModules` result
       '';
       default =
         module:
         let
           res = config.__extend {
-            modules = [
-              module
+            modules = (if builtins.isList module then module else [ module ]) ++ [
               {
                 _file = ./core.nix;
                 __extend = res.extendModules;
