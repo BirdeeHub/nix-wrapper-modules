@@ -148,31 +148,6 @@ In addition, the way it is implemented allows for the creation of helper modules
 
 In short, while both projects have surface level similarities, you would be leaving a lot on the table to not use this one instead!
 
-#### Exposition (aka: why is this not a PR):
+I did originally try to contribute my changes, but for numerous reasons, this did not work out.
 
-I heard that I could wrap programs with the module system, and then reapply more changes after, like override. I was excited.
-
-But the project was tiny, there were not many modules yet.
-
-"No problem!" I thought to myself, and began to write a module...
-
-Turns out there were actually several problems.
-
-The first, was that a significant amount of the options were not even accessible to the module system,
-and were instead only accessible to a secondary builder function.
-
-There were many more things that were going to make it hard to use. It couldn't even handle adding a second launcher script to my `tmux` derivation.
-
-So, I set about the task of fixing it. However, when I began, the core was only about 700 lines of code, with comments.
-
-Asking someone to accept someone else's rewrite of their _entire_ project is a tall order, even if it doesn't break anything existing. Especially when that rewrite was necessarily large due to fixing core architectural problems.
-
-I wanted this thing to be the best it could be, but it was looking like the full extent of what needed to be done would be a difficult sell for the maintainer to handle reading and maintaining.
-
-It looked like only small pieces would be accepted, and at some point I gained a very clear vision of what I wanted.
-
-It turns out what I wanted was significantly different from what that project was.
-
-I rewrote it several times, and finally found what I feel to be the right set of capabilities and options.
-
-Most things you see in the linked video above will work here too, but this is not intended to be a 1 for 1 compatible library, despite having a few shared option names.
+Contributing to a project by entirely rewriting it and then trying to get that accepted is not a good way to get changes to happen. But nothing short of that would have made sense, because the architecture was the problem.
