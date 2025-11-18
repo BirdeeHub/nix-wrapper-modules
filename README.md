@@ -112,7 +112,7 @@ Help us add more modules! Contributors are what makes projects like these amazin
 
 ### Why rewrite [lassulus/wrappers](https://github.com/Lassulus/wrappers)?
 
-For those paying attention to the recent nix news, they may have heard of a similar project recently.
+For those paying attention to the recent nix news, they may have heard of a similar project which was released recently.
 
 This excellent video by Vimjoyer was made, which mentions the project this one is inspired by at the end.
 
