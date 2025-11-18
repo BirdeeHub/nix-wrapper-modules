@@ -48,9 +48,14 @@ let
     graph: builtins.concatLists (map flatten (map cleanNodes graph));
 
   filtered = builtins.filter (v: v.key == "NEWDOCS") evaled.graph;
-  docimport = let
-    res = (builtins.head filtered).imports;
-  in if (builtins.match ".*:anon-[0-9]+" (builtins.head res).key) != null then (builtins.head res).imports else res;
+  docimport =
+    let
+      res = (builtins.head filtered).imports;
+    in
+    if (builtins.match ".*:anon-[0-9]+" (builtins.head res).key) != null then
+      (builtins.head res).imports
+    else
+      res;
 
   flattened = flattenGraph docimport;
 
@@ -65,4 +70,7 @@ let
         if matchres != null then builtins.head matchres else node.key;
     };
 in
-[ (stripAnon (builtins.head flattened)) ] ++ (if flattened != [] then builtins.tail flattened else throw ("BLEH2" + (builtins.toJSON filtered)))
+[ (stripAnon (builtins.head flattened)) ]
+++ (
+  if flattened != [ ] then builtins.tail flattened else throw ("BLEH2" + (builtins.toJSON filtered))
+)

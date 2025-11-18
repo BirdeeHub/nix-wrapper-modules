@@ -13,7 +13,7 @@ let
     inherit pkgs wlib;
     rootPath = ../.;
   };
-  corelist = builtins.attrNames (wlib.evalModule {}).options;
+  corelist = builtins.attrNames (wlib.evalModule { }).options;
   buildModuleDocs =
     prefix: descriptions: name: module:
     let
@@ -36,7 +36,9 @@ let
             modules = [
               { _module.check = false; }
               {
-                disabledModules = map (v: v.key) (builtins.filter (v: v.key != key || builtins.match ".*:anon-[0-9]+" == null) graph);
+                disabledModules = map (v: v.key) (
+                  builtins.filter (v: v.key != key || builtins.match ".*:anon-[0-9]+" == null) graph
+                );
                 imports = [ mod ];
                 config.pkgs = pkgs;
                 config.package = lib.mkOrder 0 package;
@@ -52,13 +54,15 @@ let
           sed 's|${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
       '') optdocs;
     in
-    pkgs.runCommand "${name}-${prefix}-docs" { } (''
-      echo '# `wlib.${prefix}.${name}`' > $out
-      echo >> $out
-      echo ${lib.escapeShellArg (descriptions.${name} or "")} >> $out
-      echo >> $out
-    ''
-    + (builtins.concatStringsSep " " commands));
+    pkgs.runCommand "${name}-${prefix}-docs" { } (
+      ''
+        echo '# `wlib.${prefix}.${name}`' > $out
+        echo >> $out
+        echo ${lib.escapeShellArg (descriptions.${name} or "")} >> $out
+        echo >> $out
+      ''
+      + (builtins.concatStringsSep " " commands)
+    );
 
   module_desc = {
     makeWrapperNix = ''
@@ -88,7 +92,7 @@ let
   };
 
   module_docs = builtins.mapAttrs (buildModuleDocs "modules" module_desc) wlib.modules;
-  wrapper_docs = builtins.mapAttrs (buildModuleDocs "wrapperModules" {}) wlib.wrapperModules;
+  wrapper_docs = builtins.mapAttrs (buildModuleDocs "wrapperModules" { }) wlib.wrapperModules;
 
   coredocs =
     let
