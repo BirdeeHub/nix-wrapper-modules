@@ -293,7 +293,7 @@
         wlib.dag.lmap (var: "unset ${config.escapingFunction var}") config.unsetVar
         ++ lib.optionals (config.env != { }) (
           wlib.dag.sortAndUnwrap {
-            dag = wlib.dag.gmap (n: v: "export " + config.escapingFunction "${n}=${toString v}") config.env;
+            dag = wlib.dag.gmap (n: v: "export ${n}=${config.escapingFunction v}") config.env;
           }
         )
         ++ wlib.dag.lmap (
@@ -304,7 +304,10 @@
             sep = elemAt tuple 1;
             val = elemAt tuple 2;
           in
-          "export " + config.escapingFunction "${env}=${val}${sep}${env}"
+          "export ${env}="
+            + (config.escapingFunction val)
+            + sep
+            + "$" + "${env}"
         ) config.prefixVar
         ++ wlib.dag.lmap (
           tuple:
@@ -314,7 +317,10 @@
             sep = elemAt tuple 1;
             val = elemAt tuple 2;
           in
-          "export " + config.escapingFunction "${env}=${env}${sep}${val}"
+          "export ${env}="
+            + "$" + "${env}"
+            + sep
+            + (config.escapingFunction val)
         ) config.suffixVar
         ++ config.runShell;
 
