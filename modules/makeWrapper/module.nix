@@ -405,7 +405,7 @@
               "--set-default"
               n
               "${toString v}"
-            ]) config.env-default
+            ]) config.envDefault
           );
         }
       );

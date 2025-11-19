@@ -134,6 +134,25 @@
       which will cause the resulting wrapper argument to be sorted accordingly
     '';
   };
+  options.envDefault = lib.mkOption {
+    type = wlib.types.dagOf wlib.types.stringable;
+    default = { };
+    example = {
+      "XDG_DATA_HOME" = "/only/if/not/set";
+    };
+    description = ''
+      Environment variables to set in the wrapper.
+
+      Like env, but only adds the variable if not already set in the environment.
+
+      This option takes a set.
+
+      Any entry can instead be of type `{ data, before ? [], after ? [] }`
+
+      This will cause it to be added to the DAG,
+      which will cause the resulting wrapper argument to be sorted accordingly
+    '';
+  };
   options.unsetVar = lib.mkOption {
     type = wlib.types.dalOf lib.types.str;
     default = [ ];
@@ -210,130 +229,11 @@
     type = lib.types.functionTo lib.types.str;
     default = wlib.escapeShellArgWithEnv;
     description = ''
-      The function to use to escape shell arguments before concatenation
+      The function to use to escape shell values
 
       default: `wlib.escapeShellArgWithEnv`
     '';
   };
-  config.wrapperFunction = lib.mkDefault (
-    {
-      config,
-      wlib,
-      lib,
-      bash,
-      ...
-    }:
-    let
-      arg0 = if config.argv0 == null then "\"$0\"" else config.escapingFunction config.argv0;
-      generateArgsFromFlags =
-        flagSeparator: dag_flags:
-        wlib.dag.sortAndUnwrap {
-          dag = (
-            wlib.dag.gmap (
-              name: value:
-              if value == false || value == null then
-                [ ]
-              else if value == true then
-                [
-                  name
-                ]
-              else if lib.isList value then
-                lib.concatMap (
-                  v:
-                  if lib.trim flagSeparator == "" then
-                    [
-                      name
-                      (toString v)
-                    ]
-                  else
-                    [
-                      "${name}${flagSeparator}${toString v}"
-                    ]
-                ) value
-              else if lib.trim flagSeparator == "" then
-                [
-                  name
-                  (toString value)
-                ]
-              else
-                [
-                  "${name}${flagSeparator}${toString value}"
-                ]
-            ) dag_flags
-          );
-        };
-      preFlagStr = builtins.concatStringsSep " " (
-        wlib.dag.sortAndUnwrap {
-          dag =
-            lib.optionals (config.addFlag != [ ]) config.addFlag
-            ++ lib.optionals (config.flags != { }) (
-              generateArgsFromFlags (config.flagSeparator or " ") config.flags
-            );
-          mapIfOk =
-            v:
-            if builtins.isList v.data then
-              builtins.concatStringsSep " " (map config.escapingFunction v.data)
-            else
-              config.escapingFunction v.data;
-        }
-      );
-      postFlagStr = builtins.concatStringsSep " " (
-        wlib.dag.sortAndUnwrap {
-          dag = config.appendFlag;
-          mapIfOk =
-            v:
-            if builtins.isList v.data then
-              builtins.concatStringsSep " " (map config.escapingFunction v.data)
-            else
-              config.escapingFunction v.data;
-        }
-      );
-
-      shellcmdsdal =
-        wlib.dag.lmap (var: "unset ${config.escapingFunction var}") config.unsetVar
-        ++ lib.optionals (config.env != { }) (
-          wlib.dag.sortAndUnwrap {
-            dag = wlib.dag.gmap (n: v: "export ${n}=${config.escapingFunction v}") config.env;
-          }
-        )
-        ++ wlib.dag.lmap (
-          tuple:
-          with builtins;
-          let
-            env = elemAt tuple 0;
-            sep = elemAt tuple 1;
-            val = elemAt tuple 2;
-          in
-          "export ${env}=" + (config.escapingFunction val) + sep + "$" + "${env}"
-        ) config.prefixVar
-        ++ wlib.dag.lmap (
-          tuple:
-          with builtins;
-          let
-            env = elemAt tuple 0;
-            sep = elemAt tuple 1;
-            val = elemAt tuple 2;
-          in
-          "export ${env}=" + "$" + "${env}" + sep + (config.escapingFunction val)
-        ) config.suffixVar
-        ++ config.runShell;
-
-      shellcmds = lib.optionals (shellcmdsdal != [ ]) (
-        wlib.dag.sortAndUnwrap {
-          dag = shellcmdsdal;
-          mapIfOk = v: v.data;
-        }
-      );
-
-      wrapstr = ''
-        #!${bash}/bin/bash
-        ${builtins.concatStringsSep "\n" shellcmds}
-        exec -a ${arg0} ${
-          if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
-        } ${preFlagStr} "$@" ${postFlagStr}
-      '';
-    in
-    "echo ${lib.escapeShellArg wrapstr} > $out/bin/${config.binName}"
-  );
+  config.wrapperFunction = lib.mkDefault (import ./makeWrapper.nix);
   config.meta.maintainers = lib.mkDefault [ lib.maintainers.birdee ];
 }
