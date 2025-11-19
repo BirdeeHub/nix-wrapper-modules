@@ -114,24 +114,8 @@ let
 
   setvarfunc = /* bash */ ''wrapperSetEnv() { export "$1=$2"; }'';
   setvardefaultfunc = /* bash */ ''wrapperSetEnvDefault() { [ -z "''${!1+x}" ] && export "$1=$2"; }'';
-  prefixvarfunc = /* bash */ ''
-    wrapperPrefixEnv() {
-        if [ -n "''${!1}" ]; then
-            export "$1=$3$2''${!1}"
-        else
-            export "$1=$3"
-        fi
-    }
-  '';
-  suffixvarfunc = /* bash */ ''
-    wrapperSuffixEnv() {
-        if [ -n "''${!1}" ]; then
-            export "$1=''${!1}$2$3"
-        else
-            export "$1=$3"
-        fi
-    }
-  '';
+  prefixvarfunc = /* bash */ ''wrapperPrefixEnv() { export "$1=''${!1:+$3$2}''${!1:-$3}"; }'';
+  suffixvarfunc = /* bash */ ''wrapperSuffixEnv() { export "$1=''${!1:+''${!1}$2}$3"; }'';
   prefuncs =
     lib.optional (config.env != { }) setvarfunc
     ++ lib.optional (config.envDefault != { }) setvardefaultfunc
