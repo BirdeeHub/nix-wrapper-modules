@@ -92,8 +92,8 @@
     '';
   };
   options.makeWrapper = lib.mkOption {
-    type = lib.types.nullOr lib.types.package;
-    default = null;
+    type = lib.types.package;
+    default = config.pkgs.makeWrapper;
     description = ''
       makeWrapper implementation to use (default `pkgs.makeWrapper`)
 
@@ -101,9 +101,7 @@
       as doing so will disable fields it does not support as well.
     '';
   };
-  config.extraDrvAttrs.nativeBuildInputs = [
-    (if config.makeWrapper != null then config.makeWrapper else config.pkgs.makeWrapper)
-  ];
+  config.extraDrvAttrs.nativeBuildInputs = [ config.makeWrapper ];
   config.wrapperFunction = lib.mkDefault (
     {
       config,
