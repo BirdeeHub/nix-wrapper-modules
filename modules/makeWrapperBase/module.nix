@@ -116,7 +116,7 @@
         "${placeholder "out"}/bin/${config.binName}"
       ];
       finalArgs = lib.pipe config.rawWrapperArgs [
-        (wlib.dag.lmap (v: if builtins.isList v then lib.escapeShellArgs v else lib.escapeShellArg v))
+        (wlib.dag.lmap (v: if builtins.isList v then map lib.escapeShellArg v else lib.escapeShellArg v))
         (v: v ++ config.unsafeWrapperArgs)
         (
           dag:
@@ -125,6 +125,7 @@
             mapIfOk = v: v.data;
           }
         )
+        lib.flatten
       ];
     in
     if config.binName == "" then
