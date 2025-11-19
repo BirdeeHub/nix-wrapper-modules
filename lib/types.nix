@@ -55,7 +55,8 @@
     let
       base = lib.types.listOf elemType;
     in
-    lib.types.addCheck base (x: base.check x && builtins.length x == len) // {
+    lib.types.addCheck base (x: base.check x && builtins.length x == len)
+    // {
       name = "fixedList";
       descriptionClass = "noun";
       description = "(List of length ${toString len})";
