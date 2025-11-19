@@ -304,10 +304,7 @@
             sep = elemAt tuple 1;
             val = elemAt tuple 2;
           in
-          "export ${env}="
-            + (config.escapingFunction val)
-            + sep
-            + "$" + "${env}"
+          "export ${env}=" + (config.escapingFunction val) + sep + "$" + "${env}"
         ) config.prefixVar
         ++ wlib.dag.lmap (
           tuple:
@@ -317,10 +314,7 @@
             sep = elemAt tuple 1;
             val = elemAt tuple 2;
           in
-          "export ${env}="
-            + "$" + "${env}"
-            + sep
-            + (config.escapingFunction val)
+          "export ${env}=" + "$" + "${env}" + sep + (config.escapingFunction val)
         ) config.suffixVar
         ++ config.runShell;
 
