@@ -55,12 +55,10 @@
     let
       base = lib.types.listOf elemType;
     in
-    lib.mkOptionType {
-      inherit (base) merge getSubOptions emptyValue;
+    lib.types.addCheck base (x: base.check x && builtins.length x == len) // {
       name = "fixedList";
       descriptionClass = "noun";
       description = "(List of length ${toString len})";
-      check = x: base.check x && builtins.length x == len;
     };
 
   /**
