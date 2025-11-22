@@ -65,21 +65,12 @@ let
     );
 
   module_desc = {
-    makeWrapperNix = ''
-      A partial and experimental pure nix implementation of the `makeWrapper` interface
-
-      Allows expansion of variables at runtime in flags and environment variable values
-    '';
     makeWrapper = ''
       An implementation of the `makeWrapper` interface via type safe module options.
 
-      Imported by `wlib.modules.default`
-    '';
-    makeWrapperBase = ''
-      Takes dependency lists of wrapper arguments of escaped and unescaped varieties,
-      and sorts them according to their listed dependencies, if any.
+      Allows you to choose one of several underlying implementations of the `makeWrapper` interface.
 
-      Imported by `wlib.modules.makeWrapper`
+      Imported by `wlib.modules.default`
     '';
     symlinkScript = ''
       Adds extra options compared to the default `symlinkScript` option value.
