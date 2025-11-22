@@ -194,8 +194,8 @@ in
 
     environment variable expansion (e.g., `$HOME`, `${VAR}`).
 
-    Caution! This is used by `wlib.modules.makeWrapperNix` to escape things,
-    but the `wlib.modules.makeWrapper` implementation passes its args to `pkgs.makeWrapper` at **build** time,
+    Caution! This is used by the `nix` backend for `wlib.modules.makeWrapper` to escape things,
+    but the `shell` and `binary` implementations pass their args to `pkgs.makeWrapper` at **build** time,
     so it may not always do what you expect!
 
     # Example

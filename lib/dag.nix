@@ -55,7 +55,7 @@ let
   mkExtraFieldsMsg =
     settings:
     if builtins.isAttrs (settings.extraOptions or null) then
-      "(with extra fields `"
+      "(with extra field(s): `"
       + (builtins.concatStringsSep "`, `" (builtins.attrNames settings.extraOptions))
       + "`) "
     else
@@ -392,12 +392,7 @@ in
           false;
       sorted = toposort before (if isList dag then normalizeDal dag else normalizeDag dag);
     in
-    if sorted ? result then
-      {
-        result = map (v: { inherit (v) name data; }) sorted.result;
-      }
-    else
-      sorted;
+    sorted;
 
   /**
     Applies a function to each element of the given DAG.
