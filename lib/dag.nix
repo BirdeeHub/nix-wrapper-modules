@@ -350,13 +350,13 @@ in
         dal:
         map (
           v:
-          {
+          v
+          // {
             name = if hasname v then v.name else null;
             before = v.before or [ ];
             data = v.data or (throw "DAG entries must have a data attribute");
             after = (v.after or [ ]) ++ optionals (hasname v) (dalBefore dag v.name);
           }
-          // v
         ) dal;
       dagBefore = dag: name: attrNames (filterAttrs (_n: v: elem name (v.before or [ ])) dag);
       normalizeDag =
@@ -373,13 +373,13 @@ in
                 else
                   null;
             in
-            {
+            v
+            // {
               inherit name;
               before = v.before or [ ];
               data = v.data or (throw "DAG entries must have a data attribute");
               after = (v.after or [ ]) ++ dagBefore dag name;
             }
-            // v
           ) dag
         );
       before =
