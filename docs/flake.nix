@@ -3,12 +3,10 @@
   # TODO: make the options expandable sections
   # TODO: allow filtering/sorting of options by module
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-  inputs.nixdoc.url = "github:nix-community/nixdoc";
   outputs =
     {
       self,
       nixpkgs,
-      nixdoc,
       ...
     }@inputs:
     let
@@ -25,7 +23,6 @@
         {
           default = pkgs.callPackage ./collect.nix {
             inherit wlib;
-            nixdoc = nixdoc.packages.${system}.default;
           };
         }
       );
