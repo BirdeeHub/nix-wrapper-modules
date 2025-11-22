@@ -1,12 +1,7 @@
 {
-  description = ''
-    Will eventually automatically generate
-    wrapper modules documentation
-
-    Currently just generates markdown and copies to a target directory
-
-    TODO: make this work in a way that is useful.
-  '';
+  description = "Generates the website documentation for the nix-wrapper-modules repository";
+  # TODO: make the options expandable sections
+  # TODO: allow filtering/sorting of options by module
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   inputs.nixdoc.url = "github:nix-community/nixdoc";
   outputs =
