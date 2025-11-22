@@ -390,9 +390,8 @@ in
           !elem b.name (a.after or [ ])
         else
           false;
-      sorted = toposort before (if isList dag then normalizeDal dag else normalizeDag dag);
     in
-    sorted;
+    toposort before (if isList dag then normalizeDal dag else normalizeDag dag);
 
   /**
     Applies a function to each element of the given DAG.
