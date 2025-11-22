@@ -354,6 +354,7 @@
       You should probably leave this as is when using either of those implementations.
 
       However, when using the `nix` implementation, they will expand at runtime!
+      Which means `wlib.escapeShellArgWithEnv` may prove to be a useful substitute!
     '';
   };
   config.suffixVar =
