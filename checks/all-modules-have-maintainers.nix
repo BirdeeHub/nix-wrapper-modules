@@ -5,6 +5,10 @@
 
 let
   # Get all modules and check their maintainers
+  # TODO: Isolate maintainers from wrapper module from that of helper module
+  # do evalModule here, and use graph and disabledModules to disable the other ones.
+  # That way, every wrapper doesnt end up with the same maintainer
+  # as its helper module for the purposes of this test.
   modulesWithoutMaintainers = pkgs.lib.filter (
     name: self.wrapperModules.${name}.meta.maintainers == [ ]
   ) (builtins.attrNames self.wrapperModules);
