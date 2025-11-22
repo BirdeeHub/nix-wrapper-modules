@@ -5,7 +5,6 @@
   ...
 }:
 {
-  imports = [ wlib.modules.makeWrapperBase ];
   options.argv0type = lib.mkOption {
     type = lib.types.enum [
       "resolve"
@@ -14,6 +13,13 @@
     default = "inherit";
     description = ''
       `argv0` overrides this option if not null or unset
+
+      Both `shell` and the `nix` implementations
+      ignore this option, as the shell always resolves `$0`
+
+      However, the `binary` implementation will use this option
+
+      Values:
 
       `"inherit"`:
       `--inherit-argv0`
@@ -35,19 +41,9 @@
       --argv0 NAME
 
       Set the name of the executed process to NAME.
-      If unset or empty, defaults to EXECUTABLE.
+      If unset or null, defaults to EXECUTABLE.
 
       overrides the setting from `argv0type` if set.
-    '';
-  };
-  options.useBinaryWrapper = lib.mkOption {
-    type = lib.types.bool;
-    default = false;
-    description = ''
-      changes the makeWrapper implementation from `pkgs.makeWrapper` to `pkgs.makeBinaryWrapper`
-
-      also disables `--run`, `--prefix-contents`, and `--suffix-contents`,
-      as they are not supported by `pkgs.makeBinaryWrapper`
     '';
   };
   options.unsetVar = lib.mkOption {
@@ -192,46 +188,30 @@
       Suffix ENV with VAL, separated by SEP.
     '';
   };
-  options.prefixContents = lib.mkOption {
+  options.prefixContent = lib.mkOption {
     type = wlib.types.wrapperFlags 3;
     default = [ ];
-    example = [
-      [
-        "ENV"
-        "SEP"
-        "FILES"
-      ]
-      [
-        "ENV"
-        "SEP"
-        "FILES"
-      ]
-    ];
     description = ''
-      --prefix-contents ENV SEP FILES
+      [
+        [ "ENV" "SEP" "FILE" ]
+      ]
 
-      FILES will be read, then the contents appended to ENV, separated by SEP
+      Prefix ENV with contents of FILE and SEP at build time.
+
+      Values may contain environment variable references using `$` to expand at runtime
     '';
   };
-  options.suffixContents = lib.mkOption {
+  options.suffixContent = lib.mkOption {
     type = wlib.types.wrapperFlags 3;
     default = [ ];
-    example = [
-      [
-        "ENV"
-        "SEP"
-        "FILES"
-      ]
-      [
-        "ENV"
-        "SEP"
-        "FILES"
-      ]
-    ];
     description = ''
-      --suffix-contents ENV SEP FILES
+      [
+        [ "ENV" "SEP" "FILE" ]
+      ]
 
-      FILES will be read, then the contents appended to ENV, separated by SEP
+      Suffix ENV with SEP and then the contents of FILE at build time.
+
+      Values may contain environment variable references using `$` to expand at runtime
     '';
   };
   options.flags = lib.mkOption {
@@ -327,173 +307,178 @@
       which will cause the resulting wrapper argument to be sorted accordingly
     '';
   };
-  options.wrapperArgEscaping = lib.mkOption {
-    type = lib.types.bool;
-    default = true;
+  options.wrapperImplementation = lib.mkOption {
+    type = lib.types.enum [
+      "nix"
+      "shell"
+      "binary"
+    ];
+    default = "nix";
     description = ''
-      Controls which `wlib.modules.makeWrapperBase` option to pass the generated wrapper arguments to
+      the `nix` implementation is the default
 
-      if value is `true` then the wrapper arguments will be passed to `config.rawWrapperArgs`
+      It makes the `escapingFunction` most relevant.
 
-      if value is `false` then the wrapper arguments will be passed to `config.unsafeWrapperArgs`
+      This is because the `shell` and `binary` implementations
+      use `pkgs.makeWrapper` or `pkgs.makeBinaryWrapper`,
+      and arguments to these functions are passed at BUILD time.
 
-      WARNING: These arguments are passed to makeWrapper at build time! Not escaping may not do what you expect!
+      So, generally, when not using the nix implementation,
+      you should always prefer to have `escapingFunction`
+      set to `lib.escapeShellArg`.
+
+      However, if you ARE using the `nix` implementation,
+      using `wlib.escapeShellArgWithEnv` will allow you
+      to use `$` expansions, which will expand at runtime.
+
+      `binary` implementation is useful for programs
+      which are likely to be used in "shebangs",
+      as macos will not allow scripts to be used for these.
+
+      However, it is more limited. It does not have access to
+      `runShell`, `prefixContent`, and `suffixContent` options.
+
+      Chosing `binary` will thus cause values in those options to be ignored.
     '';
   };
-  config =
-    let
-      generateArgsFromFlags =
-        flagSeparator: dag_flags:
-        wlib.dag.sortAndUnwrap {
-          dag = wlib.dag.gmap (
-            name: value:
-            if value == false || value == null then
-              [ ]
-            else if value == true then
-              [
-                "--add-flag"
-                name
-              ]
-            else if lib.isList value then
-              lib.concatMap (
-                v:
-                if lib.trim flagSeparator == "" then
-                  [
-                    "--add-flag"
-                    name
-                    "--add-flag"
-                    (toString v)
-                  ]
-                else
-                  [
-                    "--add-flag"
-                    "${name}${flagSeparator}${toString v}"
-                  ]
-              ) value
-            else if lib.trim flagSeparator == "" then
-              [
-                "--add-flag"
-                name
-                "--add-flag"
-                (toString value)
-              ]
-            else
-              [
-                "--add-flag"
-                "${name}${flagSeparator}${toString value}"
-              ]
-          ) dag_flags;
-        };
+  options.escapingFunction = lib.mkOption {
+    type = lib.types.functionTo lib.types.str;
+    default = lib.escapeShellArg;
+    defaultText = "lib.escapeShellArg";
+    description = ''
+      The function to use to escape shell values
 
-      argv0 = [
+      Caution: When using `shell` or `binary` implementations,
+      these will be expanded at BUILD time.
+
+      You should probably leave this as is when using either of those implementations.
+
+      However, when using the `nix` implementation, they will expand at runtime!
+    '';
+  };
+  config.suffixVar =
+    lib.optionals (config.extraPackages != [ ]) [
+      {
+        name = "NIX_PATH_ADDITIONS";
+        data = lib.optionals (config.extraPackages != [ ]) [
+          "PATH"
+          ":"
+          "${lib.makeBinPath config.extraPackages}"
+        ];
+      }
+    ]
+    ++ lib.optionals (config.runtimeLibraries != [ ]) [
+      {
+        name = "NIX_LIB_ADDITIONS";
+        data = [
+          "LD_LIBRARY_PATH"
+          ":"
+          "${lib.makeLibraryPath config.extraPackages}"
+        ];
+      }
+    ];
+  config.extraDrvAttrs.nativeBuildInputs =
+    lib.mkIf (config.wrapperImplementation == "shell" || config.wrapperImplementation == "binary")
+      [
         (
-          if builtins.isString config.argv0 then
-            [
-              "--argv0"
-              config.argv0
-            ]
-          else if config.argv0type == "resolve" then
-            [ "--resolve-argv0" ]
+          if config.wrapperImplementation == "shell" then
+            config.pkgs.makeWrapper
           else
-            [ "--inherit-argv0" ]
+            config.pkgs.makeBinaryWrapper
         )
       ];
-      envVarsDefault = lib.optionals (config.envDefault != { }) (
-        wlib.dag.sortAndUnwrap {
-          dag = (
-            wlib.dag.gmap (n: v: [
-              "--set-default"
-              n
-              "${toString v}"
-            ]) config.envDefault
-          );
-        }
-      );
-      envVars = lib.optionals (config.env != { }) (
-        wlib.dag.sortAndUnwrap {
-          dag = (
-            wlib.dag.gmap (n: v: [
-              "--set"
-              n
-              "${toString v}"
-            ]) config.env
-          );
-        }
-      );
-      xtrapkgs = lib.optionals (config.extraPackages != [ ]) [
-        {
-          name = "NIX_PATH_ADDITIONS";
-          data = lib.optionals (config.extraPackages != [ ]) [
-            "--suffix"
-            "PATH"
-            ":"
-            "${lib.makeBinPath config.extraPackages}"
-          ];
-        }
-      ];
-      xtralib = lib.optionals (config.runtimeLibraries != [ ]) [
-        {
-          name = "NIX_LIB_ADDITIONS";
-          data = [
-            "--suffix"
-            "LD_LIBRARY_PATH"
-            ":"
-            "${lib.makeLibraryPath config.extraPackages}"
-          ];
-        }
-      ];
-      flags = lib.optionals (config.flags != { }) (
-        generateArgsFromFlags (config.flagSeparator or " ") config.flags
-      );
-      mapargs =
-        n: argname: single:
-        wlib.dag.lmap (
-          v:
-          if builtins.isList v then
-            if single then
-              lib.concatMap (val: [
-                "--${argname}"
-                (toString val)
-              ]) v
-            else
-              [ "--${argname}" ] ++ v
-          else
-            [
-              "--${argname}"
-              (toString v)
-            ]
-        ) config.${n};
+  config.wrapperFunction = lib.mkDefault (
+    import (if config.wrapperImplementation == "nix" then ./makeWrapperNix.nix else ./makeWrapper.nix)
+  );
+  config.meta.maintainers = lib.mkDefault [ lib.maintainers.birdee ];
 
-      other =
-        mapargs "unsetVar" "unset" true
-        ++ mapargs "chdir" "chdir" true
-        ++ mapargs "prefixVar" "prefix" false
-        ++ mapargs "suffixVar" "suffix" false;
-      conditionals =
-        if !config.useBinaryWrapper then
-          mapargs "runShell" "run" true
-          ++ mapargs "prefixContents" "prefix-contents" false
-          ++ mapargs "suffixContents" "suffix-contents" false
+  options.rawWrapperArgs = lib.mkOption {
+    type = wlib.types.wrapperFlag;
+    default = [ ];
+    internal = true;
+    description = "DEPRECATED";
+    apply =
+      value:
+      if value != [ ] then
+        throw ''
+          The option `rawWrapperArgs` is deprecated and must not be used.
+
+          They were not an interface which was easily implemnented by other implementations,
+          and the module system options are a better interface anyway.
+        ''
+      else
+        value;
+  };
+  options.unsafeWrapperArgs = lib.mkOption {
+    type = wlib.types.wrapperFlag;
+    default = [ ];
+    internal = true;
+    description = "DEPRECATED";
+    apply =
+      value:
+      if value != [ ] then
+        throw ''
+          The option `unsafeWrapperArgs` is deprecated and must not be used.
+
+          They were not an interface which was easily implemnented by other implementations,
+          and the module system options are a better interface anyway.
+        ''
+      else
+        value;
+  };
+  options.wrapperArgEscaping = lib.mkOption {
+    type = lib.types.nullOr lib.types.bool;
+    default = null;
+    internal = true;
+    description = "DEPRECATED";
+  };
+  config.escapingFunction = lib.mkIf (config.wrapperArgEscaping != null) (
+    lib.warn
+      "wrapperArgEscaping has been renamed to escapingFunction and takes a function which recieves the value and returns the escaped version"
+      (if config.wrapperArgEscaping then lib.escapeShellArg else (s: toString s))
+  );
+  options.useBinaryWrapper = lib.mkOption {
+    type = lib.types.nullOr lib.types.bool;
+    default = null;
+    internal = true;
+    description = "DEPRECATED";
+  };
+  options.makeWrapper = lib.mkOption {
+    type = lib.types.nullOr lib.types.package;
+    default = null;
+    internal = true;
+    description = "DEPRECATED";
+  };
+  config.wrapperImplementation =
+    lib.mkIf (config.useBinaryWrapper != null || config.makeWrapper != null)
+      (
+        let
+          msg = "useBinaryWrapper has been renamed to wrapperImplementation and takes an enum of 'binary', 'shell', or 'nix'";
+        in
+        if config.useBinaryWrapper == true then
+          lib.warn msg "binary"
+        else if config.useBinaryWrapper == false then
+          lib.warn msg "shell"
         else
-          [ ];
+          throw "makeWrapper option is no longer supported, use wrapperImplementation instead, which takes an enum of 'binary', 'shell', or 'nix'"
+      );
 
-      finalArgs =
-        argv0
-        ++ mapargs "addFlag" "add-flag" true
-        ++ flags
-        ++ mapargs "appendFlag" "append-flag" true
-        ++ xtrapkgs
-        ++ xtralib
-        ++ envVars
-        ++ envVarsDefault
-        ++ other
-        ++ conditionals;
-    in
-    {
-      makeWrapper =
-        if config.useBinaryWrapper then config.pkgs.makeBinaryWrapper else config.pkgs.makeWrapper;
-      rawWrapperArgs = lib.mkIf config.wrapperArgEscaping finalArgs;
-      unsafeWrapperArgs = lib.mkIf (!config.wrapperArgEscaping) finalArgs;
-      meta.maintainers = lib.mkDefault [ lib.maintainers.birdee ];
-    };
+  options.prefixContents = lib.mkOption {
+    type = wlib.types.wrapperFlags 3;
+    default = [ ];
+    internal = true;
+    description = "DEPRECATED";
+  };
+  config.prefixContent = lib.mkIf (config.prefixContents != [ ]) (
+    lib.warn "prefixContents has been renamed to prefixContent and takes only 1 file" config.prefixContents
+  );
+  options.suffixContents = lib.mkOption {
+    type = wlib.types.wrapperFlags 3;
+    default = [ ];
+    internal = true;
+    description = "DEPRECATED";
+  };
+  config.suffixContent = lib.mkIf (config.suffixContents != [ ]) (
+    lib.warn "suffixContents has been renamed to suffixContent and takes only 1 file" config.suffixContents
+  );
 }
