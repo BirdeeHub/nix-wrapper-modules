@@ -141,10 +141,10 @@ let
         inherit dag;
         mapIfOk =
           v:
-          if builtins.isList v.data then
-            map config.escapingFunction v.data
-          else
-            config.escapingFunction v.data;
+          let
+            esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
+          in
+          if builtins.isList v.data then map esc-fn v.data else esc-fn v.data;
       }
     )
     lib.flatten

@@ -71,6 +71,4 @@ let
     };
 in
 [ (stripAnon (builtins.head flattened)) ]
-++ (
-  if flattened != [ ] then builtins.tail flattened else throw ("BLEH2" + (builtins.toJSON filtered))
-)
+++ (if flattened != [ ] then builtins.tail flattened else [ ])

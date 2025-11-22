@@ -53,10 +53,10 @@ let
         );
       mapIfOk =
         v:
-        if builtins.isList v.data then
-          builtins.concatStringsSep " " (map config.escapingFunction v.data)
-        else
-          config.escapingFunction v.data;
+        let
+          esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
+        in
+        if builtins.isList v.data then builtins.concatStringsSep " " (map esc-fn v.data) else esc-fn v.data;
     }
   );
   postFlagStr = builtins.concatStringsSep " " (
@@ -64,35 +64,35 @@ let
       dag = config.appendFlag;
       mapIfOk =
         v:
-        if builtins.isList v.data then
-          builtins.concatStringsSep " " (map config.escapingFunction v.data)
-        else
-          config.escapingFunction v.data;
+        let
+          esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
+        in
+        if builtins.isList v.data then builtins.concatStringsSep " " (map esc-fn v.data) else esc-fn v.data;
     }
   );
 
   shellcmdsdal =
     wlib.dag.lmap (
-      var:
+      var: esc-fn:
       let
-        cmd = "unset ${config.escapingFunction var}";
+        cmd = "unset ${esc-fn var}";
       in
       "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
     ) config.unsetVar
     ++ wlib.dag.sortAndUnwrap {
       dag = wlib.dag.gmap (
-        n: v:
+        n: v: esc-fn:
         let
-          cmd = "wrapperSetEnv ${config.escapingFunction n} ${config.escapingFunction v}";
+          cmd = "wrapperSetEnv ${esc-fn n} ${esc-fn v}";
         in
         "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
       ) config.env;
     }
     ++ wlib.dag.sortAndUnwrap {
       dag = wlib.dag.gmap (
-        n: v:
+        n: v: esc-fn:
         let
-          cmd = "wrapperSetEnvDefault ${config.escapingFunction n} ${config.escapingFunction v}";
+          cmd = "wrapperSetEnvDefault ${esc-fn n} ${esc-fn v}";
         in
         "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
       ) config.envDefault;
@@ -100,58 +100,62 @@ let
     ++ wlib.dag.lmap (
       tuple:
       with builtins;
+      esc-fn:
       let
         env = elemAt tuple 0;
         sep = elemAt tuple 1;
         val = elemAt tuple 2;
-        cmd = "wrapperPrefixEnv ${config.escapingFunction env} ${config.escapingFunction sep} ${config.escapingFunction val}";
+        cmd = "wrapperPrefixEnv ${esc-fn env} ${esc-fn sep} ${esc-fn val}";
       in
       "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
     ) config.prefixVar
     ++ wlib.dag.lmap (
       tuple:
       with builtins;
+      esc-fn:
       let
         env = elemAt tuple 0;
         sep = elemAt tuple 1;
         val = elemAt tuple 2;
-        cmd = "wrapperSuffixEnv ${config.escapingFunction env} ${config.escapingFunction sep} ${config.escapingFunction val}";
+        cmd = "wrapperSuffixEnv ${esc-fn env} ${esc-fn sep} ${esc-fn val}";
       in
       "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
     ) config.suffixVar
     ++ wlib.dag.lmap (
       tuple:
       with builtins;
+      esc-fn:
       let
         env = elemAt tuple 0;
         sep = elemAt tuple 1;
         val = elemAt tuple 2;
-        cmd = "wrapperPrefixEnv ${config.escapingFunction env} ${config.escapingFunction sep} ";
+        cmd = "wrapperPrefixEnv ${esc-fn env} ${esc-fn sep} ";
       in
-      ''echo ${lib.escapeShellArg cmd}"$(cat ${config.escapingFunction val})" >> $out/bin/${config.binName}''
+      ''echo ${lib.escapeShellArg cmd}"$(cat ${esc-fn val})" >> $out/bin/${config.binName}''
     ) config.prefixContent
     ++ wlib.dag.lmap (
       tuple:
       with builtins;
+      esc-fn:
       let
         env = elemAt tuple 0;
         sep = elemAt tuple 1;
         val = elemAt tuple 2;
-        cmd = "wrapperSuffixEnv ${config.escapingFunction env} ${config.escapingFunction sep} ";
+        cmd = "wrapperSuffixEnv ${esc-fn env} ${esc-fn sep} ";
       in
-      ''echo ${lib.escapeShellArg cmd}"$(cat ${config.escapingFunction val})" >> $out/bin/${config.binName}''
+      ''echo ${lib.escapeShellArg cmd}"$(cat ${esc-fn val})" >> $out/bin/${config.binName}''
     ) config.suffixContent
     ++ wlib.dag.lmap (
-      dir: "echo ${lib.escapeShellArg "cd ${config.escapingFunction dir}"} >> $out/bin/${config.binName}"
+      dir: esc-fn: "echo ${lib.escapeShellArg "cd ${esc-fn dir}"} >> $out/bin/${config.binName}"
     ) config.chdir
     ++ wlib.dag.lmap (
-      cmd: "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
+      cmd: _: "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
     ) config.runShell;
 
   shellcmds = lib.optionals (shellcmdsdal != [ ]) (
     wlib.dag.sortAndUnwrap {
       dag = shellcmdsdal;
-      mapIfOk = v: v.data;
+      mapIfOk = v: v.data (if (v.esc-fn or null) != null then v.esc-fn else config.escapingFunction);
     }
   );
 

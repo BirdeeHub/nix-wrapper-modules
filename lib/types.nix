@@ -1,4 +1,14 @@
 { wlib, lib }:
+let
+  extradagopts = {
+    extraOptions = {
+      esc-fn = lib.mkOption {
+        type = lib.types.nullOr (lib.types.functionTo lib.types.str);
+        default = null;
+      };
+    };
+  };
+in
 {
   /**
     Arguments:
@@ -33,7 +43,27 @@
   dagOf = wlib.dag.dagOf;
 
   /**
+    same as `dalOf` except with an extra field `esc-fn`
+
+    esc-fn is to be null, or a function that returns a string
+
+    used by `wlib.modules.makeWrapper`
+  */
+  dalWithEsc = wlib.dag.dalWith extradagopts;
+
+  /**
+    same as `dagOf` except with an extra field `esc-fn`
+
+    esc-fn is to be null, or a function that returns a string
+
+    used by `wlib.modules.makeWrapper`
+  */
+  dagWithEsc = wlib.dag.dagWith extradagopts;
+
+  /**
     Type for a value that can be converted to string `"${like_this}"`
+
+    used by `wlib.modules.makeWrapper`
   */
   stringable = lib.mkOptionType {
     name = "stringable";
@@ -68,14 +98,14 @@
 
     `len: wlib.types.dalOf (wlib.types.fixedList len wlib.types.stringable)`
   */
-  wrapperFlags = len: wlib.types.dalOf (wlib.types.fixedList len wlib.types.stringable);
+  wrapperFlags = len: wlib.types.dalWithEsc (wlib.types.fixedList len wlib.types.stringable);
 
   /**
     DAL (list) of (stringable or list of stringable)
 
     More flexible than `wlib.types.wrapperFlags`, allows single items, or lists of items of varied length
   */
-  wrapperFlag = wlib.types.dalOf (
+  wrapperFlag = wlib.types.dalWithEsc (
     lib.types.oneOf [
       wlib.types.stringable
       (lib.types.listOf wlib.types.stringable)

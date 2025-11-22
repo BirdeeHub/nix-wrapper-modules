@@ -47,7 +47,7 @@
     '';
   };
   options.unsetVar = lib.mkOption {
-    type = wlib.types.dalOf lib.types.str;
+    type = wlib.types.dalWithEsc lib.types.str;
     default = [ ];
     description = ''
       --unset VAR
@@ -56,7 +56,7 @@
     '';
   };
   options.runShell = lib.mkOption {
-    type = wlib.types.dalOf wlib.types.stringable;
+    type = wlib.types.dalWithEsc wlib.types.stringable;
     default = [ ];
     description = ''
       --run COMMAND
@@ -65,7 +65,7 @@
 
       This option takes a list.
 
-      Any entry can instead be of type `{ data, name ? null, before ? [], after ? [] }`
+      Any entry can instead be of type `{ data, name ? null, before ? [], after ? [], esc-fn ? null }`
 
       This will cause it to be added to the DAG.
 
@@ -73,7 +73,7 @@
     '';
   };
   options.chdir = lib.mkOption {
-    type = wlib.types.dalOf wlib.types.stringable;
+    type = wlib.types.dalWithEsc wlib.types.stringable;
     default = [ ];
     description = ''
       --chdir DIR
@@ -108,7 +108,7 @@
       This option takes a list. To group them more strongly,
       option may take a list of lists as well.
 
-      Any entry can instead be of type `{ data, name ? null, before ? [], after ? [] }`
+      Any entry can instead be of type `{ data, name ? null, before ? [], after ? [], esc-fn ? null }`
 
       This will cause it to be added to the DAG.
 
@@ -139,7 +139,7 @@
       This option takes a list. To group them more strongly,
       option may take a list of lists as well.
 
-      Any entry can instead be of type `{ data, name ? null, before ? [], after ? [] }`
+      Any entry can instead be of type `{ data, name ? null, before ? [], after ? [], esc-fn ? null }`
 
       This will cause it to be added to the DAG.
 
@@ -217,7 +217,7 @@
   options.flags = lib.mkOption {
     type =
       with lib.types;
-      wlib.types.dagOf (
+      wlib.types.dagWithEsc (
         nullOr (oneOf [
           bool
           wlib.types.stringable
@@ -237,7 +237,7 @@
 
       This option takes a set.
 
-      Any entry can instead be of type `{ data, before ? [], after ? [] }`
+      Any entry can instead be of type `{ data, before ? [], after ? [], esc-fn ? null }`
 
       This will cause it to be added to the DAG,
       which will cause the resulting wrapper argument to be sorted accordingly
@@ -272,7 +272,7 @@
     '';
   };
   options.env = lib.mkOption {
-    type = wlib.types.dagOf wlib.types.stringable;
+    type = wlib.types.dagWithEsc wlib.types.stringable;
     default = { };
     example = {
       "XDG_DATA_HOME" = "/somewhere/on/your/machine";
@@ -282,14 +282,14 @@
 
       This option takes a set.
 
-      Any entry can instead be of type `{ data, before ? [], after ? [] }`
+      Any entry can instead be of type `{ data, before ? [], after ? [], esc-fn ? null }`
 
       This will cause it to be added to the DAG,
       which will cause the resulting wrapper argument to be sorted accordingly
     '';
   };
   options.envDefault = lib.mkOption {
-    type = wlib.types.dagOf wlib.types.stringable;
+    type = wlib.types.dagWithEsc wlib.types.stringable;
     default = { };
     example = {
       "XDG_DATA_HOME" = "/only/if/not/set";
@@ -301,7 +301,7 @@
 
       This option takes a set.
 
-      Any entry can instead be of type `{ data, before ? [], after ? [] }`
+      Any entry can instead be of type `{ data, before ? [], after ? [], esc-fn ? null }`
 
       This will cause it to be added to the DAG,
       which will cause the resulting wrapper argument to be sorted accordingly
