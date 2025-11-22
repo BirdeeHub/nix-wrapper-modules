@@ -69,6 +69,7 @@ in
     name = "stringable";
     description = "str|path|drv";
     check = lib.isStringLike;
+    inherit (lib.types.str) merge;
   };
 
   /**
