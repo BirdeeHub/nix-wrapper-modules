@@ -29,8 +29,8 @@ in
   evalModules =
     evalArgs:
     let
-      res =
-        lib.evalModules ({
+      res = lib.evalModules (
+        {
           modules = [
             ./core.nix
           ]
@@ -52,7 +52,8 @@ in
         // (builtins.removeAttrs evalArgs [
           "modules"
           "specialArgs"
-        ]));
+        ])
+      );
     in
     res;
 
