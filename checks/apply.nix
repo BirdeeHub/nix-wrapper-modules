@@ -166,7 +166,7 @@ pkgs.runCommand "extend-test" { } ''
 
   # Check triple apply - greeting "extended" (the one with mkForce wins)
   if ! grep -q "extended" "$tripleScript"; then
-    echo "FAIL: triple apply should have 'triple' greeting"
+    echo "FAIL: triple apply should have 'extended' greeting"
     cat "$tripleScript"
     exit 1
   fi
