@@ -37,6 +37,7 @@ let
     mkOrder
     mkOption
     mkOptionType
+    isFunction
     types
     ;
   inherit (lib.attrsets) filterAttrs;
@@ -64,29 +65,53 @@ let
     let
       isStrict = if isBool (settings.strict or true) then settings.strict or true else true;
       extraOptions = if isAttrs (settings.extraOptions or { }) then settings.extraOptions or { } else { };
-      submoduleType = types.submodule (
-        { config, name, ... }:
-        (if isStrict then { } else { freeformType = types.attrsOf types.raw; })
-        // {
-          options = extraOptions // {
-            name = mkOption {
-              type = types.nullOr types.str;
-              default = if isDal then null else name;
-            };
-            data = mkOption { type = elemType; };
-            after = mkOption {
-              type = with types; listOf str;
-              default = [ ];
-            };
-            before = mkOption {
-              type = with types; listOf str;
-              default = [ ];
-            };
-          };
-          config = mkIf (elemType.name == "submodule") {
-            data._module.args.dagName = config.name;
-          };
+      defaultNameFn =
+        if isFunction (settings.defaultNameFn or null) then
+          settings.defaultNameFn
+        else
+          { name, isDal, ... }: if isDal then null else name;
+      submoduleType = types.submoduleWith (
+        {
+          shorthandOnlyDefinesConfig =
+            if isBool (settings.shorthandOnlyDefinesConfig or null) then
+              settings.shorthandOnlyDefinesConfig
+            else
+              true;
+          modules = [
+            (
+              { config, name, ... }:
+              (if isStrict then { } else { freeformType = types.attrsOf types.raw; })
+              // {
+                options = extraOptions // {
+                  name = mkOption {
+                    type = types.nullOr types.str;
+                    default = defaultNameFn { inherit isDal name config; };
+                  };
+                  data = mkOption { type = elemType; };
+                  after = mkOption {
+                    type = with types; listOf str;
+                    default = [ ];
+                  };
+                  before = mkOption {
+                    type = with types; listOf str;
+                    default = [ ];
+                  };
+                };
+                config = mkIf (elemType.name == "submodule") {
+                  data._module.args.dagName = config.name;
+                };
+              }
+            )
+          ]
+          ++ (if isList (settings.modules or null) then settings.modules else [ ]);
         }
+        // builtins.removeAttrs settings [
+          "strict"
+          "modules"
+          "extraOptions"
+          "shorthandOnlyDefinesConfig"
+          "defaultNameFn"
+        ]
       );
       knownKeys = [
         "name"
@@ -154,7 +179,11 @@ in
 
   /**
     Arguments:
-    - `settings`: `{ strict ? true, extraOptions ? {} }`
+    - `settings`:
+        - `strict ? true`
+        - `extraOptions ? {}`
+        - `defaultNameFn ? ({ config, name, isDal, ... }: if isDal then null else name)`
+        - ... other arguments for `lib.types.submoduleWith`
     - `elemType`: `type`
 
     dagWith accepts an attrset as its first parameter BEFORE elemType.
@@ -214,7 +243,11 @@ in
 
   /**
     Arguments:
-    - `settings`: `{ strict ? true, extraOptions ? {} }`
+    - `settings`:
+      - `strict ? true`
+      - `extraOptions ? {}`
+      - `defaultNameFn ? ({ config, name, isDal, ... }: if isDal then null else name)`
+      - ... other arguments for `lib.types.submoduleWith`
     - `elemType`: `type`
 
     dalWith accepts an attrset as its first parameter BEFORE elemType.
