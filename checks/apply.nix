@@ -2,7 +2,7 @@
   pkgs,
   self,
 }:
-
+# TODO: make sure theres no other stuff passing on accident in here
 let
   # Create a simple wrapper module
   helloModule =
@@ -164,8 +164,8 @@ pkgs.runCommand "extend-test" { } ''
     exit 1
   fi
 
-  # Check triple apply - greeting should be "triple" (newest wins)
-  if ! grep -q "triple" "$tripleScript"; then
+  # Check triple apply - greeting "extended" (the one with mkForce wins)
+  if ! grep -q "extended" "$tripleScript"; then
     echo "FAIL: triple apply should have 'triple' greeting"
     cat "$tripleScript"
     exit 1
