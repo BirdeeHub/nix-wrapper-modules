@@ -3,7 +3,7 @@
   lib,
   wlib,
   ...
-}:
+}@args:
 {
   options = {
     meta = {
@@ -121,6 +121,11 @@
       default = null;
       description = ''
         Arguments:
+
+        This option takes a function receiving the following arguments:
+
+        module arguments + pkgs.callPackage
+
         ```
         {
           config,
@@ -144,6 +149,9 @@
         This is usually an option you will never have to redefine.
 
         This option takes a function receiving the following arguments:
+
+        module arguments + `wrapper` + pkgs.callPackage
+
         ```
         {
           wlib,
@@ -152,6 +160,7 @@
           ... # <- anything you can get from pkgs.callPackage
         }:
         ```
+
         The function is to return a string which will be added to the buildCommand of the wrapper.
 
         It is in charge of linking `wrapper` and `config.outputs` to the final package.
@@ -289,28 +298,32 @@
                     else
                       ""
                   )
-                  + pkgs.callPackage final.passthru.configuration.symlinkScript {
-                    config = final.passthru.configuration;
-                    inherit
-                      wlib
-                      binName
-                      outputs
-                      exePath
-                      ;
-                    wrapper =
-                      if final.passthru.configuration.wrapperFunction == null then
-                        null
-                      else
-                        pkgs.callPackage final.passthru.configuration.wrapperFunction {
-                          config = final.passthru.configuration;
-                          inherit
-                            wlib
-                            binName
-                            outputs
-                            exePath
-                            ;
-                        };
-                  }
+                  + pkgs.callPackage final.passthru.configuration.symlinkScript (
+                    builtins.removeAttrs args [ "config" ]
+                    // {
+                      config = final.passthru.configuration;
+                      inherit
+                        binName
+                        outputs
+                        exePath
+                        ;
+                      wrapper =
+                        if final.passthru.configuration.wrapperFunction == null then
+                          null
+                        else
+                          pkgs.callPackage final.passthru.configuration.wrapperFunction (
+                            builtins.removeAttrs args [ "config" ]
+                            // {
+                              config = final.passthru.configuration;
+                              inherit
+                                binName
+                                outputs
+                                exePath
+                                ;
+                            }
+                          );
+                    }
+                  )
                   + (
                     if final.passthru.configuration.sourceStdenv then
                       ''
