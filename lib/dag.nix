@@ -64,7 +64,14 @@ let
     settings: isDal: elemType:
     let
       isStrict = if isBool (settings.strict or true) then settings.strict or true else true;
-      extraOptions = if isAttrs (settings.extraOptions or { }) then settings.extraOptions or { } else { };
+      extraOptions =
+        if isAttrs (settings.extraOptions or null) then
+          _: settings.extraOptions
+        else if isFunction (settings.extraOptions or null) then
+          settings.extraOptions
+        else
+          _: { };
+      specialArgs = if isAttrs (settings.specialArgs or null) then settings.specialArgs else { };
       defaultNameFn =
         if isFunction (settings.defaultNameFn or null) then
           settings.defaultNameFn
@@ -72,6 +79,9 @@ let
           { name, isDal, ... }: if isDal then null else name;
       submoduleType = types.submoduleWith (
         {
+          specialArgs = specialArgs // {
+            inherit isDal;
+          };
           shorthandOnlyDefinesConfig =
             if isBool (settings.shorthandOnlyDefinesConfig or null) then
               settings.shorthandOnlyDefinesConfig
@@ -79,13 +89,14 @@ let
               true;
           modules = [
             (
-              { config, name, ... }:
+              # NOTE: if name is not declared, it doesnt get added.
+              { config, name, ... }@args:
               (if isStrict then { } else { freeformType = types.attrsOf types.raw; })
               // {
-                options = extraOptions // {
+                options = (extraOptions args) // {
                   name = mkOption {
                     type = types.nullOr types.str;
-                    default = defaultNameFn { inherit isDal name config; };
+                    default = defaultNameFn args;
                   };
                   data = mkOption { type = elemType; };
                   after = mkOption {
@@ -109,6 +120,7 @@ let
           "strict"
           "modules"
           "extraOptions"
+          "specialArgs"
           "shorthandOnlyDefinesConfig"
           "defaultNameFn"
         ]
