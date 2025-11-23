@@ -29,7 +29,6 @@ let
     isString
     isBool
     mapAttrs
-    filter
     isList
     toJSON
     ;
@@ -41,7 +40,7 @@ let
     types
     ;
   inherit (lib.attrsets) filterAttrs;
-  inherit (lib.lists) toposort optionals;
+  inherit (lib.lists) toposort;
   inherit (wlib.dag)
     isEntry
     entryBetween
@@ -85,7 +84,7 @@ let
             };
           };
           config = mkIf (elemType.name == "submodule") {
-            data._module.args.dagName = if isDal then config.name else name;
+            data._module.args.dagName = config.name;
           };
         }
       );
@@ -344,54 +343,32 @@ in
   topoSort =
     dag:
     let
-      hasname = v: isString (v.name or null);
-      dalBefore = dal: name: filter (v: elem name (v.before or [ ])) dal;
-      normalizeDal =
-        dal:
-        map (
-          v:
-          v
-          // {
-            name = if hasname v then v.name else null;
-            before = v.before or [ ];
-            data = v.data or (throw "DAG entries must have a data attribute");
-            after = (v.after or [ ]) ++ optionals (hasname v) (dalBefore dag v.name);
-          }
-        ) dal;
-      dagBefore = dag: name: attrNames (filterAttrs (_n: v: elem name (v.before or [ ])) dag);
       normalizeDag =
         dag:
         attrValues (
           mapAttrs (
             n: v:
-            let
+            v
+            // {
               name =
-                if hasname v then
+                if isString (v.name or null) then
                   v.name
                 else if isString n then
                   n
                 else
                   null;
-            in
-            v
-            // {
-              inherit name;
-              before = v.before or [ ];
-              data = v.data or (throw "DAG entries must have a data attribute");
-              after = (v.after or [ ]) ++ dagBefore dag name;
             }
           ) dag
         );
       before =
         a: b:
-        if a.name != null then
-          elem a.name (b.after or [ ])
-        else if b.name != null then
-          !elem b.name (a.after or [ ])
-        else
-          false;
+        let
+          aName = a.name or null;
+          bName = b.name or null;
+        in
+        (aName != null && elem aName (b.after or [ ])) || (bName != null && elem bName (a.before or [ ]));
     in
-    toposort before (if isList dag then normalizeDal dag else normalizeDag dag);
+    toposort before (if isList dag then dag else normalizeDag dag);
 
   /**
     Applies a function to each element of the given DAG.
