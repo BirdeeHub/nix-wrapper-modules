@@ -8,42 +8,38 @@
 let
   arg0 = if config.argv0 == null then "\"$0\"" else config.escapingFunction config.argv0;
   generateArgsFromFlags =
-    flagSeparator: dag_flags:
-    wlib.dag.sortAndUnwrap {
-      dag = (
-        wlib.dag.gmap (
-          name: value:
-          if value == false || value == null then
-            [ ]
-          else if value == true then
+    flagSeparator:
+    wlib.dag.mapDagToDal (
+      name: value:
+      if value == false || value == null then
+        [ ]
+      else if value == true then
+        [
+          name
+        ]
+      else if lib.isList value then
+        lib.concatMap (
+          v:
+          if lib.trim flagSeparator == "" then
             [
               name
-            ]
-          else if lib.isList value then
-            lib.concatMap (
-              v:
-              if lib.trim flagSeparator == "" then
-                [
-                  name
-                  (toString v)
-                ]
-              else
-                [
-                  "${name}${flagSeparator}${toString v}"
-                ]
-            ) value
-          else if lib.trim flagSeparator == "" then
-            [
-              name
-              (toString value)
+              (toString v)
             ]
           else
             [
-              "${name}${flagSeparator}${toString value}"
+              "${name}${flagSeparator}${toString v}"
             ]
-        ) dag_flags
-      );
-    };
+        ) value
+      else if lib.trim flagSeparator == "" then
+        [
+          name
+          (toString value)
+        ]
+      else
+        [
+          "${name}${flagSeparator}${toString value}"
+        ]
+    );
   preFlagStr = builtins.concatStringsSep " " (
     wlib.dag.sortAndUnwrap {
       dag =

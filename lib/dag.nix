@@ -51,6 +51,8 @@ let
     dagWith
     dalWith
     topoSort
+    gmap
+    dagToDal
     ;
   mkExtraFieldsMsg =
     settings:
@@ -186,6 +188,9 @@ in
     internal structure of the DAG values. To give access to the
     "actual" attribute name a new submodule argument is provided with
     the name `dagName`.
+
+    The `config.optionname` value from the associated option
+    will be normalized such that all items are DAG entries
   */
   dagOf = dagWith { };
 
@@ -206,6 +211,9 @@ in
     You may include `{ extraOptions = { lib.mkOption ... }; }`
     to add extra fields to the dagEntryOf type to have extra type checked values,
     even if strict is true
+
+    The `config.optionname` value from the associated option
+    will be normalized such that all items are DAG entries
   */
   dagWith =
     settings: elemType:
@@ -250,6 +258,9 @@ in
     internal structure of the DAG values. To give access to the
     "actual" attribute name a new submodule argument is provided with
     the name `dagName`.
+
+    The `config.optionname` value from the associated option
+    will be normalized such that all items are DAG entries
   */
   dalOf = dalWith { };
 
@@ -270,6 +281,9 @@ in
     You may include `{ extraOptions = { lib.mkOption ... }; }`
     to add extra fields to the dagEntryOf type to have extra type checked values,
     even if strict is true
+
+    The `config.optionname` value from the associated option
+    will be normalized such that all items are DAG entries
   */
   dalWith =
     settings: elemType:
@@ -323,6 +337,8 @@ in
 
     Alternatively, it can take a `dal` (dependency list) instead.
     Which is a list of such entries.
+
+    Requires values to all be DAG entries (in other words, have a `value.data` field)
 
     Internally this function uses the `topoSort` function in
     `<nixpkgs/lib/lists.nix>` and its value is accordingly.
@@ -388,23 +404,6 @@ in
   topoSort =
     dag:
     let
-      normalizeDag =
-        dag:
-        attrValues (
-          mapAttrs (
-            n: v:
-            v
-            // {
-              name =
-                if isString (v.name or null) then
-                  v.name
-                else if isString n then
-                  n
-                else
-                  null;
-            }
-          ) dag
-        );
       before =
         a: b:
         let
@@ -413,15 +412,49 @@ in
         in
         (aName != null && elem aName (b.after or [ ])) || (bName != null && elem bName (a.before or [ ]));
     in
-    toposort before (if isList dag then dag else normalizeDag dag);
+    toposort before (if isList dag then dag else dagToDal dag);
 
   /**
     Applies a function to each element of the given DAG.
+
+    Requires values to all be DAG entries (in other words, have a `value.data` field)
   */
   gmap = f: mapAttrs (n: v: v // { data = f n v.data; });
 
   /**
+    wlib.dag.gmap but returns the result as a DAL
+
+    Requires values to all be DAG entries (in other words, have a `value.data` field)
+  */
+  mapDagToDal = f: dag: dagToDal (gmap f dag);
+
+  /**
+    converts a DAG to a DAL
+
+    Requires values to all be DAG entries (in other words, have a `value.data` field)
+  */
+  dagToDal =
+    dag:
+    attrValues (
+      mapAttrs (
+        n: v:
+        v
+        // {
+          name =
+            if isString (v.name or null) then
+              v.name
+            else if isString n then
+              n
+            else
+              null;
+        }
+      ) dag
+    );
+
+  /**
     Applies a function to each element of the given DAL.
+
+    Requires values to all be DAG entries (in other words, have a `value.data` field)
   */
   lmap = f: map (v: v // { data = f v.data; });
 
@@ -503,6 +536,8 @@ in
       mapIfOk ? null,
     }
     ```
+
+    Requires values to all be DAG entries (in other words, have a `value.data` field)
   */
   sortAndUnwrap =
     {
