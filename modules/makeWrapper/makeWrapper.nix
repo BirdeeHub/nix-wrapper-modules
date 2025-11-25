@@ -62,26 +62,18 @@ let
     )
   ];
   envVarsDefault = lib.optionals (config.envDefault != { }) (
-    wlib.dag.sortAndUnwrap {
-      dag = (
-        wlib.dag.gmap (n: v: [
-          "--set-default"
-          n
-          (toString v)
-        ]) config.envDefault
-      );
-    }
+    wlib.dag.mapDagToDal (n: v: [
+      "--set-default"
+      n
+      (toString v)
+    ]) config.envDefault
   );
   envVars = lib.optionals (config.env != { }) (
-    wlib.dag.sortAndUnwrap {
-      dag = (
-        wlib.dag.gmap (n: v: [
-          "--set"
-          n
-          (toString v)
-        ]) config.env
-      );
-    }
+    wlib.dag.mapDagToDal (n: v: [
+      "--set"
+      n
+      (toString v)
+    ]) config.env
   );
   flags = lib.optionals (config.flags != { }) (
     generateArgsFromFlags (config.flagSeparator or " ") config.flags
