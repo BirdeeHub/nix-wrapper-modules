@@ -64,23 +64,7 @@ let
       + (builtins.concatStringsSep " " commands)
     );
 
-  module_desc = {
-    makeWrapper = ''
-      An implementation of the `makeWrapper` interface via type safe module options.
-
-      Allows you to choose one of several underlying implementations of the `makeWrapper` interface.
-
-      Imported by `wlib.modules.default`
-    '';
-    symlinkScript = ''
-      Adds extra options compared to the default `symlinkScript` option value.
-
-      Imported by `wlib.modules.default`
-    '';
-    default = ''
-      This module imports both `wlib.modules.makeWrapper` and `wlib.modules.symlinkScript` for convenience
-    '';
-  };
+  module_desc = import ./helper-mod-desc.nix;
 
   module_docs = builtins.mapAttrs (buildModuleDocs "modules" module_desc) wlib.modules;
   wrapper_docs = builtins.mapAttrs (buildModuleDocs "wrapperModules" { }) wlib.wrapperModules;
