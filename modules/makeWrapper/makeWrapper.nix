@@ -6,47 +6,45 @@
 }:
 let
   generateArgsFromFlags =
-    flagSeparator: dag_flags:
-    wlib.dag.sortAndUnwrap {
-      dag = wlib.dag.gmap (
-        name: value:
-        if value == false || value == null then
-          [ ]
-        else if value == true then
-          [
-            "--add-flag"
-            name
-          ]
-        else if lib.isList value then
-          lib.concatMap (
-            v:
-            if lib.trim flagSeparator == "" then
-              [
-                "--add-flag"
-                name
-                "--add-flag"
-                (toString v)
-              ]
-            else
-              [
-                "--add-flag"
-                "${name}${flagSeparator}${toString v}"
-              ]
-          ) value
-        else if lib.trim flagSeparator == "" then
-          [
-            "--add-flag"
-            name
-            "--add-flag"
-            (toString value)
-          ]
-        else
-          [
-            "--add-flag"
-            "${name}${flagSeparator}${toString value}"
-          ]
-      ) dag_flags;
-    };
+    flagSeparator:
+    wlib.dag.mapDagToDal (
+      name: value:
+      if value == false || value == null then
+        [ ]
+      else if value == true then
+        [
+          "--add-flag"
+          name
+        ]
+      else if lib.isList value then
+        lib.concatMap (
+          v:
+          if lib.trim flagSeparator == "" then
+            [
+              "--add-flag"
+              name
+              "--add-flag"
+              (toString v)
+            ]
+          else
+            [
+              "--add-flag"
+              "${name}${flagSeparator}${toString v}"
+            ]
+        ) value
+      else if lib.trim flagSeparator == "" then
+        [
+          "--add-flag"
+          name
+          "--add-flag"
+          (toString value)
+        ]
+      else
+        [
+          "--add-flag"
+          "${name}${flagSeparator}${toString value}"
+        ]
+    );
 
   argv0 = [
     (
