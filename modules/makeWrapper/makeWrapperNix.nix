@@ -75,24 +75,20 @@ let
       in
       "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
     ) config.unsetVar
-    ++ wlib.dag.sortAndUnwrap {
-      dag = wlib.dag.gmap (
-        n: v: esc-fn:
-        let
-          cmd = "wrapperSetEnv ${esc-fn n} ${esc-fn v}";
-        in
-        "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
-      ) config.env;
-    }
-    ++ wlib.dag.sortAndUnwrap {
-      dag = wlib.dag.gmap (
-        n: v: esc-fn:
-        let
-          cmd = "wrapperSetEnvDefault ${esc-fn n} ${esc-fn v}";
-        in
-        "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
-      ) config.envDefault;
-    }
+    ++ wlib.dag.mapDagToDal (
+      n: v: esc-fn:
+      let
+        cmd = "wrapperSetEnv ${esc-fn n} ${esc-fn v}";
+      in
+      "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
+    ) config.env
+    ++ wlib.dag.mapDagToDal (
+      n: v: esc-fn:
+      let
+        cmd = "wrapperSetEnvDefault ${esc-fn n} ${esc-fn v}";
+      in
+      "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
+    ) config.envDefault
     ++ wlib.dag.lmap (
       tuple:
       with builtins;
