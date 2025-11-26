@@ -93,7 +93,7 @@ let
             (
               # NOTE: if name is not declared, it doesnt get added.
               { config, name, ... }@args:
-              (if isStrict then { } else { freeformType = types.attrsOf types.raw; })
+              (if isStrict then { } else { freeformType = wlib.types.attrsRecursive; })
               // {
                 options = (extraOptions args) // {
                   name = mkOption {
