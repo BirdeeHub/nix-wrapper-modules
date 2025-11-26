@@ -93,7 +93,7 @@ let
               { config, name, ... }@args:
               (if isStrict then { } else { freeformType = wlib.types.attrsRecursive; })
               // {
-                options = (extraOptions args) // {
+                options = extraOptions // {
                   name = mkOption {
                     type = types.nullOr types.str;
                     default = defaultNameFn args;
