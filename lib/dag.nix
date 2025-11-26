@@ -68,11 +68,9 @@ let
       isStrict = if isBool (settings.strict or true) then settings.strict or true else true;
       extraOptions =
         if isAttrs (settings.extraOptions or null) then
-          _: settings.extraOptions
-        else if isFunction (settings.extraOptions or null) then
           settings.extraOptions
         else
-          _: { };
+          { };
       specialArgs = if isAttrs (settings.specialArgs or null) then settings.specialArgs else { };
       defaultNameFn =
         if isFunction (settings.defaultNameFn or null) then
