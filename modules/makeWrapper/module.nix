@@ -215,15 +215,7 @@
     '';
   };
   options.flags = lib.mkOption {
-    type =
-      with lib.types;
-      wlib.types.dagWithEsc (
-        nullOr (oneOf [
-          bool
-          wlib.types.stringable
-          (listOf wlib.types.stringable)
-        ])
-      );
+    type = (import ./genArgsFromFlags.nix { inherit lib wlib; }).flagDag;
     default = { };
     example = {
       "--config" = "\${./nixPath}";
@@ -237,7 +229,9 @@
 
       This option takes a set.
 
-      Any entry can instead be of type `{ data, before ? [], after ? [], esc-fn ? null }`
+      Any entry can instead be of type `{ data, before ? [], after ? [], esc-fn ? null, sep ? null }`
+
+      The `sep` field may be used to override the value of `config.flagSeparator`
 
       This will cause it to be added to the DAG,
       which will cause the resulting wrapper argument to be sorted accordingly
