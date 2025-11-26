@@ -19,11 +19,11 @@
       {
         extraOptions = {
           esc-fn = lib.mkOption {
-            type = lib.types.nullOr (lib.types.functionTo lib.types.str);
+            type = nullOr (functionTo str);
             default = null;
           };
           sep = lib.mkOption {
-            type = lib.types.nullOr lib.types.str;
+            type = nullOr str;
             default = null;
           };
         };
