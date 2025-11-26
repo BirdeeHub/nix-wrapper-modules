@@ -8,14 +8,7 @@ in
 
   checks = wrapper_mod_res.checks or { } // helper_mod_res.checks or { };
 
-  modules = (helper_mod_res.modules or { }) // {
-    default = {
-      imports = [
-        wlib.modules.symlinkScript
-        wlib.modules.makeWrapper
-      ];
-    };
-  };
+  modules = helper_mod_res.modules or { };
 
   types = import ./types.nix { inherit lib wlib; };
 
