@@ -30,6 +30,15 @@ let
       ]
     ];
   };
+  # test anonymous stay in order
+  wrappedPackage3 = self.lib.wrapPackage {
+    inherit pkgs;
+    package = pkgs.hello;
+    addFlag = [
+      "--greeting"
+      "hi"
+    ];
+  };
 
   mkTest = pkg: /* bash */ ''
     wrapperScript="${pkg}/bin/hello"
@@ -62,7 +71,10 @@ pkgs.runCommand "args-direct-test" { } ''
   echo "Testing direct args list..."
 
   ${mkTest wrappedPackage}
+
   ${mkTest wrappedPackage2}
+
+  ${mkTest wrappedPackage3}
 
   echo "SUCCESS: Direct args test passed"
   touch $out
