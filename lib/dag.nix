@@ -66,11 +66,7 @@ let
     settings: isDal: elemType:
     let
       isStrict = if isBool (settings.strict or true) then settings.strict or true else true;
-      extraOptions =
-        if isAttrs (settings.extraOptions or null) then
-          settings.extraOptions
-        else
-          { };
+      extraOptions = if isAttrs (settings.extraOptions or null) then settings.extraOptions else { };
       specialArgs = if isAttrs (settings.specialArgs or null) then settings.specialArgs else { };
       defaultNameFn =
         if isFunction (settings.defaultNameFn or null) then
