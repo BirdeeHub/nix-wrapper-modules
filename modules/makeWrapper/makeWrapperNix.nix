@@ -6,40 +6,25 @@
   ...
 }:
 let
-  arg0 = if config.argv0 == null then "\"$0\"" else config.escapingFunction config.argv0;
-  generateArgsFromFlags =
-    flagSeparator:
-    wlib.dag.mapDagToDal (
-      name: value:
-      if value == false || value == null then
-        [ ]
-      else if value == true then
-        [
-          name
-        ]
-      else if lib.isList value then
-        lib.concatMap (
-          v:
-          if lib.trim flagSeparator == "" then
-            [
-              name
-              (toString v)
-            ]
-          else
-            [
-              "${name}${flagSeparator}${toString v}"
-            ]
-        ) value
-      else if lib.trim flagSeparator == "" then
-        [
-          name
-          (toString value)
-        ]
-      else
-        [
-          "${name}${flagSeparator}${toString value}"
-        ]
-    );
+  generateArgsFromFlags = (import ./genArgsFromFlags.nix { inherit lib wlib; }).genArgs flaggenfunc;
+  flaggenfunc =
+    is_list: flagSeparator: name: value:
+    if !is_list && (value == false || value == null) then
+      [ ]
+    else if !is_list && value == true then
+      [
+        name
+      ]
+    else if lib.trim flagSeparator == "" && flagSeparator != "" then
+      [
+        name
+        (toString value)
+      ]
+    else
+      [
+        "${name}${flagSeparator}${toString value}"
+      ];
+
   preFlagStr = builtins.concatStringsSep " " (
     wlib.dag.sortAndUnwrap {
       dag =
@@ -160,6 +145,8 @@ let
     ++ lib.optional (config.envDefault != { }) setvardefaultfunc
     ++ lib.optional (config.prefixVar != [ ] || config.suffixContent != [ ]) prefixvarfunc
     ++ lib.optional (config.suffixVar != [ ] || config.suffixContent != [ ]) suffixvarfunc;
+
+  arg0 = if config.argv0 == null then "\"$0\"" else config.escapingFunction config.argv0;
   execcmd = ''
     exec -a ${arg0} ${
       if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
