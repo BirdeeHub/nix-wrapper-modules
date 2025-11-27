@@ -29,7 +29,7 @@
       '';
     };
   };
-  config.extraDrvAttrs.nativeBuildInputs = lib.mkIf ((config.filesToPatch or [ ]) != [ ]) [
+  config.drv.nativeBuildInputs = lib.mkIf ((config.filesToPatch or [ ]) != [ ]) [
     config.pkgs.replace
   ];
   config.symlinkScript = lib.mkDefault (

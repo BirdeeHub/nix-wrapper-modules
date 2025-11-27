@@ -46,7 +46,7 @@ in
   config.flags = {
     "--config" = config."--config".path;
   };
-  config.extraDrvAttrs.phases = [
+  config.drv.phases = [
     "buildPhase"
     "checkPhase"
     "installPhase"
