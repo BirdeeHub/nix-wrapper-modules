@@ -4,43 +4,79 @@
   wlib,
   ...
 }@args:
+let
+  maintainersWithFiles =
+    let
+      maintainer = lib.types.submodule (
+        { name, ... }:
+        {
+          freeformType = lib.types.raw;
+          options = {
+            name = lib.mkOption {
+              type = lib.types.str;
+              default = name;
+              description = "name";
+            };
+            github = lib.mkOption {
+              type = lib.types.str;
+              description = "GitHub username";
+            };
+            githubId = lib.mkOption {
+              type = lib.types.int;
+              description = "GitHub id";
+            };
+            email = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = "email";
+            };
+            matrix = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = "Matrix ID";
+            };
+          };
+        }
+      );
+    in
+    lib.types.listOf maintainer
+    // {
+      name = "maintainersWithFiles";
+      getSubModules = null;
+      merge =
+        loc: defs:
+        (lib.types.listOf maintainer).merge loc (
+          lib.imap1 (
+            n: def:
+            (
+              def
+              // {
+                value = lib.imap1 (
+                  m: def':
+                  maintainer.merge (loc ++ [ "[${toString n}-${toString m}]" ]) [
+                    (
+                      def
+                      // {
+                        value = def' // {
+                          inherit (def) file;
+                        };
+                      }
+                    )
+                  ]
+                ) def.value;
+              }
+            )
+          ) defs
+        );
+    };
+in
 {
+  config.meta.maintainers = lib.mkOverride 1001 [ lib.maintainers.birdee ];
   options = {
     meta = {
       maintainers = lib.mkOption {
-        description = "Maintainers of this wrapper module.";
-        type = lib.types.listOf (
-          lib.types.submodule (
-            { name, ... }:
-            {
-              options = {
-                name = lib.mkOption {
-                  type = lib.types.str;
-                  default = name;
-                  description = "name";
-                };
-                github = lib.mkOption {
-                  type = lib.types.str;
-                  description = "GitHub username";
-                };
-                githubId = lib.mkOption {
-                  type = lib.types.int;
-                  description = "GitHub id";
-                };
-                email = lib.mkOption {
-                  type = lib.types.nullOr lib.types.str;
-                  default = null;
-                  description = "email";
-                };
-                matrix = lib.mkOption {
-                  type = lib.types.nullOr lib.types.str;
-                  default = null;
-                  description = "Matrix ID";
-                };
-              };
-            }
-          )
-        );
+        description = ''Maintainers of this module.'';
+        type = maintainersWithFiles;
         default = [ ];
       };
       platforms = lib.mkOption {
