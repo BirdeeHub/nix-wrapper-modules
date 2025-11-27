@@ -297,9 +297,11 @@ in
             outputs
             exePath
             ;
+          meta = (package.meta or { }) // {
+            mainProgram = binName;
+          };
         in
         pkgs.stdenv.mkDerivation (
-          final:
           {
             passthru = passthru // {
               wrap = passthru.configuration.wrap;
@@ -325,13 +327,10 @@ in
             name = package.pname or package.name or binName;
             pname = package.pname or package.name or binName;
             inherit outputs;
-            meta = (package.meta or { }) // {
-              mainProgram = binName;
-            };
+            inherit meta;
             version =
-              package.version or final.meta.version or package.revision or final.meta.revision or package.rev
-                or final.meta.rev or package.release or final.meta.release or package.releaseDate
-                  or final.meta.releaseDate or "master";
+              package.version or meta.version or package.revision or meta.revision or package.rev or meta.rev
+                or package.release or meta.release or package.releaseDate or meta.releaseDate or "master";
             phases = [
               "buildPhase"
               "checkPhase"
