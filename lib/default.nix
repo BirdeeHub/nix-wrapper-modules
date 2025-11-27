@@ -5,6 +5,7 @@
   checks ? wrappers_dir.checks or { } // modules_dir.checks or { },
   wrapperModules ? wrappers_dir.wrapperModules or { },
   modules ? modules_dir.modules or { },
+  maintainers ? import ../maintainers { inherit lib; },
   modulesPath ? ../.,
   wlib ? import ./lib.nix {
     inherit
@@ -14,6 +15,7 @@
       modules
       checks
       modulesPath
+      maintainers
       ;
   },
 }:

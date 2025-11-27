@@ -51,6 +51,6 @@ in
 
   config.package = lib.mkDefault config.pkgs.mako;
 
-  config.meta.maintainers = [ lib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
   config.meta.platforms = lib.platforms.linux;
 }

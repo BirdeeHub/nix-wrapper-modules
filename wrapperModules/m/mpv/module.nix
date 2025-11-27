@@ -51,5 +51,5 @@
       scripts = config.scripts;
     }
   );
-  config.meta.maintainers = [ lib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

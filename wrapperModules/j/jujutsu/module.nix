@@ -27,6 +27,6 @@ in
       JJ_CONFIG = builtins.toString (tomlFmt.generate "jujutsu.toml" config.settings);
     };
 
-    meta.maintainers = [ lib.maintainers.birdee ];
+    meta.maintainers = [ wlib.maintainers.birdee ];
   };
 }

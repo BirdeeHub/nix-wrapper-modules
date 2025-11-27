@@ -38,5 +38,5 @@
 
   config.package = lib.mkDefault config.pkgs.wezterm;
 
-  config.meta.maintainers = [ lib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

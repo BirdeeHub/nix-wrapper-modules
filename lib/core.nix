@@ -10,7 +10,7 @@ let
       maintainer = lib.types.submodule (
         { name, ... }:
         {
-          freeformType = lib.types.raw;
+          freeformType = wlib.types.attrsRecursive;
           options = {
             name = lib.mkOption {
               type = lib.types.str;
@@ -48,30 +48,22 @@ let
         (lib.types.listOf maintainer).merge loc (
           lib.imap1 (
             n: def:
-            (
-              def
-              // {
-                value = lib.imap1 (
-                  m: def':
-                  maintainer.merge (loc ++ [ "[${toString n}-${toString m}]" ]) [
-                    (
-                      def
-                      // {
-                        value = def' // {
-                          inherit (def) file;
-                        };
-                      }
-                    )
-                  ]
-                ) def.value;
-              }
-            )
+            def
+            // {
+              value = lib.imap1 (
+                m: def':
+                def'
+                // {
+                  inherit (def) file;
+                }
+              ) def.value;
+            }
           ) defs
         );
     };
 in
 {
-  config.meta.maintainers = lib.mkOverride 1001 [ lib.maintainers.birdee ];
+  config.meta.maintainers = lib.mkOverride 1001 [ wlib.maintainers.birdee ];
   config.drv = lib.mkIf (config.extraDrvAttrs != null) (
     lib.warn "extraDrvAttrs has been renamed to `config.drv`" config.extraDrvAttrs
   );
