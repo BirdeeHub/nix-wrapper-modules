@@ -46,14 +46,8 @@ in
   config.flags = {
     "--config" = config."--config".path;
   };
-  config.drv.phases = [
-    "buildPhase"
-    "checkPhase"
-    "installPhase"
-    "installCheckPhase"
-    # "fixupPhase" # mako doesnt like fixupPhase
-    "distPhase"
-  ];
+  # mako doesnt like fixupPhase
+  config.drv.dontFixup = true;
 
   config.package = lib.mkDefault config.pkgs.mako;
 
