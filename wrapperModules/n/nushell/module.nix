@@ -39,5 +39,5 @@
 
   config.package = lib.mkDefault config.pkgs.nushell;
 
-  config.meta.maintainers = [ lib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

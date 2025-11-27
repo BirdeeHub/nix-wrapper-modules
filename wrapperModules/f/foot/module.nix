@@ -23,6 +23,6 @@ in
     "--config" = iniFmt.generate "foot.ini" config.settings;
   };
   config.package = lib.mkDefault config.pkgs.foot;
-  config.meta.maintainers = [ lib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
   config.meta.platforms = lib.platforms.linux;
 }

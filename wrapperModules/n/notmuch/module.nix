@@ -46,5 +46,5 @@ in
   };
   config.package = config.pkgs.notmuch;
   config.env.NOTMUCH_CONFIG = config.configFile.path;
-  config.meta.maintainers = [ lib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

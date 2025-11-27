@@ -5,9 +5,15 @@
   modules,
   checks,
   modulesPath,
+  maintainers,
 }:
 {
-  inherit wrapperModules modules checks;
+  inherit
+    wrapperModules
+    modules
+    checks
+    maintainers
+    ;
 
   types = import ./types.nix { inherit lib wlib; };
 

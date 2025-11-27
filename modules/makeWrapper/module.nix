@@ -385,7 +385,7 @@
   config.wrapperFunction = lib.mkDefault (
     import (if config.wrapperImplementation == "nix" then ./makeWrapperNix.nix else ./makeWrapper.nix)
   );
-  config.meta.maintainers = lib.mkDefault [ lib.maintainers.birdee ];
+  config.meta.maintainers = lib.mkDefault [ wlib.maintainers.birdee ];
 
   options.rawWrapperArgs = lib.mkOption {
     type = wlib.types.wrapperFlag;

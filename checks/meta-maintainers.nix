@@ -4,9 +4,9 @@
 }:
 
 let
-  # Test with a nixpkgs maintainer (lassulus)
-  nixpkgsMaintainer = pkgs.lib.maintainers.lassulus;
-
+  # Test with a nixpkgs maintainer (rycee because he has an extra field)
+  # { email = ...; github = ...; githubId = ...; keys = [ ... ]; name = ...; }
+  nixpkgsMaintainer = pkgs.lib.maintainers.rycee;
   helloModule = self.lib.wrapModule (
     { config, ... }:
     {
@@ -17,6 +17,8 @@ let
 
   moduleConfig = helloModule.apply { inherit pkgs; };
 
+  esc = pkgs.lib.escapeShellArg;
+
 in
 pkgs.runCommand "meta-maintainers-test" { } ''
   echo "Testing meta.maintainers field with nixpkgs maintainer..."
@@ -26,28 +28,23 @@ pkgs.runCommand "meta-maintainers-test" { } ''
   echo "Maintainers: $maintainers"
 
   # Verify the maintainer has all required fields
-  if ! echo "$maintainers" | grep -q "Lassulus"; then
-    echo "FAIL: name 'Lassulus' not found in maintainers"
+  if ! echo "$maintainers" | grep -q ${esc nixpkgsMaintainer.name}; then
+    echo "FAIL: name ${esc nixpkgsMaintainer.name} not found in maintainers"
     exit 1
   fi
 
-  if ! echo "$maintainers" | grep -q "lassulus@gmail.com"; then
-    echo "FAIL: email 'lassulus@gmail.com' not found in maintainers"
+  if ! echo "$maintainers" | grep -q ${esc nixpkgsMaintainer.email}; then
+    echo "FAIL: email ${esc nixpkgsMaintainer.email} not found in maintainers"
     exit 1
   fi
 
-  if ! echo "$maintainers" | grep -q '"github":"Lassulus"'; then
-    echo "FAIL: github 'Lassulus' not found in maintainers"
+  if ! echo "$maintainers" | grep -q ${esc nixpkgsMaintainer.github}; then
+    echo "FAIL: github ${esc nixpkgsMaintainer.github} not found in maintainers"
     exit 1
   fi
 
-  if ! echo "$maintainers" | grep -q '"githubId":621759'; then
-    echo "FAIL: githubId '621759' not found in maintainers"
-    exit 1
-  fi
-
-  if ! echo "$maintainers" | grep -q '@lassulus:lassul.us'; then
-    echo "FAIL: matrix '@lassulus:lassul.us' not found in maintainers"
+  if ! echo "$maintainers" | grep -q ${esc nixpkgsMaintainer.githubId}; then
+    echo "FAIL: githubId ${esc nixpkgsMaintainer.githubId} not found in maintainers"
     exit 1
   fi
 

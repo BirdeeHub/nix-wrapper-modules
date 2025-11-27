@@ -23,5 +23,5 @@ in
     "--config-file" = tomlFmt.generate "alacritty.toml" config.settings;
   };
   config.package = lib.mkDefault config.pkgs.alacritty;
-  config.meta.maintainers = [ lib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

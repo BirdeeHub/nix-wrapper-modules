@@ -23,5 +23,5 @@ in
     "--config-path" = tomlFmt.generate "tealdeer.toml" config.settings;
   };
   config.package = lib.mkDefault config.pkgs.tealdeer;
-  meta.maintainers = [ lib.maintainers.birdee ];
+  meta.maintainers = [ wlib.maintainers.birdee ];
 }
