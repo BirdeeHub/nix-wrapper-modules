@@ -1,14 +1,13 @@
-{ lib, wlib }:
-let
-  wrapper_mod_res = import ../wrapperModules { inherit lib wlib; };
-  helper_mod_res = import ../modules { inherit lib wlib; };
-in
 {
-  inherit (wrapper_mod_res) wrapperModules;
-
-  checks = wrapper_mod_res.checks or { } // helper_mod_res.checks or { };
-
-  modules = helper_mod_res.modules or { };
+  lib,
+  wlib,
+  wrapperModules,
+  modules,
+  checks,
+  modulesPath,
+}:
+{
+  inherit wrapperModules modules checks;
 
   types = import ./types.nix { inherit lib wlib; };
 
@@ -35,7 +34,7 @@ in
             }
           ];
           specialArgs = {
-            modulesPath = ../.;
+            inherit modulesPath;
           }
           // (evalArgs.specialArgs or { })
           // {
