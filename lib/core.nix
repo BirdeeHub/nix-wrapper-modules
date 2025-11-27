@@ -42,7 +42,6 @@ let
     lib.types.listOf maintainer
     // {
       name = "maintainersWithFiles";
-      getSubModules = null;
       merge =
         loc: defs:
         (lib.types.listOf maintainer).merge loc (
