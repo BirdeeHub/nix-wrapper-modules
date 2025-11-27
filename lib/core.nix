@@ -199,7 +199,12 @@ in
       '';
     };
     symlinkScript = lib.mkOption {
-      type = lib.types.functionTo lib.types.str;
+      type =
+        with lib.types;
+        functionTo (oneOf [
+          str
+          (functionTo (attrsOf raw))
+        ]);
       description = ''
         Outside of importing `wlib.modules.symlinkScript` module,
         which is included in `wlib.modules.default`,
@@ -227,6 +232,15 @@ in
         The builtin implementation, and also the `wlib.modules.symlinkScript` module,
         accept either a string to prepend to the returned `buildCommand` string,
         or a derivation to link with lndir
+
+        Alternatively, it may return a function.
+
+        If it returns a function, that function will be given the final computed derivation attributes,
+        and it will be expected to return the final attribute set to be passed to `pkgs.stdenv.mkDerivation`.
+
+        Regardless of if you return a string or function,
+        `passthru.wrap`, `passthru.apply`, `passthru.eval`, `passthru.override`,
+        `passthru.overrideAttrs`, and `config.sourceStdenv` will be handled for you.
       '';
       default =
         {
@@ -295,35 +309,15 @@ in
             package
             binName
             outputs
-            exePath
             ;
           meta = (package.meta or { }) // {
             mainProgram = binName;
           };
-        in
-        pkgs.stdenv.mkDerivation (
-          {
-            passthru = passthru // {
-              wrap = passthru.configuration.wrap;
-              apply = passthru.configuration.apply;
-              eval = passthru.configuration.eval;
-              override =
-                overrideArgs:
-                passthru.configuration.wrap {
-                  __package = lib.mkOverride 0 {
-                    package = package.override overrideArgs;
-                    old = package;
-                  };
-                };
-              overrideAttrs =
-                overrideArgs:
-                passthru.configuration.wrap {
-                  __package = lib.mkOverride 0 {
-                    package = package.overrideAttrs overrideArgs;
-                    old = package;
-                  };
-                };
-            };
+          drvargs = {
+            passthru = passthru;
+            dontUnpack = true;
+            dontConfigure = true;
+            dontPatch = true;
             name = package.pname or package.name or binName;
             pname = package.pname or package.name or binName;
             inherit outputs;
@@ -331,14 +325,6 @@ in
             version =
               package.version or meta.version or package.revision or meta.revision or package.rev or meta.rev
                 or package.release or meta.release or package.releaseDate or meta.releaseDate or "master";
-            phases = [
-              "buildPhase"
-              "checkPhase"
-              "installPhase"
-              "installCheckPhase"
-              "fixupPhase"
-              "distPhase"
-            ];
             buildPhase = ''
               runHook preBuild
               runHook postBuild
@@ -347,69 +333,93 @@ in
               runHook preInstall
               runHook postInstall
             '';
-            buildCommand =
-              (
-                if passthru.configuration.sourceStdenv then
-                  ''
-                    source $stdenv/setup
-                  ''
-                else
-                  ""
-              )
-              + pkgs.callPackage passthru.configuration.symlinkScript (
-                builtins.removeAttrs args [ "config" ]
-                // {
-                  config = passthru.configuration;
-                  inherit
-                    binName
-                    outputs
-                    exePath
-                    ;
-                  wrapper =
-                    if passthru.configuration.wrapperFunction == null then
-                      null
-                    else
-                      pkgs.callPackage passthru.configuration.wrapperFunction (
-                        builtins.removeAttrs args [ "config" ]
-                        // {
-                          config = passthru.configuration;
-                          inherit
-                            binName
-                            outputs
-                            exePath
-                            ;
-                        }
-                      );
-                }
-              )
-              + (
-                if passthru.configuration.sourceStdenv then
-                  ''
-
-                    for phase in ''${phases[@]}; do
-                      # Some phases are conditional
-                      if [ "$phase" = "checkPhase" ] && [ "$doCheck" != 1 ]; then
-                        continue
-                      fi
-                      if [ "$phase" = "installCheckPhase" ] && [ "$doInstallCheck" != 1 ]; then
-                        continue
-                      fi
-                      if [ "$phase" = "distPhase" ] && [ "$doDist" != 1 ]; then
-                        continue
-                      fi
-                      # call the function defined earlier, e.g., buildPhase()
-                      $phase
-                    done
-                  ''
-                else
-                  ""
-              );
           }
           // builtins.removeAttrs passthru.configuration.drv [
             "passthru"
             "buildCommand"
             "outputs"
-          ]
+          ];
+          symres =
+            let
+              initial = pkgs.callPackage passthru.configuration.symlinkScript (
+                builtins.removeAttrs args [ "config" ]
+                // {
+                  config = passthru.configuration;
+                  wrapper =
+                    if passthru.configuration.wrapperFunction == null then
+                      null
+                    else
+                      pkgs.callPackage passthru.configuration.wrapperFunction (
+                        builtins.removeAttrs args [ "config" ] // { config = passthru.configuration; }
+                      );
+                }
+              );
+              errormsg = "config.symlinkScript function must return (a string) or (a function that recieves attrset and returns an attrset)";
+            in
+            if lib.isFunction initial then
+              let
+                res = (initial (builtins.removeAttrs drvargs [ "buildCommand" ]));
+              in
+              if builtins.isAttrs res then res else throw errormsg
+            else if builtins.isString initial then
+              initial
+            else
+              throw errormsg;
+        in
+        pkgs.stdenv.mkDerivation (
+          (
+            if builtins.isString symres then
+              drvargs
+            else
+              builtins.removeAttrs symres [
+                "buildCommand"
+                "passthru"
+              ]
+          )
+          // {
+            passthru = (if builtins.isString symres then drvargs.passthru else symres.passthru or { }) // {
+              wrap = passthru.configuration.wrap;
+              apply = passthru.configuration.apply;
+              eval = passthru.configuration.eval;
+              override =
+                overrideArgs:
+                passthru.configuration.wrap {
+                  _file = ./core.nix;
+                  __package = lib.mkOverride 0 {
+                    package = package.override overrideArgs;
+                    old = package;
+                  };
+                };
+              overrideAttrs =
+                overrideArgs:
+                passthru.configuration.wrap {
+                  _file = ./core.nix;
+                  __package = lib.mkOverride 0 {
+                    package = package.overrideAttrs overrideArgs;
+                    old = package;
+                  };
+                };
+            };
+            buildCommand =
+              lib.optionalString passthru.configuration.sourceStdenv ''
+                source $stdenv/setup
+
+                if [ -z "''${phases[*]:-}" ]; then
+                    phases="''${prePhases[*]:-} unpackPhase patchPhase ''${preConfigurePhases[*]:-} \
+                        configurePhase ''${preBuildPhases[*]:-} buildPhase checkPhase \
+                        ''${preInstallPhases[*]:-} installPhase ''${preFixupPhases[*]:-} fixupPhase installCheckPhase \
+                        ''${preDistPhases[*]:-} distPhase ''${postPhases[*]:-}";
+                fi
+
+              ''
+              + (if builtins.isString symres then symres else symres.buildCommand or "")
+              + lib.optionalString passthru.configuration.sourceStdenv ''
+
+                for curPhase in ''${phases[*]}; do
+                    runPhase "$curPhase"
+                done
+              '';
+          }
         );
     };
     wrap = lib.mkOption {

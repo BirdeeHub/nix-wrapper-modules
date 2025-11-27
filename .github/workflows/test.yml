@@ -35,4 +35,4 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Run checks
-        run: nix flake check --log-format bar-with-logs
+        run: nix flake check -Lv --log-format bar-with-logs
