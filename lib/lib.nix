@@ -31,7 +31,7 @@ in
           ++ [
             {
               _file = ./core.nix;
-              __extend = res.extendModules;
+              __extend = lib.mkOverride 0 res.extendModules;
             }
           ];
           specialArgs = {

@@ -402,7 +402,7 @@
             modules = (if builtins.isList module then module else [ module ]) ++ [
               {
                 _file = ./core.nix;
-                __extend = res.extendModules;
+                __extend = lib.mkOverride 0 res.extendModules;
               }
             ];
           };
