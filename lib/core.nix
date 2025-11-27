@@ -71,6 +71,10 @@ let
     };
 in
 {
+  config.meta.maintainers = lib.mkOverride 1001 [ lib.maintainers.birdee ];
+  config.drv = lib.mkIf (config.extraDrvAttrs != null) (
+    lib.warn "extraDrvAttrs has been renamed to `config.drv`" config.extraDrvAttrs
+  );
   options = {
     meta = {
       maintainers = lib.mkOption {
@@ -287,6 +291,93 @@ in
         to override this choice in a more fine-grained manner
       '';
     };
+    wrap = lib.mkOption {
+      type = lib.types.functionTo lib.types.package;
+      readOnly = true;
+      description = ''
+        Function to extend the current configuration with additional modules.
+        Can accept a single module, or a list of modules.
+        Re-evaluates the configuration with the original settings plus the new module(s).
+
+        Returns the updated package.
+      '';
+      default = module: (config.eval module).config.wrapper;
+    };
+    apply = lib.mkOption {
+      type = lib.types.functionTo lib.types.raw;
+      readOnly = true;
+      description = ''
+        Function to extend the current configuration with additional modules.
+        Can accept a single module, or a list of modules.
+        Re-evaluates the configuration with the original settings plus the new module(s).
+
+        Returns `.config` from the `lib.evalModules` result
+      '';
+      default = module: (config.eval module).config;
+    };
+    eval = lib.mkOption {
+      type = lib.types.functionTo lib.types.raw;
+      readOnly = true;
+      description = ''
+        Function to extend the current configuration with additional modules.
+        Can accept a single module, or a list of modules.
+        Re-evaluates the configuration with the original settings plus the new module(s).
+
+        Returns the raw `lib.evalModules` result
+      '';
+      default =
+        module:
+        let
+          res = config.__extend {
+            modules = (if builtins.isList module then module else [ module ]) ++ [
+              {
+                _file = ./core.nix;
+                __extend = lib.mkOverride 0 res.extendModules;
+              }
+            ];
+          };
+        in
+        res;
+    };
+    __extend = lib.mkOption {
+      type = lib.types.mkOptionType {
+        name = "lastWins";
+        description = "All definitions (of the same priority) override the previous one";
+        check = lib.isFunction;
+        # merge is ordered latest first within the same priority
+        merge = loc: defs: (builtins.head defs).value;
+        emptyValue = _: { };
+      };
+      internal = true;
+      description = ''
+        Internal option storing the `.extendModules` function at each re-evaluation.
+        Used by `.eval` to re-evaluate with additional modules.
+      '';
+    };
+    __package = lib.mkOption {
+      type = lib.types.mkOptionType {
+        name = "lastWins";
+        description = "All definitions (of the same priority) override the previous one";
+        check =
+          x:
+          let
+            ispkg = lib.types.package.check;
+          in
+          x == null || (ispkg (x.package or null) && ispkg (x.old or null));
+        # merge is ordered latest first within the same priority
+        merge = loc: defs: (builtins.head defs).value;
+        emptyValue = null;
+      };
+      default = null;
+      internal = true;
+      description = ''
+        holds the output of .override and .overrideAttrs
+        along with what they were before.
+
+        This allows the apply of the package option
+        to figure out if it should be using the result of overrides or not
+      '';
+    };
     wrapper = lib.mkOption {
       type = lib.types.package;
       readOnly = true;
@@ -422,96 +513,5 @@ in
           }
         );
     };
-    wrap = lib.mkOption {
-      type = lib.types.functionTo lib.types.package;
-      readOnly = true;
-      description = ''
-        Function to extend the current configuration with additional modules.
-        Can accept a single module, or a list of modules.
-        Re-evaluates the configuration with the original settings plus the new module(s).
-
-        Returns the updated package.
-      '';
-      default = module: (config.eval module).config.wrapper;
-    };
-    apply = lib.mkOption {
-      type = lib.types.functionTo lib.types.raw;
-      readOnly = true;
-      description = ''
-        Function to extend the current configuration with additional modules.
-        Can accept a single module, or a list of modules.
-        Re-evaluates the configuration with the original settings plus the new module(s).
-
-        Returns `.config` from the `lib.evalModules` result
-      '';
-      default = module: (config.eval module).config;
-    };
-    eval = lib.mkOption {
-      type = lib.types.functionTo lib.types.raw;
-      readOnly = true;
-      description = ''
-        Function to extend the current configuration with additional modules.
-        Can accept a single module, or a list of modules.
-        Re-evaluates the configuration with the original settings plus the new module(s).
-
-        Returns the raw `lib.evalModules` result
-      '';
-      default =
-        module:
-        let
-          res = config.__extend {
-            modules = (if builtins.isList module then module else [ module ]) ++ [
-              {
-                _file = ./core.nix;
-                __extend = lib.mkOverride 0 res.extendModules;
-              }
-            ];
-          };
-        in
-        res;
-    };
-    __package = lib.mkOption {
-      type = lib.types.mkOptionType {
-        name = "lastWins";
-        description = "All definitions (of the same priority) override the previous one";
-        check =
-          x:
-          let
-            ispkg = lib.types.package.check;
-          in
-          x == null || (ispkg (x.package or null) && ispkg (x.old or null));
-        # merge is ordered latest first within the same priority
-        merge = loc: defs: (builtins.head defs).value;
-        emptyValue = null;
-      };
-      default = null;
-      internal = true;
-      description = ''
-        holds the output of .override and .overrideAttrs
-        along with what they were before.
-
-        This allows the apply of the package option
-        to figure out if it should be using the result of overrides or not
-      '';
-    };
-    __extend = lib.mkOption {
-      type = lib.types.mkOptionType {
-        name = "lastWins";
-        description = "All definitions (of the same priority) override the previous one";
-        check = lib.isFunction;
-        # merge is ordered latest first within the same priority
-        merge = loc: defs: (builtins.head defs).value;
-        emptyValue = _: { };
-      };
-      internal = true;
-      description = ''
-        Internal option storing the `.extendModules` function at each re-evaluation.
-        Used by `.eval` to re-evaluate with additional modules.
-      '';
-    };
   };
-  config.meta.maintainers = lib.mkOverride 1001 [ lib.maintainers.birdee ];
-  config.drv = lib.mkIf (config.extraDrvAttrs != null) (
-    lib.warn "extraDrvAttrs has been renamed to `config.drv`" config.extraDrvAttrs
-  );
 }
