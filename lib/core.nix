@@ -477,7 +477,13 @@ in
       };
       default = null;
       internal = true;
-      description = '''';
+      description = ''
+        holds the output of .override and .overrideAttrs
+        along with what they were before.
+
+        This allows the apply of the package option
+        to figure out if it should be using the result of overrides or not
+      '';
     };
     __extend = lib.mkOption {
       type = lib.types.mkOptionType {
