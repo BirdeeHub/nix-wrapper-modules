@@ -71,7 +71,6 @@ let
     };
 in
 {
-  config.meta.maintainers = lib.mkOverride 1001 [ lib.maintainers.birdee ];
   options = {
     meta = {
       maintainers = lib.mkOption {
@@ -101,12 +100,19 @@ in
       '';
     };
     package = lib.mkOption {
+      # If config.package has not changed since last using override or overrideAttrs
+      # then use the package from override or overrideAttrs
+      apply = v: if config.__package.old or null == v then config.__package.package else v;
       type = lib.types.package;
       description = ''
         The base package to wrap.
         This means `config.symlinkScript` will be responsible
         for inheriting all other files from this package
         (like man page, /share, ...)
+
+        If you use `.override` or `.overrideAttrs` on the final wrapped package,
+        it will override this value until you set `config.package`
+        with a `lib.mkOverride` priority higher than the previous value of `config.package`
       '';
     };
     passthru = lib.mkOption {
@@ -119,9 +125,24 @@ in
       '';
     };
     extraDrvAttrs = lib.mkOption {
+      default = null;
+      internal = true;
+      type = lib.types.nullOr wlib.types.attrsRecursive;
+      description = "DEPRECATED renamed to `drv`";
+    };
+    drv = lib.mkOption {
       default = { };
       type = wlib.types.attrsRecursive;
-      description = ''Extra attributes to add to the resulting derivation.'';
+      description = ''
+        Extra attributes to add to the resulting derivation.
+
+        Cannot affect `passthru`, or `outputs`. For that,
+        use `config.passthru`, or `config.outputs` instead.
+
+        Also cannot override `buildCommand`.
+        That is controlled by the `config.symlinkScript`
+        and `config.sourceStdenv` options.
+      '';
     };
     binName = lib.mkOption {
       type = lib.types.str;
@@ -248,7 +269,7 @@ in
 
         If any phases are enabled, also runs the enabled phases after the symlinkScript command has ran.
 
-        NOTE: often you may prefer to set `extraDrvAttrs.phases = [ ... "buildPhase" etc ... ];` instead,
+        NOTE: often you may prefer to set `drv.phases = [ ... "buildPhase" etc ... ];` instead,
         to override this choice in a more fine-grained manner
       '';
     };
@@ -266,135 +287,130 @@ in
       '';
       default =
         let
-          wrapPackageInternal =
-            passthru:
-            let
-              inherit (passthru.configuration) pkgs;
-            in
-            pkgs.stdenv.mkDerivation (
-              final:
-              let
-                inherit (final.passthru.configuration)
-                  package
-                  binName
-                  outputs
-                  exePath
-                  ;
-              in
-              {
-                passthru = passthru // {
-                  wrap = final.passthru.configuration.wrap;
-                  apply = final.passthru.configuration.apply;
-                  eval = final.passthru.configuration.eval;
-                  override =
-                    overrideArgs:
-                    wrapPackageInternal (
-                      final.passthru
-                      // {
-                        configuration = final.passthru.configuration // {
-                          package = package.override overrideArgs;
-                        };
-                      }
-                    );
-                };
-                name = package.pname or package.name or binName;
-                pname = package.pname or package.name or binName;
-                inherit outputs;
-                meta =
-                  (package.meta or { })
-                  // lib.optionalAttrs (binName != baseNameOf (lib.getExe package)) {
-                    mainProgram = binName;
-                  };
-                version =
-                  package.version or final.meta.version or package.revision or final.meta.revision or package.rev
-                    or final.meta.rev or package.release or final.meta.release or package.releaseDate
-                      or final.meta.releaseDate or "master";
-                phases = [
-                  "buildPhase"
-                  "checkPhase"
-                  "installPhase"
-                  "installCheckPhase"
-                  "fixupPhase"
-                  "distPhase"
-                ];
-                buildPhase = ''
-                  runHook preBuild
-                  runHook postBuild
-                '';
-                installPhase = ''
-                  runHook preInstall
-                  runHook postInstall
-                '';
-                buildCommand =
-                  (
-                    if final.passthru.configuration.sourceStdenv then
-                      ''
-                        source $stdenv/setup
-                      ''
-                    else
-                      ""
-                  )
-                  + pkgs.callPackage final.passthru.configuration.symlinkScript (
-                    builtins.removeAttrs args [ "config" ]
-                    // {
-                      config = final.passthru.configuration;
-                      inherit
-                        binName
-                        outputs
-                        exePath
-                        ;
-                      wrapper =
-                        if final.passthru.configuration.wrapperFunction == null then
-                          null
-                        else
-                          pkgs.callPackage final.passthru.configuration.wrapperFunction (
-                            builtins.removeAttrs args [ "config" ]
-                            // {
-                              config = final.passthru.configuration;
-                              inherit
-                                binName
-                                outputs
-                                exePath
-                                ;
-                            }
-                          );
-                    }
-                  )
-                  + (
-                    if final.passthru.configuration.sourceStdenv then
-                      ''
-
-                        for phase in ''${phases[@]}; do
-                          # Some phases are conditional
-                          if [ "$phase" = "checkPhase" ] && [ "$doCheck" != 1 ]; then
-                            continue
-                          fi
-                          if [ "$phase" = "installCheckPhase" ] && [ "$doInstallCheck" != 1 ]; then
-                            continue
-                          fi
-                          if [ "$phase" = "distPhase" ] && [ "$doDist" != 1 ]; then
-                            continue
-                          fi
-                          # call the function defined earlier, e.g., buildPhase()
-                          $phase
-                        done
-                      ''
-                    else
-                      ""
-                  );
-              }
-              // builtins.removeAttrs passthru.configuration.extraDrvAttrs [
-                "passthru"
-                "buildCommand"
-                "outputs"
-              ]
-            );
-        in
-        wrapPackageInternal (
-          config.passthru
-          // {
+          passthru = config.passthru // {
             configuration = config;
+          };
+          inherit (passthru.configuration)
+            pkgs
+            package
+            binName
+            outputs
+            exePath
+            ;
+        in
+        pkgs.stdenv.mkDerivation (
+          final:
+          {
+            passthru = passthru // {
+              wrap = passthru.configuration.wrap;
+              apply = passthru.configuration.apply;
+              eval = passthru.configuration.eval;
+              override =
+                overrideArgs:
+                passthru.configuration.wrap {
+                  __package = lib.mkOverride 0 {
+                    package = package.override overrideArgs;
+                    old = package;
+                  };
+                };
+              overrideAttrs =
+                overrideArgs:
+                passthru.configuration.wrap {
+                  __package = lib.mkOverride 0 {
+                    package = package.overrideAttrs overrideArgs;
+                    old = package;
+                  };
+                };
+            };
+            name = package.pname or package.name or binName;
+            pname = package.pname or package.name or binName;
+            inherit outputs;
+            meta = (package.meta or { }) // {
+              mainProgram = binName;
+            };
+            version =
+              package.version or final.meta.version or package.revision or final.meta.revision or package.rev
+                or final.meta.rev or package.release or final.meta.release or package.releaseDate
+                  or final.meta.releaseDate or "master";
+            phases = [
+              "buildPhase"
+              "checkPhase"
+              "installPhase"
+              "installCheckPhase"
+              "fixupPhase"
+              "distPhase"
+            ];
+            buildPhase = ''
+              runHook preBuild
+              runHook postBuild
+            '';
+            installPhase = ''
+              runHook preInstall
+              runHook postInstall
+            '';
+            buildCommand =
+              (
+                if passthru.configuration.sourceStdenv then
+                  ''
+                    source $stdenv/setup
+                  ''
+                else
+                  ""
+              )
+              + pkgs.callPackage passthru.configuration.symlinkScript (
+                builtins.removeAttrs args [ "config" ]
+                // {
+                  config = passthru.configuration;
+                  inherit
+                    binName
+                    outputs
+                    exePath
+                    ;
+                  wrapper =
+                    if passthru.configuration.wrapperFunction == null then
+                      null
+                    else
+                      pkgs.callPackage passthru.configuration.wrapperFunction (
+                        builtins.removeAttrs args [ "config" ]
+                        // {
+                          config = passthru.configuration;
+                          inherit
+                            binName
+                            outputs
+                            exePath
+                            ;
+                        }
+                      );
+                }
+              )
+              + (
+                if passthru.configuration.sourceStdenv then
+                  ''
+
+                    for phase in ''${phases[@]}; do
+                      # Some phases are conditional
+                      if [ "$phase" = "checkPhase" ] && [ "$doCheck" != 1 ]; then
+                        continue
+                      fi
+                      if [ "$phase" = "installCheckPhase" ] && [ "$doInstallCheck" != 1 ]; then
+                        continue
+                      fi
+                      if [ "$phase" = "distPhase" ] && [ "$doDist" != 1 ]; then
+                        continue
+                      fi
+                      # call the function defined earlier, e.g., buildPhase()
+                      $phase
+                    done
+                  ''
+                else
+                  ""
+              );
           }
+          // builtins.removeAttrs passthru.configuration.drv [
+            "passthru"
+            "buildCommand"
+            "outputs"
+          ]
         );
     };
     wrap = lib.mkOption {
@@ -445,6 +461,24 @@ in
         in
         res;
     };
+    __package = lib.mkOption {
+      type = lib.types.mkOptionType {
+        name = "lastWins";
+        description = "All definitions (of the same priority) override the previous one";
+        check =
+          x:
+          let
+            ispkg = lib.types.package.check;
+          in
+          x == null || (ispkg (x.package or null) && ispkg (x.old or null));
+        # merge is ordered latest first within the same priority
+        merge = loc: defs: (builtins.head defs).value;
+        emptyValue = null;
+      };
+      default = null;
+      internal = true;
+      description = '''';
+    };
     __extend = lib.mkOption {
       type = lib.types.mkOptionType {
         name = "lastWins";
@@ -461,4 +495,8 @@ in
       '';
     };
   };
+  config.meta.maintainers = lib.mkOverride 1001 [ lib.maintainers.birdee ];
+  config.drv = lib.mkIf (config.extraDrvAttrs != null) (
+    lib.warn "extraDrvAttrs has been renamed to `config.drv`" config.extraDrvAttrs
+  );
 }

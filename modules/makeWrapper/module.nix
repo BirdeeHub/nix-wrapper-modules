@@ -372,7 +372,7 @@
         ];
       }
     ];
-  config.extraDrvAttrs.nativeBuildInputs =
+  config.drv.nativeBuildInputs =
     lib.mkIf (config.wrapperImplementation == "shell" || config.wrapperImplementation == "binary")
       [
         (
