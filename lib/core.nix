@@ -367,8 +367,6 @@ in
           in
           if newest.package or null == null then
             null
-          else if builtins.length defs == 1 then
-            newest
           else
             {
               inherit (newest) package;
