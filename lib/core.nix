@@ -46,12 +46,12 @@ let
       merge =
         loc: defs:
         (lib.types.listOf maintainer).merge loc (
-          lib.imap1 (
-            n: def:
+          map (
+            def:
             def
             // {
-              value = lib.imap1 (
-                m: def':
+              value = map (
+                def':
                 def'
                 // {
                   inherit (def) file;
