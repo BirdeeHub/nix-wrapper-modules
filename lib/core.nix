@@ -279,7 +279,8 @@ in
 
         If any phases are enabled, also runs the enabled phases after the symlinkScript command has ran.
 
-        NOTE: often you may prefer to set `drv.phases = [ ... "buildPhase" etc ... ];` instead,
+        NOTE: often you may prefer to use things like `drv.dontFixup = true;`,
+        or even `drv.phases = [ ... "buildPhase" etc ... ];` instead,
         to override this choice in a more fine-grained manner
       '';
     };
