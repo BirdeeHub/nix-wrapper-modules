@@ -17,21 +17,47 @@ They will get you started with a module file and the default one also gives you 
 ```nix
 {
   inputs.wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
-
-  outputs = { self, nixpkgs, wrappers }: {
+  outputs = { self, wrappers }: {
     packages.x86_64-linux.default =
-      wrappers.wrapperModules.mpv.wrap {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux;
-        scripts = [ pkgs.mpvScripts.mpris ];
-        "mpv.conf".content = ''
-          vo=gpu
-          hwdec=auto
-        '';
-        "mpv.input".content = ''
-          WHEEL_UP seek 10
-          WHEEL_DOWN seek -10
-        '';
+      wrappers.wrapperModules.wezterm.wrap rec {
+        pkgs = wrappers.inputs.nixpkgs.legacyPackages.x86_64-linux;
+        luaInfo = {
+          keys = [
+            {
+              key = "F12";
+              mods = "SUPER|CTRL|ALT|SHIFT";
+              action = pkgs.lib.generators.mkLuaInline "wezterm.action.Nop";
+            }
+          ];
+        };
       };
+  };
+}
+```
+
+```nix
+{
+  inputs.wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  outputs = { self, nixpkgs, wrappers }: let
+    forAllSystems = with nixpkgs.lib; genAttrs platforms.all;
+  in {
+    packages = forAllSystems (system: {
+      default = wrappers.wrapperModules.mpv.wrap (
+        {config, wlib, lib, ...}: {
+          pkgs = import nixpkgs { inherit system; };
+          scripts = [ config.pkgs.mpvScripts.mpris ];
+          "mpv.conf".content = ''
+            vo=gpu
+            hwdec=auto
+          '';
+          "mpv.input".content = ''
+            WHEEL_UP seek 10
+            WHEEL_DOWN seek -10
+          '';
+        }
+      );
+    });
   };
 }
 ```
