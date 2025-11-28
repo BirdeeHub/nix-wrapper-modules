@@ -4,15 +4,21 @@
 }:
 
 let
-  # Get all modules and check their maintainers
-  modulesWithoutMaintainers = pkgs.lib.filter (
-    name:
-    let
-      module = self.lib.wrapperModules.${name};
-      list = (self.lib.evalModule module).config.meta.maintainers;
-    in
-    pkgs.lib.findFirst (v: toString v.file == toString module) null list == null
-  ) (builtins.attrNames self.lib.wrapperModules);
+  getModulesWithoutMaintainers =
+    module_set:
+    pkgs.lib.filter (
+      name:
+      let
+        module = module_set.${name};
+        list = (self.lib.evalModule module).config.meta.maintainers;
+        check = modpath: pkgs.lib.findFirst (v: toString v.file == toString modpath) null list == null;
+      in
+      if !pkgs.lib.isStringLike module then false else check module
+    ) (builtins.attrNames module_set);
+
+  modulesWithoutMaintainers =
+    getModulesWithoutMaintainers self.lib.wrapperModules
+    ++ getModulesWithoutMaintainers self.lib.modules;
 
   hasMissingMaintainers = modulesWithoutMaintainers != [ ];
 
