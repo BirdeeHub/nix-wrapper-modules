@@ -21,7 +21,7 @@ in
 
     configFile = lib.mkOption {
       type = wlib.types.file config.pkgs;
-      default.path = toString (gitIniFmt.generate "gitconfig" config.settings);
+      default.path = gitIniFmt.generate "gitconfig" config.settings;
       description = "Generated git configuration file.";
     };
   };
