@@ -356,8 +356,24 @@ in
             ispkg = lib.types.package.check;
           in
           x == null || (ispkg (x.package or null) && ispkg (x.old or null));
-        # merge is ordered latest first within the same priority
-        merge = loc: defs: (builtins.head defs).value;
+        merge =
+          loc: defs:
+          let
+            newest = (builtins.head defs).value;
+            oldestInChain = builtins.foldl' (
+              acc: v:
+              if !(acc.done or false) && acc.old == v.value.package then v.value else acc // { done = true; }
+            ) { inherit (newest) old; } (builtins.tail defs);
+          in
+          if newest.package or null == null then
+            null
+          else if builtins.length defs == 1 then
+            newest
+          else
+            {
+              inherit (newest) package;
+              inherit (oldestInChain) old;
+            };
         emptyValue = null;
       };
       default = null;
@@ -368,6 +384,9 @@ in
 
         This allows the apply of the package option
         to figure out if it should be using the result of overrides or not
+
+        In order to handle multiple overrides, we return the newest `.package`,
+        but we return the oldest `.old` in the chain of `curr.old == prev.package`
       '';
     };
     wrapper = lib.mkOption {
