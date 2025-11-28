@@ -193,9 +193,9 @@
 
     environment variable expansion (e.g., `$HOME`, `${VAR}`).
 
-    Caution! This is used by the `nix` backend for `wlib.modules.makeWrapper` to escape things,
-    but the `shell` and `binary` implementations pass their args to `pkgs.makeWrapper` at **build** time,
-    so it may not always do what you expect!
+    Caution! This is best used by the `nix` backend for `wlib.modules.makeWrapper` to escape things,
+    because the `shell` and `binary` implementations pass their args to `pkgs.makeWrapper` at **build** time,
+    so allowing variable expansion may not always do what you expect!
 
     # Example
 
@@ -215,13 +215,6 @@
 
     ```
   */
-  escapeShellArgWithEnv =
-    arg:
-    let
-      argStr = toString arg;
-      # Escape backslashes first, then double quotes
-      escaped = lib.replaceStrings [ ''\'' ''"'' ] [ ''\\'' ''\"'' ] argStr;
-    in
-    ''"${escaped}"'';
+  escapeShellArgWithEnv = arg: ''"${lib.escape [ ''\'' ''"'' ] (toString arg)}"'';
 
 }
