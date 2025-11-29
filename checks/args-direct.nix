@@ -35,8 +35,22 @@ let
     inherit pkgs;
     package = pkgs.hello;
     addFlag = [
-      "--greeting"
+      {
+        data = "--greeting";
+        name = "greeting";
+      }
       "hi"
+    ];
+  };
+  wrappedPackage4 = self.lib.wrapPackage {
+    inherit pkgs;
+    package = pkgs.hello;
+    addFlag = [
+      "--greeting"
+      {
+        data = "hi";
+        name = "greeting";
+      }
     ];
   };
 
@@ -75,6 +89,8 @@ pkgs.runCommand "args-direct-test" { } ''
   ${mkTest wrappedPackage2}
 
   ${mkTest wrappedPackage3}
+
+  ${mkTest wrappedPackage4}
 
   echo "SUCCESS: Direct args test passed"
   touch $out
