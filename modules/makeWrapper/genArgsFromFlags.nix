@@ -18,11 +18,7 @@
     (
       wlib.types.dagOf
       // {
-        extraOptions = {
-          esc-fn = lib.mkOption {
-            type = nullOr (functionTo str);
-            default = null;
-          };
+        extraOptions = wlib.types.dagWithEsc.extraOptions // {
           sep = lib.mkOption {
             type = nullOr str;
             default = null;
