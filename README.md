@@ -87,7 +87,14 @@ The above snippet does everything the prior 2 examples did, and then some!
 
 That's a full module (defined like [this](https://github.com/BirdeeHub/nix-wrapper-modules/blob/main/wrapperModules/a/alacritty/module.nix) and with docs [here](https://birdeehub.github.io/nix-wrapper-modules/alacritty.html)) but just for that package, and the result is a fully portable derivation, just like the wrapper scripts above!
 
-And you can call `.wrap` on it as many times as you want! You can define your own options to easily toggle things for your different use cases and re-export it in a flake and change them on import, etc.
+And you can call `.wrap` on it as many times as you want! You can define your own options
+to easily toggle things for your different use cases and re-export it in a flake and change them on import, etc.
+
+And you do not lose your ability to use `.override` or `.overrideAttrs` on the original package!
+
+The arguments will be passed through to the value of `config.package`,
+and the result will persist within the module system for future evaluations!
+(unless you explicitly override it with a new package)
 
 There are included modules for several programs already, but there are rich and easy to use options defined for creating your own modules as well!
 
@@ -112,25 +119,26 @@ Help us add more modules! Contributors are what makes projects like these amazin
 
 ### Why rewrite [lassulus/wrappers](https://github.com/Lassulus/wrappers)?
 
-For those paying attention to the recent nix news, they may have heard of a similar project which was released recently.
+Yes, I know about this comic [(xkcd 927)](https://xkcd.com/927/), but it was necessary that I not heed the warning it gives. 
+
+For those paying attention to the recent nix news, you may have heard of a similar project which was released recently.
 
 This excellent video by Vimjoyer was made, which mentions the project this one is inspired by at the end.
 
-The video got that repository a good amount of attention. And the idea of the `.apply` interface was quite good.
-
-But that project also leaves a lot to be desired.
-
-This one has modules that are capable of much more, with a more flexible, and capable design.
-
-Most of the video is still applicable though! So, if you still find yourself confused as to what problem this repository is solving, please watch it!
-
 [![Homeless Dotfiles with Nix Wrappers](https://img.youtube.com/vi/Zzvn9uYjQJY/0.jpg)](https://www.youtube.com/watch?v=Zzvn9uYjQJY)
 
-Yes, I know about this comic: [xkcd 927](https://xkcd.com/927/)
+The video got that repository a good amount of attention. And the idea of the `.apply` interface was quite good, although I did implement it slightly differently (at the time of writing this anyway).
+
+Most of the video is still applicable though! It is short and most of its runtime is devoted to explaining the problem being solved.
+So, if you still find yourself confused as to what problem this repository is solving, please watch it!
+
+But the mentioned project gives you very little control from within the module system
+over what is being built as your wrapper derivation. (the thing you are actually trying to create)
+
+It was designed around a module system which can supply some of the arguments of some separate builder function designed to be called separately,
+which itself does not give full control over the derivation.
 
 This repository was designed around giving you absolute control over the _derivation_ your wrapper is creating from **within** the module system, and defining modules for making the experience making wrapper modules great.
-
-The other repository was designed around a module system which can supply some but not all the arguments of some separate builder function designed to be called separately, which itself does not give full control over the derivation.
 
 In short, this repo is more what it claims to be. A generalized and effective module system for creating wrapper derivations, and offers far more abilities to that effect to the module system itself.
 
@@ -142,14 +150,21 @@ This allows you to easily modify your module with extra files and scripts or wha
 
 Maybe you want your `tmux` wrapper to also output a launcher script that rejoins a session, or creates one? You can do that using this project with, for example, a `postBuild` hook just like in a derivation, and you can even use `"${placeholder "out"}"` in it!
 
-But you can supply it [from within the module system](https://birdeehub.github.io/nix-wrapper-modules/core.html#drv)! You could define an option to customize its behavior later!
+But you can supply it [from within the module system](https://birdeehub.github.io/nix-wrapper-modules/core.html#drv)! You could then define an option to customize its behavior later!
 
 In addition, the way it is implemented allows for the creation of helper modules that wrap derivations in all sorts of ways, which you could import instead of `wlib.modules.default` if you wanted. We could have similar modules for wrapping projects via bubblewrap or into docker containers with the same ease with which this library orchestrates regular wrapper scripts.
+
+It makes many more improvements as well, things like, ordering of flags on a fine-grained basis, customizing of escaping function per item, and more...
 
 In short, while both projects have surface level similarities, you would be leaving a lot on the table to not use this one instead!
 
 I did originally try to contribute my changes, but for numerous reasons, this did not work out.
 
-The original changes suggested were not as sweeping as the changes made when rewriting it for this repository.
+The original changes suggested were not as sweeping as the changes made when rewriting it for this repository, and did not break any existing functionality.
 
-That being said, contributing to a project by entirely rewriting it and then trying to get that accepted is not a good way to get changes to happen. But nothing short of that would have made sense, because the architecture was the problem, and the core of the project, which I was altering, was under 700 lines at the time.
+That being said, contributing to a project by entirely rewriting it and then trying to get that accepted is not a good way to get changes to happen.
+
+But nothing short of that would have made sense.
+The architecture was the problem, and the core of the project, which I was altering, was very short.
+Given that I was deleting one of the core features (the separate builder function), and rolling it directly into the module system,
+breaking it up further was not very possible without leaving it in a broken state.
