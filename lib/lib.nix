@@ -88,7 +88,7 @@
     Example usage:
 
     ```nix
-      helloWrapper = wrapModule ({ config, wlib, ... }: {
+      helloWrapper = wrapModule ({ config, wlib, pkgs, ... }: {
         options.greeting = lib.mkOption {
           type = lib.types.str;
           default = "hello";
