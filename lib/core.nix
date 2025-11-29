@@ -67,6 +67,7 @@ in
   config.drv = lib.mkIf (config.extraDrvAttrs != null) (
     lib.warn "extraDrvAttrs has been renamed to `config.drv`" config.extraDrvAttrs
   );
+  config._module.args.pkgs = config.pkgs;
   options = {
     meta = {
       maintainers = lib.mkOption {

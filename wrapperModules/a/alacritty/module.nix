@@ -2,10 +2,11 @@
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 let
-  tomlFmt = config.pkgs.formats.toml { };
+  tomlFmt = pkgs.formats.toml { };
 in
 {
   imports = [ wlib.modules.default ];
@@ -22,6 +23,6 @@ in
   config.flags = {
     "--config-file" = tomlFmt.generate "alacritty.toml" config.settings;
   };
-  config.package = lib.mkDefault config.pkgs.alacritty;
+  config.package = lib.mkDefault pkgs.alacritty;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

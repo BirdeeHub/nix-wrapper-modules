@@ -44,9 +44,9 @@ They will get you started with a module file and the default one also gives you 
   in {
     packages = forAllSystems (system: {
       default = wrappers.wrapperModules.mpv.wrap (
-        {config, wlib, lib, ...}: {
+        {config, wlib, lib, pkgs, ...}: {
           pkgs = import nixpkgs { inherit system; };
-          scripts = [ config.pkgs.mpvScripts.mpris ];
+          scripts = [ pkgs.mpvScripts.mpris ];
           "mpv.conf".content = ''
             vo=gpu
             hwdec=auto
@@ -76,11 +76,11 @@ The package (via `passthru`) and the modules under `.config` both offer all 3 fu
 ```nix
 # Apply initial configuration
 # you can use `.eval` `.apply` or `.wrap` for this.
-initialConfig = (wrappers.wrapperModules.tmux.eval ({config, ...}{
+initialConfig = (wrappers.wrapperModules.tmux.eval ({config, pkgs, ...}{
   # but if you don't plan to provide pkgs yet, you can't use `.wrap` or `.wrapper` yet.
   # config.pkgs = pkgs;
-  # but we can still use `config.pkgs` before that inside!
-  config.plugins = [ config.pkgs.tmuxPlugins.onedark-theme ];
+  # but we can still use `pkgs` before that inside!
+  config.plugins = [ pkgs.tmuxPlugins.onedark-theme ];
   config.clock24 = false;
 })).config;
 
@@ -106,9 +106,9 @@ apackage = (actualPackage.eval {
 
 # and again! `.wrap` gives us back the package directly
 # all 3 forms take modules as an argument
-packageAgain = apackage.wrap ({config, ...}: {
+packageAgain = apackage.wrap ({config, pkgs, ...}: {
   # list definitions append when declared across modules by default!
-  plugins = [ config.pkgs.tmuxPlugins.fzf-tmux-url ];
+  plugins = [ pkgs.tmuxPlugins.fzf-tmux-url ];
 });
 ```
 
@@ -117,7 +117,7 @@ packageAgain = apackage.wrap ({config, ...}: {
 ```nix
 { wlib, lib }:
 
-(wlib.evalModule ({ config, wlib, lib, ... }: {
+(wlib.evalModule ({ config, wlib, lib, pkgs, ... }: {
   # You can only grab the final package if you supply pkgs!
   # But if you were making it for someone else, you would want them to do that!
 
@@ -137,7 +137,7 @@ packageAgain = apackage.wrap ({config, ...}: {
     };
   };
 
-  config.package = config.pkgs.ffmpeg;
+  config.package = pkgs.ffmpeg;
   config.flags = {
     "-preset" = if config.profile == "fast" then "veryfast" else "slow";
   };

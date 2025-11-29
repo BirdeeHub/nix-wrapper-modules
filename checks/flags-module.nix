@@ -5,10 +5,15 @@
 
 let
   helloModule = self.lib.evalModule (
-    { config, wlib, ... }:
+    {
+      config,
+      wlib,
+      pkgs,
+      ...
+    }:
     {
       imports = [ wlib.modules.default ];
-      config.package = config.pkgs.hello;
+      config.package = pkgs.hello;
       config.flags = {
         "--greeting" = "world";
         "--silent" = true;

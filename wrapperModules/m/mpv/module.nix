@@ -2,6 +2,7 @@
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 {
@@ -19,7 +20,7 @@
       '';
     };
     "mpv.input" = lib.mkOption {
-      type = wlib.types.file config.pkgs;
+      type = wlib.types.file pkgs;
       default.content = "";
       description = ''
         The MPV input configuration file.
@@ -30,7 +31,7 @@
       '';
     };
     "mpv.conf" = lib.mkOption {
-      type = wlib.types.file config.pkgs;
+      type = wlib.types.file pkgs;
       default.content = "";
       description = ''
         The main MPV configuration file.
@@ -47,7 +48,7 @@
     "--include" = config."mpv.conf".path;
   };
   config.package = lib.mkDefault (
-    config.pkgs.mpv.override {
+    pkgs.mpv.override {
       scripts = config.scripts;
     }
   );

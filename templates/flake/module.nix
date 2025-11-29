@@ -2,6 +2,7 @@
   config,
   wlib,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -11,7 +12,7 @@
     default = "hello";
     description = "The greeting to use";
   };
-  config.package = config.pkgs.hello;
+  config.package = pkgs.hello;
   config.flags = {
     "--greeting" = config.greeting;
   };

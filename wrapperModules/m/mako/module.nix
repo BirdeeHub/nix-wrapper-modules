@@ -2,17 +2,18 @@
   config,
   wlib,
   lib,
+  pkgs,
   ...
 }:
 let
-  iniFormat = config.pkgs.formats.iniWithGlobalSection { };
+  iniFormat = pkgs.formats.iniWithGlobalSection { };
   iniAtomType = iniFormat.lib.types.atom;
 in
 {
   imports = [ wlib.modules.default ];
   options = {
     "--config" = lib.mkOption {
-      type = wlib.types.file config.pkgs;
+      type = wlib.types.file pkgs;
       default.path = iniFormat.generate "mako-settings" { globalSection = config.settings; };
       description = ''
         Path to the generated Mako configuration file.
@@ -49,7 +50,7 @@ in
   # mako doesnt like fixupPhase
   config.drv.dontFixup = true;
 
-  config.package = lib.mkDefault config.pkgs.mako;
+  config.package = lib.mkDefault pkgs.mako;
 
   config.meta.maintainers = [ wlib.maintainers.birdee ];
   config.meta.platforms = lib.platforms.linux;

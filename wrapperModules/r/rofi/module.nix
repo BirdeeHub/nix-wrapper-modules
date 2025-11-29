@@ -2,6 +2,7 @@
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 let
@@ -101,7 +102,7 @@ let
   theme =
     if (isAttrs config.theme) then
       builtins.toPath (
-        config.pkgs.writeTextFile {
+        pkgs.writeTextFile {
           name = "rofi-theme";
           text = toRasi config.theme;
         }
@@ -113,7 +114,7 @@ in
   imports = [ wlib.modules.default ];
   options = {
     "config.rasi" = lib.mkOption {
-      type = wlib.types.file config.pkgs;
+      type = wlib.types.file pkgs;
       default.content =
         toRasi {
           configuration = config.settings;
@@ -172,7 +173,7 @@ in
   };
 
   config.package = lib.mkDefault (
-    config.pkgs.rofi.override (old: {
+    pkgs.rofi.override (old: {
       plugins = (old.plugins or [ ]) ++ config.plugins;
     })
   );

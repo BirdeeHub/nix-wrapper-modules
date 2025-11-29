@@ -7,9 +7,14 @@ let
   # Create a simple wrapper module
   helloModule =
     (self.lib.evalModule (
-      { config, wlib, ... }:
       {
-        config.package = config.pkgs.hello;
+        config,
+        wlib,
+        pkgs,
+        ...
+      }:
+      {
+        config.package = pkgs.hello;
         imports = [ wlib.modules.default ];
         config.flags = {
           "--greeting" = "initial";

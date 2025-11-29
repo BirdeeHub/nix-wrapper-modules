@@ -32,13 +32,14 @@ Example:
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 {
   imports = [ wlib.modules.default ];
   options = {
     "wezterm.lua" = lib.mkOption {
-      type = wlib.types.file config.pkgs;
+      type = wlib.types.file pkgs;
       default.content = "return require('nix-info')";
       description = "The wezterm config file. provide `.content`, or `.path`";
     };
@@ -59,7 +60,7 @@ Example:
 
   config.flagSeparator = "=";
   config.flags = {
-    "--config-file" = config.pkgs.writeText "wezterm.lua" ''
+    "--config-file" = pkgs.writeText "wezterm.lua" ''
       local wezterm = require 'wezterm'
       package.preload["nix-info"] = function() return ${
         lib.generators.toLua { } config.luaInfo
@@ -68,7 +69,7 @@ Example:
     '';
   };
 
-  config.package = lib.mkDefault config.pkgs.wezterm;
+  config.package = lib.mkDefault pkgs.wezterm;
 
   config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

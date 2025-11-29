@@ -2,10 +2,11 @@
   config,
   wlib,
   lib,
+  pkgs,
   ...
 }:
 let
-  iniFmt = config.pkgs.formats.ini { };
+  iniFmt = pkgs.formats.ini { };
 in
 {
   imports = [ wlib.modules.default ];
@@ -23,7 +24,7 @@ in
   config.flags = {
     "--config" = iniFmt.generate "fuzzel.ini" config.settings;
   };
-  config.package = lib.mkDefault config.pkgs.fuzzel;
+  config.package = lib.mkDefault pkgs.fuzzel;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
   config.meta.platforms = lib.platforms.linux;
 }

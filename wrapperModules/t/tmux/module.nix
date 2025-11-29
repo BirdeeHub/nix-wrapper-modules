@@ -2,6 +2,7 @@
   config,
   wlib,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -228,13 +229,13 @@ in
   };
   config = {
     flags = {
-      "-f" = "${config.pkgs.writeText "tmux.conf" # tmux
+      "-f" = "${pkgs.writeText "tmux.conf" # tmux
         ''
           ${lib.optionalString config.sourceSensible ''
             # ============================================= #
             # Start with defaults from the Sensible plugin  #
             # --------------------------------------------- #
-            run-shell ${config.pkgs.tmuxPlugins.sensible.rtp}
+            run-shell ${pkgs.tmuxPlugins.sensible.rtp}
             # ============================================= #
           ''}
           unbind C-b
@@ -289,7 +290,7 @@ in
     runShell = lib.mkIf config.secureSocket [
       ''export TMUX_TMPDIR=''${TMUX_TMPDIR:-''${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}}''
     ];
-    package = config.pkgs.tmux;
+    package = pkgs.tmux;
     meta.maintainers = [ wlib.maintainers.birdee ];
   };
 }

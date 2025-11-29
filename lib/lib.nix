@@ -93,7 +93,7 @@
           type = lib.types.str;
           default = "hello";
         };
-        config.package = config.pkgs.hello;
+        config.package = pkgs.hello;
         config.flags = {
           "--greeting" = config.greeting;
         };
