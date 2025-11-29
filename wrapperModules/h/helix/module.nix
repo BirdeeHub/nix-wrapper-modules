@@ -2,23 +2,24 @@
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 let
-  tomlFmt = config.pkgs.formats.toml { };
+  tomlFmt = pkgs.formats.toml { };
   conf =
     let
       base = tomlFmt.generate "helix-config" config.settings;
     in
     if config.extraSettings != "" then
-      config.pkgs.concatText "helix-config" [
+      pkgs.concatText "helix-config" [
         base
-        (config.pkgs.writeText "extraSettings" config.extraSettings)
+        (pkgs.writeText "extraSettings" config.extraSettings)
       ]
     else
       base;
   langs = tomlFmt.generate "helix-languages-config" config.languages;
-  ignore = config.pkgs.writeText "helix-ignore" (lib.strings.concatLines config.ignores);
+  ignore = pkgs.writeText "helix-ignore" (lib.strings.concatLines config.ignores);
   themes = lib.mapAttrsToList (
     name: value:
     let
@@ -26,8 +27,7 @@ let
     in
     {
       name = "themes/${name}.toml";
-      path =
-        if lib.isString value then config.pkgs.writeText fname value else (tomlFmt.generate fname value);
+      path = if lib.isString value then pkgs.writeText fname value else (tomlFmt.generate fname value);
     }
   ) config.themes;
 in
@@ -80,10 +80,10 @@ in
       '';
     };
   };
-  config.package = lib.mkDefault config.pkgs.helix;
+  config.package = lib.mkDefault pkgs.helix;
   config.env = {
     XDG_CONFIG_HOME = builtins.toString (
-      config.pkgs.linkFarm "helix-merged-config" (
+      pkgs.linkFarm "helix-merged-config" (
         map
           (a: {
             inherit (a) path;

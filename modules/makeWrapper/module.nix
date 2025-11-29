@@ -2,6 +2,7 @@
   config,
   wlib,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -153,12 +154,12 @@
       [
         "LD_LIBRARY_PATH"
         ":"
-        "\${lib.makeLibraryPath (with config.pkgs; [ ... ])}"
+        "\${lib.makeLibraryPath (with pkgs; [ ... ])}"
       ]
       [
         "PATH"
         ":"
-        "\${lib.makeBinPath (with config.pkgs; [ ... ])}"
+        "\${lib.makeBinPath (with pkgs; [ ... ])}"
       ]
     ];
     description = ''
@@ -174,12 +175,12 @@
       [
         "LD_LIBRARY_PATH"
         ":"
-        "\${lib.makeLibraryPath (with config.pkgs; [ ... ])}"
+        "\${lib.makeLibraryPath (with pkgs; [ ... ])}"
       ]
       [
         "PATH"
         ":"
-        "\${lib.makeBinPath (with config.pkgs; [ ... ])}"
+        "\${lib.makeBinPath (with pkgs; [ ... ])}"
       ]
     ];
     description = ''
@@ -375,12 +376,7 @@
   config.drv.nativeBuildInputs =
     lib.mkIf (config.wrapperImplementation == "shell" || config.wrapperImplementation == "binary")
       [
-        (
-          if config.wrapperImplementation == "shell" then
-            config.pkgs.makeWrapper
-          else
-            config.pkgs.makeBinaryWrapper
-        )
+        (if config.wrapperImplementation == "shell" then pkgs.makeWrapper else pkgs.makeBinaryWrapper)
       ];
   config.wrapperFunction = lib.mkDefault (
     import (if config.wrapperImplementation == "nix" then ./makeWrapperNix.nix else ./makeWrapper.nix)

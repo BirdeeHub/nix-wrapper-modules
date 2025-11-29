@@ -2,10 +2,11 @@
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 let
-  iniFmt = config.pkgs.formats.ini { };
+  iniFmt = pkgs.formats.ini { };
   writeNotmuchConfig = cfg: iniFmt.generate "notmuch.ini" cfg;
 in
 {
@@ -34,7 +35,7 @@ in
       '';
     };
     configFile = lib.mkOption {
-      type = wlib.types.file config.pkgs;
+      type = wlib.types.file pkgs;
       default.path = toString (writeNotmuchConfig config.settings);
       description = ''
         Path or inline definition of the generated Notmuch configuration file.
@@ -44,7 +45,7 @@ in
       '';
     };
   };
-  config.package = config.pkgs.notmuch;
+  config.package = pkgs.notmuch;
   config.env.NOTMUCH_CONFIG = config.configFile.path;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

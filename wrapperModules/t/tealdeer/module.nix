@@ -2,10 +2,11 @@
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 let
-  tomlFmt = config.pkgs.formats.toml { };
+  tomlFmt = pkgs.formats.toml { };
 in
 {
   imports = [ wlib.modules.default ];
@@ -22,6 +23,6 @@ in
   config.flags = {
     "--config-path" = tomlFmt.generate "tealdeer.toml" config.settings;
   };
-  config.package = lib.mkDefault config.pkgs.tealdeer;
+  config.package = lib.mkDefault pkgs.tealdeer;
   meta.maintainers = [ wlib.maintainers.birdee ];
 }

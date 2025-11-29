@@ -2,6 +2,7 @@
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 {
@@ -30,7 +31,7 @@
     };
   };
   config.drv.nativeBuildInputs = lib.mkIf ((config.filesToPatch or [ ]) != [ ]) [
-    config.pkgs.replace
+    pkgs.replace
   ];
   config.symlinkScript = lib.mkDefault (
     {

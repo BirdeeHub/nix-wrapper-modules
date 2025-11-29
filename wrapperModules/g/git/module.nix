@@ -2,10 +2,11 @@
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 let
-  gitIniFmt = config.pkgs.formats.gitIni { };
+  gitIniFmt = pkgs.formats.gitIni { };
 in
 {
   imports = [ wlib.modules.default ];
@@ -20,13 +21,13 @@ in
     };
 
     configFile = lib.mkOption {
-      type = wlib.types.file config.pkgs;
+      type = wlib.types.file pkgs;
       default.path = gitIniFmt.generate "gitconfig" config.settings;
       description = "Generated git configuration file.";
     };
   };
 
   config.env.GIT_CONFIG_GLOBAL = config.configFile.path;
-  config.package = lib.mkDefault config.pkgs.git;
+  config.package = lib.mkDefault pkgs.git;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

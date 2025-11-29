@@ -2,10 +2,11 @@
   config,
   wlib,
   lib,
+  pkgs,
   ...
 }:
 let
-  tomlFmt = config.pkgs.formats.toml { };
+  tomlFmt = pkgs.formats.toml { };
 in
 {
   imports = [ wlib.modules.default ];
@@ -22,7 +23,7 @@ in
 
   config = {
     drv.dontFixup = true;
-    package = lib.mkDefault config.pkgs.jujutsu;
+    package = lib.mkDefault pkgs.jujutsu;
     env = {
       JJ_CONFIG = builtins.toString (tomlFmt.generate "jujutsu.toml" config.settings);
     };

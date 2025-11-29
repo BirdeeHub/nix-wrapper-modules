@@ -8,9 +8,9 @@ let
   # { email = ...; github = ...; githubId = ...; keys = [ ... ]; name = ...; }
   nixpkgsMaintainer = pkgs.lib.maintainers.rycee;
   helloModule = self.lib.wrapModule (
-    { config, ... }:
+    { config, pkgs, ... }:
     {
-      config.package = config.pkgs.hello;
+      config.package = pkgs.hello;
       config.meta.maintainers = [ nixpkgsMaintainer ];
     }
   );

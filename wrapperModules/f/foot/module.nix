@@ -2,10 +2,11 @@
   config,
   wlib,
   lib,
+  pkgs,
   ...
 }:
 let
-  iniFmt = config.pkgs.formats.ini { };
+  iniFmt = pkgs.formats.ini { };
 in
 {
   imports = [ wlib.modules.default ];
@@ -22,7 +23,7 @@ in
   config.flags = {
     "--config" = iniFmt.generate "foot.ini" config.settings;
   };
-  config.package = lib.mkDefault config.pkgs.foot;
+  config.package = lib.mkDefault pkgs.foot;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
   config.meta.platforms = lib.platforms.linux;
 }

@@ -2,13 +2,14 @@
   config,
   lib,
   wlib,
+  pkgs,
   ...
 }:
 {
   imports = [ wlib.modules.default ];
   options = {
     "env.nu" = lib.mkOption {
-      type = wlib.types.file config.pkgs;
+      type = wlib.types.file pkgs;
       default.content = "";
       description = ''
         The Nushell environment configuration file.
@@ -19,7 +20,7 @@
       '';
     };
     "config.nu" = lib.mkOption {
-      type = wlib.types.file config.pkgs;
+      type = wlib.types.file pkgs;
       default.content = "";
       description = ''
         The main Nushell configuration file.
@@ -37,7 +38,7 @@
     "--env-config" = config."env.nu".path;
   };
 
-  config.package = lib.mkDefault config.pkgs.nushell;
+  config.package = lib.mkDefault pkgs.nushell;
 
   config.meta.maintainers = [ wlib.maintainers.birdee ];
 }
