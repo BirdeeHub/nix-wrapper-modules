@@ -185,8 +185,13 @@ in
 
     The `config.optionname` value from the associated option
     will be normalized such that all items are DAG entries
+
+    If you wish to alter the type, you may provide different options
+    to wlib.dag.dagWith by updating this type `wlib.dag.dagOf // { strict = false; }`
   */
-  dagOf = dagWith { };
+  dagOf = {
+    __functor = self: dagWith (builtins.removeAttrs self [ "__functor" ]);
+  };
 
   /**
     Arguments:
@@ -255,8 +260,13 @@ in
 
     The `config.optionname` value from the associated option
     will be normalized such that all items are DAG entries
+
+    If you wish to alter the type, you may provide different options
+    to wlib.dag.dalWith by updating this type `wlib.dag.dalOf // { strict = false; }`
   */
-  dalOf = dalWith { };
+  dalOf = {
+    __functor = self: dalWith (builtins.removeAttrs self [ "__functor" ]);
+  };
 
   /**
     Arguments:

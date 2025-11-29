@@ -49,7 +49,7 @@ in
 
     used by `wlib.modules.makeWrapper`
   */
-  dalWithEsc = wlib.dag.dalWith extradagopts;
+  dalWithEsc = wlib.types.dalOf // extradagopts;
 
   /**
     same as `dagOf` except with an extra field `esc-fn`
@@ -58,7 +58,7 @@ in
 
     used by `wlib.modules.makeWrapper`
   */
-  dagWithEsc = wlib.dag.dagWith extradagopts;
+  dagWithEsc = wlib.types.dagOf // extradagopts;
 
   /**
     Type for a value that can be converted to string `"${like_this}"`

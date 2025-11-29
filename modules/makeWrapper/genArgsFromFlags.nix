@@ -15,8 +15,9 @@
     );
   flagDag =
     with lib.types;
-    wlib.dag.dagWith
-      {
+    (
+      wlib.types.dagOf
+      // {
         extraOptions = {
           esc-fn = lib.mkOption {
             type = nullOr (functionTo str);
@@ -28,6 +29,7 @@
           };
         };
       }
+    )
       (
         nullOr (oneOf [
           bool
