@@ -127,7 +127,7 @@ This excellent video by Vimjoyer was made, which mentions the project this one i
 
 [![Homeless Dotfiles with Nix Wrappers](https://img.youtube.com/vi/Zzvn9uYjQJY/0.jpg)](https://www.youtube.com/watch?v=Zzvn9uYjQJY)
 
-The video got that repository a good amount of attention. And the idea of the `.apply` interface was quite good, although I did implement it slightly differently (at the time of writing this anyway).
+The video got that repository a good amount of attention. And the idea of the `.apply` interface was quite good, although I did implement it in my own way.
 
 Most of the video is still applicable though! It is short and most of its runtime is devoted to explaining the problem being solved.
 So, if you still find yourself confused as to what problem this repository is solving, please watch it!
