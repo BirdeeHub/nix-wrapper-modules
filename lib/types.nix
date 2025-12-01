@@ -197,4 +197,49 @@ in
       in
       mergeFunction loc defs;
   };
+
+  /**
+    Like wlib.types.attrsRecursive, but does NOT allow contained functions to be merged
+
+    This is primarily used by the `config.passthru` option, as merged modules do not work properly,
+    and passing a module via `passthru` may be a common usecase.
+  */
+  recAttrs = lib.mkOptionType {
+    name = "recAttrs";
+    description = "recAttrs";
+    descriptionClass = "noun";
+    check = value: true;
+    merge =
+      loc: defs:
+      let
+        getType =
+          value:
+          if lib.isAttrs value && lib.isStringLike value then "stringCoercibleSet" else builtins.typeOf value;
+
+        # Returns the common type of all definitions, throws an error if they
+        # don't have the same type
+        commonType = lib.foldl' (
+          type: def:
+          if getType def.value == type then
+            type
+          else
+            throw "The option `${lib.showOption loc}' has conflicting option types in ${lib.showFiles (lib.getFiles defs)}"
+        ) (getType (lib.head defs).value) defs;
+
+        mergeFunction =
+          {
+            # Recursively merge attribute sets
+            set = (lib.types.attrsOf wlib.types.attrsRecursive).merge;
+            # merge lists
+            list = (lib.types.listOf wlib.types.attrsRecursive).merge;
+            # allowing functions to be mergeable prevents passing modules properly
+            lambda = lib.mergeOneOption;
+            # This is the type of packages, only accept a single definition
+            stringCoercibleSet = lib.mergeOneOption;
+            # Otherwise fall back to only allowing all equal definitions
+          }
+          .${commonType} or lib.mergeEqualOption;
+      in
+      mergeFunction loc defs;
+  };
 }

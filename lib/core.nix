@@ -113,7 +113,7 @@ in
       '';
     };
     passthru = lib.mkOption {
-      type = wlib.types.attrsRecursive;
+      type = wlib.types.recAttrs;
       default = { };
       description = ''
         Additional attributes to add to the resulting derivation's passthru.

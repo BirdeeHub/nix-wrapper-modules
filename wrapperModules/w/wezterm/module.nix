@@ -14,7 +14,7 @@
       description = "The wezterm config file. provide `.content`, or `.path`";
     };
     luaInfo = lib.mkOption {
-      type = wlib.types.attrsRecursive;
+      inherit (pkgs.formats.lua { }) type;
       default = { };
       description = ''
         anything other than uncalled nix functions can be put into this option, 
