@@ -6,6 +6,7 @@
   ...
 }:
 let
+  inherit (builtins) elemAt;
   generateArgsFromFlags = (import ./genArgsFromFlags.nix { inherit lib wlib; }).genArgs flaggenfunc;
   flaggenfunc =
     is_list: flagSeparator: name: value:
@@ -52,56 +53,39 @@ let
     }
   );
 
+  wrapcmd = partial: ''
+    echo ${lib.escapeShellArg partial} >> $out/bin/${config.binName}
+  '';
   shellcmdsdal =
-    wlib.dag.lmap (
-      var: esc-fn:
-      let
-        cmd = "unset ${esc-fn var}";
-      in
-      "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
-    ) config.unsetVar
+    wlib.dag.lmap (var: esc-fn: wrapcmd "unset ${esc-fn var}") config.unsetVar
     ++ wlib.dag.mapDagToDal (
       n: v: esc-fn:
-      let
-        cmd = "wrapperSetEnv ${esc-fn n} ${esc-fn v}";
-      in
-      "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
+      wrapcmd "wrapperSetEnv ${esc-fn n} ${esc-fn v}"
     ) config.env
     ++ wlib.dag.mapDagToDal (
       n: v: esc-fn:
-      let
-        cmd = "wrapperSetEnvDefault ${esc-fn n} ${esc-fn v}";
-      in
-      "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
+      wrapcmd "wrapperSetEnvDefault ${esc-fn n} ${esc-fn v}"
     ) config.envDefault
     ++ wlib.dag.lmap (
-      tuple:
-      with builtins;
-      esc-fn:
+      tuple: esc-fn:
       let
         env = elemAt tuple 0;
         sep = elemAt tuple 1;
         val = elemAt tuple 2;
-        cmd = "wrapperPrefixEnv ${esc-fn env} ${esc-fn sep} ${esc-fn val}";
       in
-      "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
+      wrapcmd "wrapperPrefixEnv ${esc-fn env} ${esc-fn sep} ${esc-fn val}"
     ) config.prefixVar
     ++ wlib.dag.lmap (
-      tuple:
-      with builtins;
-      esc-fn:
+      tuple: esc-fn:
       let
         env = elemAt tuple 0;
         sep = elemAt tuple 1;
         val = elemAt tuple 2;
-        cmd = "wrapperSuffixEnv ${esc-fn env} ${esc-fn sep} ${esc-fn val}";
       in
-      "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
+      wrapcmd "wrapperSuffixEnv ${esc-fn env} ${esc-fn sep} ${esc-fn val}"
     ) config.suffixVar
     ++ wlib.dag.lmap (
-      tuple:
-      with builtins;
-      esc-fn:
+      tuple: esc-fn:
       let
         env = elemAt tuple 0;
         sep = elemAt tuple 1;
@@ -111,9 +95,7 @@ let
       ''echo ${lib.escapeShellArg cmd}"$(cat ${esc-fn val})" >> $out/bin/${config.binName}''
     ) config.prefixContent
     ++ wlib.dag.lmap (
-      tuple:
-      with builtins;
-      esc-fn:
+      tuple: esc-fn:
       let
         env = elemAt tuple 0;
         sep = elemAt tuple 1;
@@ -122,16 +104,22 @@ let
       in
       ''echo ${lib.escapeShellArg cmd}"$(cat ${esc-fn val})" >> $out/bin/${config.binName}''
     ) config.suffixContent
-    ++ wlib.dag.lmap (
-      dir: esc-fn: "echo ${lib.escapeShellArg "cd ${esc-fn dir}"} >> $out/bin/${config.binName}"
-    ) config.chdir
-    ++ wlib.dag.lmap (
-      cmd: _: "echo ${lib.escapeShellArg cmd} >> $out/bin/${config.binName}"
-    ) config.runShell;
+    ++ wlib.dag.lmap (dir: esc-fn: wrapcmd "cd ${esc-fn dir}") config.chdir
+    ++ wlib.dag.lmap (cmd: _: wrapcmd cmd) config.runShell;
+
+  arg0 = if config.argv0 == null then "\"$0\"" else config.escapingFunction config.argv0;
+  finalcmd = ''${
+    if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
+  } ${preFlagStr} "$@" ${postFlagStr}'';
 
   shellcmds = lib.optionals (shellcmdsdal != [ ]) (
     wlib.dag.sortAndUnwrap {
-      dag = shellcmdsdal;
+      dag =
+        shellcmdsdal
+        ++ lib.optional (lib.isFunction config.argv0type) {
+          name = "NIX_RUN_MAIN_PACKAGE";
+          data = _: (wrapcmd (config.argv0type finalcmd));
+        };
       mapIfOk = v: v.data (if (v.esc-fn or null) != null then v.esc-fn else config.escapingFunction);
     }
   );
@@ -143,21 +131,14 @@ let
   prefuncs =
     lib.optional (config.env != { }) setvarfunc
     ++ lib.optional (config.envDefault != { }) setvardefaultfunc
-    ++ lib.optional (config.prefixVar != [ ] || config.suffixContent != [ ]) prefixvarfunc
+    ++ lib.optional (config.prefixVar != [ ] || config.prefixContent != [ ]) prefixvarfunc
     ++ lib.optional (config.suffixVar != [ ] || config.suffixContent != [ ]) suffixvarfunc;
-
-  arg0 = if config.argv0 == null then "\"$0\"" else config.escapingFunction config.argv0;
-  execcmd = ''
-    exec -a ${arg0} ${
-      if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
-    } ${preFlagStr} "$@" ${postFlagStr}
-  '';
 in
 ''
   mkdir -p $out/bin
   echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > $out/bin/${config.binName}
-  echo ${lib.escapeShellArg (builtins.concatStringsSep "\n" prefuncs)} >> $out/bin/${config.binName}
+  ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
   ${builtins.concatStringsSep "\n" shellcmds}
-  echo ${lib.escapeShellArg execcmd} >> $out/bin/${config.binName}
+  ${lib.optionalString (!lib.isFunction config.argv0type) (wrapcmd "exec -a ${arg0} ${finalcmd}")}
   chmod +x $out/bin/${config.binName}
 ''
