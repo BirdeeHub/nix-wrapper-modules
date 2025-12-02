@@ -14,12 +14,22 @@
   };
   options.luaEnv = lib.mkOption {
     type =
-      with lib.types;
+      let
+        inherit (lib.types) package listOf functionTo;
+      in
       (functionTo (listOf package))
       // {
         merge =
           loc: defs: arg:
-          builtins.concatLists (map (def: def.value arg) defs);
+          (listOf package).merge (loc ++ [ "<function body>" ]) (
+            map (
+              def:
+              def
+              // {
+                value = def.value arg;
+              }
+            ) defs
+          );
       };
     default = (lp: [ ]);
     description = ''
