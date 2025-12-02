@@ -23,7 +23,7 @@ When making options for your module, if you are able, please provide both nix-ge
 
 If you are not able to provide both, default to `wlib.types.file` unless it is `JSON` or something else which does not append nicely, but do try to provide both options.
 
-When you provide a `wlib.types.file` option, you should try to name it as close to the filename as possible, if that makes sense.
+When you provide a `wlib.types.file` option, you should name it the actual filename, especially if there are multiple, but `configFile` is also OK.
 
 Example:
 
@@ -35,42 +35,30 @@ Example:
   pkgs,
   ...
 }:
+let
+  gitIniFmt = pkgs.formats.gitIni { };
+in
 {
   imports = [ wlib.modules.default ];
   options = {
-    "wezterm.lua" = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.content = "return require('nix-info')";
-      description = "The wezterm config file. provide `.content`, or `.path`";
-    };
-    luaInfo = lib.mkOption {
-      type = lib.types.attrsOf lib.types.anything;
+    settings = lib.mkOption {
+      inherit (gitIniFmt) type;
       default = { };
       description = ''
-        anything other than uncalled nix functions can be put into this option, 
-        within your `"wezterm.lua"`, you will be able to call `require('nix-info')`
-        and get the values as lua values
-
-        the default `"wezterm.lua"` value is `return require('nix-info')`
-
-        This means, by default, this will act like your wezterm config file, unless you want to add some lua in between there.
+        Git configuration settings.
+        See {manpage}`git-config(1)` for available options.
       '';
+    };
+
+    configFile = lib.mkOption {
+      type = wlib.types.file pkgs;
+      default.path = gitIniFmt.generate "gitconfig" config.settings;
+      description = "Generated git configuration file.";
     };
   };
 
-  config.flagSeparator = "=";
-  config.flags = {
-    "--config-file" = pkgs.writeText "wezterm.lua" ''
-      local wezterm = require 'wezterm'
-      package.preload["nix-info"] = function() return ${
-        lib.generators.toLua { } config.luaInfo
-      } end
-      return dofile(${builtins.toJSON config."wezterm.lua".path})
-    '';
-  };
-
-  config.package = lib.mkDefault pkgs.wezterm;
-
+  config.env.GIT_CONFIG_GLOBAL = config.configFile.path;
+  config.package = lib.mkDefault pkgs.git;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
 }
 ```
@@ -97,45 +85,20 @@ Example:
   self,
 }:
 let
-  weztermWrapped = self.wrapperModules.wezterm.wrap (
-    { lib, ... }:
-    {
-      inherit pkgs;
-      luaInfo = {
-        keys = [
-          {
-            key = "F12";
-            mods = "SUPER|CTRL|ALT|SHIFT";
-            action = lib.generators.mkLuaInline "wezterm.action.Nop";
-          }
-        ];
+  gitWrapped = self.wrapperModules.git.wrap {
+    inherit pkgs;
+    settings = {
+      user = {
+        name = "Test User";
+        email = "test@example.com";
       };
-      "wezterm.lua".content = # lua
-        ''
-          local wezterm = require 'wezterm'
-          local config = require 'nix-info'
-          config.keys[2] = {
-            key = 'F13',
-            mods = 'SUPER|CTRL|ALT|SHIFT',
-            action = wezterm.action.Nop,
-          }
-          return config
-        '';
-    }
-  );
+    };
+  };
+
 in
-pkgs.runCommand "wezterm-test" { } ''
-  res=$("${weztermWrapped}/bin/wezterm" show-keys)
-  if ! echo "$res" | grep -q "SHIFT | ALT | CTRL | SUPER   F12"; then
-    echo "Wezterm doesn't see custom keybind 1"
-    touch $out
-    exit 1
-  fi
-  if ! echo "$res" | grep -q "SHIFT | ALT | CTRL | SUPER   F13"; then
-    echo "Wezterm doesn't see custom keybind 2"
-    touch $out
-    exit 1
-  fi
+pkgs.runCommand "git-test" { } ''
+  "${gitWrapped}/bin/git" config user.name | grep -q "Test User"
+  "${gitWrapped}/bin/git" config user.email | grep -q "test@example.com"
   touch $out
 ''
 ```
