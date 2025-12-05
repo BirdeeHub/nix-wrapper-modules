@@ -64,18 +64,22 @@ let
       + (builtins.concatStringsSep " " commands)
     );
 
-  module_desc =
+  read_md_dir =
+    dir:
     let
-      files = builtins.readDir ./modules;
+      files = builtins.readDir dir;
       mdFiles = builtins.filter (name: builtins.match ".*\\.md$" name != null) (builtins.attrNames files);
     in
     builtins.listToAttrs (
       map (name: {
         name = builtins.substring 0 (builtins.stringLength name - 3) name;
-        value = builtins.readFile (./modules + "/${name}");
+        value = builtins.readFile (dir + "/${name}");
       }) mdFiles
     );
-  module_docs = builtins.mapAttrs (buildModuleDocs "modules" (builtins.removeAttrs module_desc [ "core" ])) wlib.modules;
+  module_desc = read_md_dir ./modules;
+  module_docs = builtins.mapAttrs (buildModuleDocs "modules" (
+    builtins.removeAttrs module_desc [ "core" ]
+  )) wlib.modules;
   wrapper_docs = builtins.mapAttrs (buildModuleDocs "wrapperModules" { }) wlib.wrapperModules;
 
   coredocs =
@@ -155,7 +159,12 @@ let
     echo '  - [`wlib.dag`](./dag.md)' >> $out/src/SUMMARY.md
     echo '  - [`wlib.types`](./types.md)' >> $out/src/SUMMARY.md
     echo '- [Helper Modules](./helper-modules.md)' >> $out/src/SUMMARY.md
-    ${mkSubLinks (builtins.removeAttrs module_docs [ "default" "core" ])}
+    ${mkSubLinks (
+      builtins.removeAttrs module_docs [
+        "default"
+        "core"
+      ]
+    )}
     echo '- [Wrapper Modules](./wrapper-modules.md)' >> $out/src/SUMMARY.md
     ${mkSubLinks wrapper_docs}
   '';
