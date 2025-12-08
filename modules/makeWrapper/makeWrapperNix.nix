@@ -112,13 +112,13 @@ let
     if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
   } ${preFlagStr} "$@" ${postFlagStr}'';
 
-  shellcmds = lib.optionals (shellcmdsdal != [ ]) (
+  shellcmds = lib.optionals (shellcmdsdal != [ ] || lib.isFunction config.argv0type) (
     wlib.dag.sortAndUnwrap {
       dag =
         shellcmdsdal
         ++ lib.optional (lib.isFunction config.argv0type) {
           name = "NIX_RUN_MAIN_PACKAGE";
-          data = _: (wrapcmd (config.argv0type finalcmd));
+          data = _: wrapcmd (config.argv0type finalcmd);
         };
       mapIfOk = v: v.data (if (v.esc-fn or null) != null then v.esc-fn else config.escapingFunction);
     }
