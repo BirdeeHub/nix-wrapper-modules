@@ -11,7 +11,7 @@ let
   buildModuleDocs =
     {
       prefix,
-      exclude_core ? true,
+      include_core ? false,
     }:
     name: module:
     let
@@ -69,9 +69,17 @@ let
               } descriptions
             )
           ];
-      get_options =
-        key: mod: builtins.removeAttrs (eval_mod key mod).options (lib.optionals exclude_core corelist);
-      options = map (v: get_options v.key v.file) graph;
+      get_options = key: mod: builtins.removeAttrs (eval_mod key mod).options corelist;
+      options =
+        map (v: get_options v.key v.file) graph
+        ++ lib.optional include_core (
+          builtins.removeAttrs
+            (wlib.evalModule {
+              inherit pkgs;
+              package = lib.mkOverride 9001 pkgs.hello;
+            }).options
+            [ "_module" ]
+        );
       optdocs = map (v: (nixosOptionsDoc { options = v; }).optionsCommonMark) options;
       commands = map (v: /* bash */ ''
         cat ${v} | \
