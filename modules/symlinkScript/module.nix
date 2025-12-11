@@ -132,4 +132,11 @@
     ''
   );
   config.meta.maintainers = lib.mkDefault [ wlib.maintainers.birdee ];
+  config.meta.description = lib.mkDefault ''
+    Adds extra options compared to the default `symlinkScript` option value.
+
+    Imported by `wlib.modules.default`
+
+    ---
+  '';
 }

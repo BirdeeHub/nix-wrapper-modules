@@ -67,6 +67,7 @@ in
   */
   stringable = lib.mkOptionType {
     name = "stringable";
+    descriptionClass = "noun";
     description = "str|path|drv";
     check = lib.isStringLike;
     merge = lib.mergeEqualOption;

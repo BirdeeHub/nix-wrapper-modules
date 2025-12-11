@@ -8,15 +8,19 @@
   ...
 }:
 let
-  # This gets you a list of each module, and those they import
-  getGraph = import ./eval-graph.nix {
-    inherit pkgs wlib;
-    rootPath = ../.;
-  };
-  corelist = builtins.attrNames (wlib.evalModule { }).options;
   buildModuleDocs =
-    prefix: descriptions: name: module:
+    {
+      prefix,
+      exclude_core ? true,
+    }:
+    name: module:
     let
+      # This gets you a list of each module, and those they import
+      getGraph = import ./eval-graph.nix {
+        inherit pkgs wlib;
+        rootPath = ../.;
+      };
+      corelist = builtins.attrNames (wlib.evalModule { }).options;
       graph = getGraph module;
       maineval = wlib.evalModules {
         modules = [
@@ -29,23 +33,44 @@ let
         ];
       };
       package = maineval.config.package;
-      get_options =
+      eval_mod =
         key: mod:
-        builtins.removeAttrs
-          (wlib.evalModules {
-            modules = [
-              { _module.check = false; }
+        wlib.evalModules {
+          modules = [
+            { _module.check = false; }
+            {
+              disabledModules = map (v: v.key) (
+                builtins.filter (v: v.key != key && builtins.match ".*:anon-[0-9]+" v.key == null) graph
+              );
+              imports = [ mod ];
+              config.pkgs = pkgs;
+              config.package = lib.mkOverride 9001 package;
+            }
+          ];
+        };
+      module_description =
+        if graph == [ ] then
+          ""
+        else
+          lib.pipe graph [
+            builtins.head
+            (
+              { key, file, ... }:
               {
-                disabledModules = map (v: v.key) (
-                  builtins.filter (v: v.key != key && builtins.match ".*:anon-[0-9]+" v.key == null) graph
-                );
-                imports = [ mod ];
-                config.pkgs = pkgs;
-                config.package = lib.mkOverride 9001 package;
+                inherit file;
+                descriptions = (eval_mod key file).config.meta.description;
               }
-            ];
-          }).options
-          corelist;
+            )
+            (
+              { file, descriptions }:
+              lib.findFirst (v: v.file == file) {
+                pre = "";
+                post = "";
+              } descriptions
+            )
+          ];
+      get_options =
+        key: mod: builtins.removeAttrs (eval_mod key mod).options (lib.optionals exclude_core corelist);
       options = map (v: get_options v.key v.file) graph;
       optdocs = map (v: (nixosOptionsDoc { options = v; }).optionsCommonMark) options;
       commands = map (v: /* bash */ ''
@@ -56,31 +81,23 @@ let
     in
     pkgs.runCommand "${name}-${prefix}-docs" { } (
       ''
-        echo '# `wlib.${prefix}.${name}`' > $out
+        echo ${lib.escapeShellArg "# `${prefix}${name}`"} > $out
         echo >> $out
-        echo ${lib.escapeShellArg (descriptions.${name} or "")} >> $out
+        echo ${lib.escapeShellArg module_description.pre} >> $out
         echo >> $out
       ''
-      + (builtins.concatStringsSep " " commands)
+      + (builtins.concatStringsSep "\n" commands)
+      + "\n"
+      + ''
+        echo >> $out
+        echo ${lib.escapeShellArg module_description.post} >> $out
+      ''
     );
 
-  read_md_dir =
-    dir:
-    let
-      files = builtins.readDir dir;
-      mdFiles = builtins.filter (name: builtins.match ".*\\.md$" name != null) (builtins.attrNames files);
-    in
-    builtins.listToAttrs (
-      map (name: {
-        name = builtins.substring 0 (builtins.stringLength name - 3) name;
-        value = builtins.readFile (dir + "/${name}");
-      }) mdFiles
-    );
-  module_desc = read_md_dir ./modules;
-  module_docs = builtins.mapAttrs (buildModuleDocs "modules" (
-    builtins.removeAttrs module_desc [ "core" ]
-  )) wlib.modules;
-  wrapper_docs = builtins.mapAttrs (buildModuleDocs "wrapperModules" { }) wlib.wrapperModules;
+  module_docs = builtins.mapAttrs (buildModuleDocs { prefix = "wlib.modules."; }) wlib.modules;
+  wrapper_docs = builtins.mapAttrs (buildModuleDocs {
+    prefix = "wlib.wrapperModules.";
+  }) wlib.wrapperModules;
 
   coredocs =
     let
@@ -97,7 +114,7 @@ let
           };
         in
         ''
-          echo ${lib.escapeShellArg (module_desc.core or "")} > $out
+          echo ${lib.escapeShellArg (builtins.readFile ./core.md)} > $out
           echo >> $out
           cat ${coreopts.optionsCommonMark} | \
             sed 's|file://${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
@@ -159,12 +176,7 @@ let
     echo '  - [`wlib.dag`](./dag.md)' >> $out/src/SUMMARY.md
     echo '  - [`wlib.types`](./types.md)' >> $out/src/SUMMARY.md
     echo '- [Helper Modules](./helper-modules.md)' >> $out/src/SUMMARY.md
-    ${mkSubLinks (
-      builtins.removeAttrs module_docs [
-        "default"
-        "core"
-      ]
-    )}
+    ${mkSubLinks (builtins.removeAttrs module_docs [ "default" ])}
     echo '- [Wrapper Modules](./wrapper-modules.md)' >> $out/src/SUMMARY.md
     ${mkSubLinks wrapper_docs}
   '';

@@ -5,6 +5,67 @@
   ...
 }@args:
 let
+  descriptionsWithFiles = lib.mkOptionType {
+    name = "descriptionsWithFiles";
+    check =
+      (lib.types.either lib.types.str (
+        lib.types.submodule {
+          options = {
+            post = lib.mkOption {
+              type = lib.types.str;
+              default = "";
+            };
+            pre = lib.mkOption {
+              type = lib.types.str;
+              default = "";
+            };
+          };
+        }
+      )).check;
+    descriptionClass = "noun";
+    description = ''string or { pre ? "", post ? "" } (converted to `[ { pre, post, file } ]`)'';
+    merge =
+      loc: defs:
+      (lib.types.listOf (
+        lib.types.submodule {
+          options = {
+            pre = lib.mkOption {
+              type = lib.types.str;
+              default = "";
+              description = "header text";
+            };
+            post = lib.mkOption {
+              type = lib.types.str;
+              default = "";
+              description = "footer text";
+            };
+            file = lib.mkOption {
+              type = wlib.types.stringable;
+              description = "file";
+            };
+          };
+        }
+      )).merge
+        loc
+        (
+          map (
+            v:
+            v
+            // {
+              value =
+                if builtins.isString v.value then
+                  [
+                    {
+                      inherit (v) file;
+                      pre = v.value;
+                    }
+                  ]
+                else
+                  [ (v.value // { inherit (v) file; }) ];
+            }
+          ) defs
+        );
+  };
   maintainersWithFiles =
     let
       maintainer = lib.types.submodule (
@@ -86,6 +147,17 @@ in
         default = lib.platforms.all;
         defaultText = "lib.platforms.all";
         description = "Supported platforms";
+      };
+      description = lib.mkOption {
+        description = ''
+          Description of the module.
+
+          Accepts either a string, or a set of `{ pre ? "", post ? "" }`
+
+          Resulting config value will be a list of `{ pre, post, file }`
+        '';
+        default = "";
+        type = descriptionsWithFiles;
       };
     };
     pkgs = lib.mkOption {
