@@ -21,7 +21,7 @@ in
     };
   };
   config.flags = {
-    "--config-file" = yamlFmt.generate "ov.yaml" config.settings;
+    "--config" = yamlFmt.generate "ov.yaml" config.settings;
   };
   config.package = lib.mkDefault pkgs.ov;
   config.meta.maintainers = [ wlib.maintainers.rencire ];
