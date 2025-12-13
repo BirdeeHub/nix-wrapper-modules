@@ -186,7 +186,8 @@ in
                  res)
 
                (var result {})
-               (each [_ h (ipairs hooks)]
+               (for [i 1 (select "#" ((or unpack table.unpack) hooks))]
+                 (local h (. hooks i))
                  (when (= (type h) :table) (set result (add-hooks result h))))
                result) [
                 ${generatedConfig}
@@ -211,7 +212,8 @@ in
                 return res
               end
               local result = {}
-              for _, h in ipairs(hooks) do
+              for i = 1, select('#', (unpack or table.unpack)(hooks)) do
+                local h = hooks[i]
                 if type(h) == "table" then
                   result = add_hooks(result, h)
                 end

@@ -40,6 +40,10 @@ let
     { lib, ... }:
     {
       inherit pkgs;
+      luaInit.testfile1 = {
+        before = [ "testfile" ];
+        data = "";
+      };
       luaInit.testfile = /* lua */ ''
         xplr.fn.custom.my_test = function()
           print("HELLO FROM HOOK")
