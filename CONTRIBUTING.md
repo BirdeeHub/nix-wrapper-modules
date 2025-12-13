@@ -52,7 +52,7 @@ When you provide a `wlib.types.file` option, you should name it the actual filen
 
 If you do name it `configFile` instead, you can fix the filename if necessary/desired by setting `default.path` explicitly, as shown in the example below.
 
-Keep in mind that even if you do not choose to use `wlib.types.file`, the user can usually still override the value by overriding the option you supply the path to.
+Keep in mind that even if you do not choose to use `wlib.types.file`, the user can usually still override the option that you set to provide the generated path if needed.
 
 However, this makes the user of your module search for it, and in some situations, such as when your module is adding stuff to `list` or `DAL` type options, this can be slightly harder to override later.
 
