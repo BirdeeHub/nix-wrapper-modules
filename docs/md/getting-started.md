@@ -19,7 +19,7 @@ They will get you started with a module file and the default one also gives you 
   inputs.wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
   outputs = { self, wrappers }: {
     packages.x86_64-linux.default =
-      wrappers.wrapperModules.wezterm.wrap rec {
+      wrappers.wrapperModules.wezterm.wrap ({ pkgs, ... }: {
         pkgs = wrappers.inputs.nixpkgs.legacyPackages.x86_64-linux;
         luaInfo = {
           keys = [
@@ -30,7 +30,7 @@ They will get you started with a module file and the default one also gives you 
             }
           ];
         };
-      };
+      });
   };
 }
 ```
