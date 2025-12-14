@@ -198,4 +198,30 @@ in
       in
       mergeFunction loc defs;
   };
+
+  /**
+    The kind of type you would provide to `pkgs.lua.withPackages` or `pkgs.python3.withPackages`
+
+    This type is a function from a set of packages to a list of packages.
+
+    If you set it in multiple files, it will merge the resulting lists according to normal module rules for a `listOf package`.
+  */
+  withPackagesType =
+    let
+      inherit (lib.types) package listOf functionTo;
+    in
+    (functionTo (listOf package))
+    // {
+      merge =
+        loc: defs: arg:
+        (listOf package).merge (loc ++ [ "<function body>" ]) (
+          map (
+            def:
+            def
+            // {
+              value = def.value arg;
+            }
+          ) defs
+        );
+    };
 }

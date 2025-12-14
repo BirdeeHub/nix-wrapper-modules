@@ -7,24 +7,6 @@
 }:
 let
   luaType = (pkgs.formats.lua { }).type;
-  withPackagesType =
-    let
-      inherit (lib.types) package listOf functionTo;
-    in
-    (functionTo (listOf package))
-    // {
-      merge =
-        loc: defs: arg:
-        (listOf package).merge (loc ++ [ "<function body>" ]) (
-          map (
-            def:
-            def
-            // {
-              value = def.value arg;
-            }
-          ) defs
-        );
-    };
   disableableDagOf = wlib.types.dagOf // {
     extraOptions.disabled = lib.mkOption {
       type = lib.types.bool;
@@ -85,7 +67,7 @@ in
     description = "The default config language to use for generated config segments. Does not affect the `luaInfo` option.";
   };
   options.luaEnv = lib.mkOption {
-    type = withPackagesType;
+    type = wlib.types.withPackagesType;
     default = lp: [ ];
     description = ''
       extra lua packages to add to the lua environment for xplr

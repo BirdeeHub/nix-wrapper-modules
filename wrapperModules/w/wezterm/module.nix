@@ -13,24 +13,7 @@
     description = "The lua derivation used to evaluate the `luaEnv` option";
   };
   options.luaEnv = lib.mkOption {
-    type =
-      let
-        inherit (lib.types) package listOf functionTo;
-      in
-      (functionTo (listOf package))
-      // {
-        merge =
-          loc: defs: arg:
-          (listOf package).merge (loc ++ [ "<function body>" ]) (
-            map (
-              def:
-              def
-              // {
-                value = def.value arg;
-              }
-            ) defs
-          );
-      };
+    type = wlib.types.withPackagesType;
     default = (lp: [ ]);
     description = ''
       extra lua packages to add to the lua environment for wezterm
