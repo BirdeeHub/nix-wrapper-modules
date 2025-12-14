@@ -31,6 +31,8 @@ let
     mapAttrs
     isList
     toJSON
+    removeAttrs
+    concatStringsSep
     ;
   inherit (lib)
     mkIf
@@ -55,10 +57,8 @@ let
     ;
   mkExtraFieldsMsg =
     settings:
-    if builtins.isAttrs (settings.extraOptions or null) then
-      "(with extra field(s): `"
-      + (builtins.concatStringsSep "`, `" (builtins.attrNames settings.extraOptions))
-      + "`) "
+    if isAttrs (settings.extraOptions or null) then
+      "(with extra field(s): `" + (concatStringsSep "`, `" (attrNames settings.extraOptions)) + "`) "
     else
       "";
   dagEntryOf =
@@ -111,7 +111,7 @@ let
           ]
           ++ (if isList (settings.modules or null) then settings.modules else [ ]);
         }
-        // builtins.removeAttrs settings [
+        // removeAttrs settings [
           "strict"
           "modules"
           "extraOptions"
@@ -187,7 +187,7 @@ in
     to wlib.dag.dagWith by updating this type `wlib.dag.dagOf // { strict = false; }`
   */
   dagOf = {
-    __functor = self: dagWith (builtins.removeAttrs self [ "__functor" ]);
+    __functor = self: dagWith (removeAttrs self [ "__functor" ]);
   };
 
   /**
@@ -262,7 +262,7 @@ in
     to wlib.dag.dalWith by updating this type `wlib.dag.dalOf // { strict = false; }`
   */
   dalOf = {
-    __functor = self: dalWith (builtins.removeAttrs self [ "__functor" ]);
+    __functor = self: dalWith (removeAttrs self [ "__functor" ]);
   };
 
   /**
