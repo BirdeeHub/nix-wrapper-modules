@@ -14,7 +14,15 @@ You can then receive it in `.data` with `local opts, name = ...`
 
 ```nix
 luaEnv = lp: [ lp.inspect ];
-luaInit.WillRunEventually = "print('you can also just put a string if you dont want opts or need to run it before or after another')";
+luaInit.WillRunEventually = ''
+  print([[
+    you can also just put a string if you currently don't need opts,
+    don't have ordering requirements, etc...
+
+    config.luaInit.WillRunEventually.data will be this string.
+    You can still add other stuff later.
+  ]])
+'';
 luaInit.TESTFILE_1 = {
   opts = { testval = 1; };
   data = /* lua */''
