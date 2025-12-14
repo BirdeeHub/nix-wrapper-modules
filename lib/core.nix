@@ -180,6 +180,91 @@ in
         values from `config.overrides` applied to it.
       '';
     };
+    overrides = lib.mkOption {
+      type =
+        let
+          inherit (lib.types)
+            functionTo
+            attrsOf
+            either
+            raw
+            enum
+            str
+            ;
+          base =
+            (
+              wlib.types.dalOf
+              // {
+                extraOptions = {
+                  type = lib.mkOption {
+                    type = either (enum [
+                      "override"
+                      "overrideAttrs"
+                    ]) str;
+                    description = ''
+                      the list of `.override` and `.overrideAttrs` to apply to `config.package`
+                      Accessing `config.package` will return the value with all overrides applied.
+                    '';
+                  };
+                };
+              }
+            )
+              (either (attrsOf raw) (functionTo (attrsOf raw)));
+        in
+        base
+        // {
+          merge =
+            loc: defs:
+            # NOTE: we want low&old -> high&new
+            # but we get low&new -> high&old
+            # so we reverse the sort so that mkBefore, mkAfter, override and overrideAttrs
+            # don't happen in reverse of what we expect
+            base.merge loc (
+              builtins.sort (
+                a: b:
+                (a.priority or lib.modules.defaultOrderPriority) <= (b.priority or lib.modules.defaultOrderPriority)
+              ) defs
+            );
+        };
+      default = [ ];
+      description = ''
+        the list of `.override` and `.overrideAttrs` to apply to `config.package`
+
+        Accessing `config.package` will return the package with all overrides applied.
+
+        Accepts a list of `{ type, data, name ? null, before ? [], after ? [] }`
+
+        `type` is a string like `override` or `overrideAttrs`
+
+        ```nix
+        config.package = pkgs.mpv;
+        config.overrides = [
+          {
+            after = [ "MPV_SCRIPTS" ];
+            type = "override";
+            data = (prev: {
+              scripts = (prev.scripts or []) ++ [ pkgs.mpvScripts.visualizer ];
+            });
+          }
+          {
+            name = "MPV_SCRIPTS";
+            type = "override";
+            data = (prev: {
+              scripts = (prev.scripts or []) ++ config.scripts;
+            });
+          }
+          {
+            type = "override";
+            data = (prev: {
+              scripts = (prev.scripts or []) ++ [ pkgs.mpvScripts.autocrop ];
+            });
+          }
+        ];
+        ```
+
+        The above will add `config.scripts`, then `pkgs.mpvScripts.visualizer` and finally `pkgs.mpvScripts.autocrop`
+      '';
+    };
     passthru = lib.mkOption {
       type = wlib.types.attrsRecursive;
       default = { };
@@ -411,91 +496,6 @@ in
       description = ''
         Internal option storing the `.extendModules` function at each re-evaluation.
         Used by `.eval` to re-evaluate with additional modules.
-      '';
-    };
-    overrides = lib.mkOption {
-      type =
-        let
-          inherit (lib.types)
-            functionTo
-            attrsOf
-            either
-            raw
-            enum
-            str
-            ;
-          base =
-            (
-              wlib.types.dalOf
-              // {
-                extraOptions = {
-                  type = lib.mkOption {
-                    type = either (enum [
-                      "override"
-                      "overrideAttrs"
-                    ]) str;
-                    description = ''
-                      the list of `.override` and `.overrideAttrs` to apply to `config.package`
-                      Accessing `config.package` will return the value with all overrides applied.
-                    '';
-                  };
-                };
-              }
-            )
-              (either (attrsOf raw) (functionTo (attrsOf raw)));
-        in
-        base
-        // {
-          merge =
-            loc: defs:
-            # NOTE: we want low&old -> high&new
-            # but we get low&new -> high&old
-            # so we reverse the sort so that mkBefore, mkAfter, override and overrideAttrs
-            # don't happen in reverse of what we expect
-            base.merge loc (
-              lib.sort (
-                a: b:
-                (a.priority or lib.modules.defaultOrderPriority) <= (b.priority or lib.modules.defaultOrderPriority)
-              ) defs
-            );
-        };
-      default = [ ];
-      description = ''
-        the list of `.override` and `.overrideAttrs` to apply to `config.package`
-
-        Accessing `config.package` will return the package with all overrides applied.
-
-        Accepts a list of `{ type, data, name ? null, before ? [], after ? [] }`
-
-        `type` is a string like `override` or `overrideAttrs`
-
-        ```nix
-        config.package = pkgs.mpv;
-        config.overrides = [
-          {
-            after = [ "MPV_SCRIPTS" ];
-            type = "override";
-            data = (prev: {
-              scripts = (prev.scripts or []) ++ [ pkgs.mpvScripts.visualizer ];
-            });
-          }
-          {
-            name = "MPV_SCRIPTS";
-            type = "override";
-            data = (prev: {
-              scripts = (prev.scripts or []) ++ config.scripts;
-            });
-          }
-          {
-            type = "override";
-            data = (prev: {
-              scripts = (prev.scripts or []) ++ [ pkgs.mpvScripts.autocrop ];
-            });
-          }
-        ];
-        ```
-
-        The above will add `config.scripts`, then `pkgs.mpvScripts.visualizer` and finally `pkgs.mpvScripts.autocrop`
       '';
     };
     wrapper = lib.mkOption {
