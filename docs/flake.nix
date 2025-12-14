@@ -21,7 +21,7 @@
           pkgs = import nixpkgs { inherit system; };
         in
         {
-          default = pkgs.callPackage ./collect.nix {
+          default = pkgs.callPackage ./. {
             inherit wlib;
           };
         }
