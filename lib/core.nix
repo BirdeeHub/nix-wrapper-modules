@@ -202,8 +202,7 @@ in
                       "overrideAttrs"
                     ]) str;
                     description = ''
-                      the list of `.override` and `.overrideAttrs` to apply to `config.package`
-                      Accessing `config.package` will return the value with all overrides applied.
+                      The attribute of `config.package` to pass the override argument to.
                     '';
                   };
                 };
