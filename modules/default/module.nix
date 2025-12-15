@@ -13,8 +13,6 @@
 
     Allows you to choose one of several underlying implementations of the `makeWrapper` interface.
 
-    Imported by `wlib.modules.default`
-
     Wherever the type includes `DAG` you can mentally substitute this with `attrsOf`
 
     Wherever the type includes `DAL` or `DAG list` you can mentally substitute this with `listOf`
