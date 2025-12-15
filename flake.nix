@@ -8,7 +8,7 @@
         system:
         if inputs.pkgs.stdenv.hostPlatform.system or null == system then
           inputs.pkgs
-        else if inputs.nixpkgs.legacyPackages.${system} or null != null then
+        else if inputs.nixpkgs.legacyPackages ? "${system}" then
           inputs.nixpkgs.legacyPackages.${system}
         else
           import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) { inherit system; };
