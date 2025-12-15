@@ -476,7 +476,7 @@ in
             modules = (if builtins.isList module then module else [ module ]) ++ [
               {
                 _file = ./core.nix;
-                __extend = lib.mkOverride 0 res.extendModules;
+                __extend = lib.mkOverride 0 (lib.mkOrder 0 res.extendModules);
               }
             ];
           };
@@ -488,7 +488,9 @@ in
         name = "lastWins";
         description = "All definitions (of the same priority) override the previous one";
         check = lib.isFunction;
-        # merge is ordered latest first within the same priority
+        # merge is ordered latest first within the same priority (of both types of priority)
+        # we always assign to this with lib.mkOverride 0 (lib.mkOrder 0 res.extendModules),
+        # this assures we can always override its value with the newest internal usage of this option.
         merge = loc: defs: (builtins.head defs).value;
         emptyValue = _: { };
       };

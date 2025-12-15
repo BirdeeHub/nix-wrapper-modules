@@ -36,7 +36,7 @@
           ++ [
             {
               _file = ./core.nix;
-              __extend = lib.mkOverride 0 res.extendModules;
+              __extend = lib.mkOverride 0 (lib.mkOrder 0 res.extendModules);
             }
           ];
           specialArgs = {
