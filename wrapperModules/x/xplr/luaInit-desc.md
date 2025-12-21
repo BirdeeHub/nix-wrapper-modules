@@ -8,7 +8,7 @@ It is like the `config.luaInfo` option, but per entry.
 
 You can then receive it in `.data` with `local opts, name = ...`
 
-`{ data, after ? [], before ? [], opts ? {}, disabled ? false, plugin ? null, type ? config.defaultConfigLang }`
+`{ data, after ? [], before ? [], opts ? {}, enable ? true, plugin ? null, type ? config.defaultConfigLang }`
 
 **Example usage:**
 
