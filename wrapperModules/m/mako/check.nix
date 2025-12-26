@@ -7,16 +7,14 @@ let
   makoWrapped =
     (self.wrapperModules.mako.apply {
       inherit pkgs;
-      "--config".content = ''
-        ao=null
-        vo=null
-      '';
+      settings.icon-location = "left";
     }).wrapper;
 
 in
 if builtins.elem pkgs.stdenv.hostPlatform.system self.wrapperModules.mako.meta.platforms then
   pkgs.runCommand "mako-test" { } ''
     "${makoWrapped}/bin/mako" --help | grep -q "mako"
+    grep -q --no-ignore-case -- "--config" "${makoWrapped}/bin/mako"
     touch $out
   ''
 else
