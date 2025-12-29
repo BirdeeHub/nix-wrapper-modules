@@ -173,7 +173,7 @@ in
         for inheriting all other files from this package
         (like man page, /share, ...)
 
-        The config.package value given by this option already has all
+        The `config.package` value given by this option already has all
         values from `config.overrides` applied to it.
       '';
     };
@@ -313,6 +313,8 @@ in
       default = config.package.outputs or [ "out" ];
       description = ''
         Override the list of nix outputs that get symlinked into the final package.
+
+        Default is the value of `config.package.outputs or [ "out" ]`
       '';
     };
     wrapperFunction = lib.mkOption {
@@ -323,7 +325,7 @@ in
 
         This option takes a function receiving the following arguments:
 
-        module arguments + pkgs.callPackage
+        module arguments + `pkgs.callPackage`
 
         ```
         {
@@ -351,7 +353,7 @@ in
 
         This option takes a function receiving the following arguments:
 
-        module arguments + `wrapper` + pkgs.callPackage
+        module arguments + `wrapper` + `pkgs.callPackage`
 
         ```
         {
@@ -418,9 +420,9 @@ in
       type = lib.types.bool;
       default = true;
       description = ''
-        Whether to call $stdenv/setup to set up the environment before the symlinkScript
+        Whether to call `$stdenv/setup` to set up the environment before the symlinkScript
 
-        If any phases are enabled, also runs the enabled phases after the symlinkScript command has ran.
+        If any phases are enabled, also runs the enabled phases after the `config.symlinkScript` command has ran.
 
         NOTE: often you may prefer to use things like `drv.dontFixup = true;`,
         or even `drv.phases = [ ... "buildPhase" etc ... ];` instead,
