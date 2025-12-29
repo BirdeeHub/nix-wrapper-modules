@@ -56,7 +56,7 @@
     res;
 
   /**
-    `evalModule = module: wlib.evalModules { modules = [ module ]; };`
+    `evalModule = module: wlib.evalModules { modules = if builtins.isList module then module else [ module ]; };`
 
     Evaluates the module along with the core options, using `lib.evalModules`
 
@@ -70,7 +70,8 @@
     - Provides `config` for accessing evaluated configuration
     - Provides `options` for introspection and documentation
   */
-  evalModule = module: wlib.evalModules { modules = [ module ]; };
+  evalModule =
+    module: wlib.evalModules { modules = if builtins.isList module then module else [ module ]; };
 
   /**
     Creates a reusable wrapper module.
@@ -111,8 +112,8 @@
     (wlib.evalModules {
       modules = [
         wlib.modules.default
-        module
-      ];
+      ]
+      ++ (if builtins.isList module then module else [ module ]);
     }).config;
 
   /**
@@ -131,8 +132,8 @@
     (wlib.evalModules {
       modules = [
         wlib.modules.default
-        module
-      ];
+      ]
+      ++ (if builtins.isList module then module else [ module ]);
     }).config.wrapper;
 
   /**
