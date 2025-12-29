@@ -170,15 +170,27 @@ let
       type = mkOptionType {
         name = "dagEntryOf";
         description = "DAG entry ${extraFieldsMsg}of ${elemType.description}";
-        # leave the checking to the submodule type
-        merge =
-          loc: defs:
-          submoduleType.merge loc (
-            map (def: {
-              inherit (def) file;
-              value = maybeConvert def;
-            }) defs
-          );
+        check = {
+          # leave the checking to the submodule type merge
+          __functor = _self: _x: true;
+          isV2MergeCoherent = true;
+        };
+        merge = {
+          __functor =
+            self: loc: defs:
+            (self.v2 { inherit loc defs; }).value;
+          v2 =
+            { loc, defs }:
+            submoduleType.merge.v2 {
+              inherit loc;
+              defs = (
+                map (def: {
+                  inherit (def) file;
+                  value = maybeConvert def;
+                }) defs
+              );
+            };
+        };
       };
     };
 in
