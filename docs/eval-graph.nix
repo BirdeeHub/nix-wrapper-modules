@@ -24,7 +24,7 @@ let
     ];
   };
 
-  stripStore = path: (pkgs.lib.removePrefix "/" (pkgs.lib.removePrefix "${rootPath}" path));
+  stripStore = path: (pkgs.lib.removePrefix "${rootPath}/" path);
 
   cleanNodes =
     node:
@@ -70,5 +70,5 @@ let
         if matchres != null then builtins.head matchres else node.key;
     };
 in
-[ (stripAnon (builtins.head flattened)) ]
-++ (if flattened != [ ] then builtins.tail flattened else [ ])
+(if builtins.length flattened > 0 then [ (stripAnon (builtins.head flattened)) ] else [ ])
+++ (if builtins.length flattened > 1 then builtins.tail flattened else [ ])
