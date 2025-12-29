@@ -593,7 +593,7 @@ in
                 overrideArgs:
                 passthru.configuration.wrap {
                   _file = ./core.nix;
-                  overrides = lib.mkOverride options.overrides.highestPrio [
+                  overrides = lib.mkOverride (options.overrides.highestPrio or lib.modules.defaultOverridePriority) [
                     {
                       type = "override";
                       data = overrideArgs;
@@ -604,7 +604,7 @@ in
                 overrideArgs:
                 passthru.configuration.wrap {
                   _file = ./core.nix;
-                  overrides = lib.mkOverride options.overrides.highestPrio [
+                  overrides = lib.mkOverride (options.overrides.highestPrio or lib.modules.defaultOverridePriority) [
                     {
                       type = "overrideAttrs";
                       data = overrideArgs;
