@@ -118,6 +118,7 @@ let
           "modules"
           "extraOptions"
           "specialArgs"
+          "dontConvertFunctions"
           "shorthandOnlyDefinesConfig"
           "defaultNameFn"
           "dataTypeFn"
