@@ -59,6 +59,8 @@ let
     settings: isDal: elemType:
     let
       isStrict = if isBool (settings.strict or true) then settings.strict or true else true;
+      dontConvertFunctions =
+        if isBool (settings.dontConvertFunctions or null) then settings.dontConvertFunctions else false;
       dataTypeFn = if isFunction (settings.dataTypeFn or null) then settings.dataTypeFn else x: _: x;
       defaultNameFn =
         if isFunction (settings.defaultNameFn or null) then
@@ -150,14 +152,18 @@ let
         else
           "";
       extrasWithoutDefaults = attrNames (filterAttrs (n: v: !(v.isDefined or true)) subopts);
+      # returns true if already the submodule type and false if not
       checkMergeDef =
         def:
-        if !isStrict then
+        if dontConvertFunctions && isFunction def.value then
+          true
+        else if !isStrict then
           isEntry def.value && all (k: def.value ? ${k}) extrasWithoutDefaults
         else
           isEntry def.value
           && all (k: elem k (attrNames subopts)) (attrNames def.value)
           && all (k: def.value ? ${k}) extrasWithoutDefaults;
+      # converts if not already the submodule type
       maybeConvert =
         def:
         if checkMergeDef def then
@@ -228,12 +234,16 @@ in
   /**
     Arguments:
     - `settings`:
-        - `strict ? true`: `false` adds `freeformType = wlib.types.attrsRecursive`
-        - `defaultNameFn ? ({ config, name, isDal, ... }@moduleArgs: if isDal then null else name)`
+        - `strict ? true`:
+          `false` adds `freeformType = wlib.types.attrsRecursive`
+        - `defaultNameFn ? ({ config, name, isDal, ... }@moduleArgs: if isDal then null else name)`:
           Function to compute the default `name` for entries. Recieves the submodule arguments.
-        - `dataTypeFn` ? `(elemType: { config, name, isDal, ... }@moduleArgs: elemType)`
+        - `dataTypeFn` ? `(elemType: { config, name, isDal, ... }@moduleArgs: elemType)`:
           Can be used if the type of the `data` field needs to depend upon the submodule arguments.
-        - ...other arguments for `lib.types.submoduleWith`
+        - `dontConvertFunctions ? false`:
+          `true` allows passing function-type submodules as dag entries.
+          If your `data` field's type may contain a function, or is a submodule type itself, this should be left as `false`.
+        - ...other arguments for `lib.types.submoduleWith` (`modules`, `specialArgs`, etc...)
           Passed through to configure submodules in the DAG entries.
 
     - `elemType`: `type`
@@ -307,12 +317,16 @@ in
   /**
     Arguments:
     - `settings`:
-        - `strict ? true`: `false` adds `freeformType = wlib.types.attrsRecursive`
-        - `defaultNameFn ? ({ config, name, isDal, ... }@moduleArgs: if isDal then null else name)`
+        - `strict ? true`:
+          `false` adds `freeformType = wlib.types.attrsRecursive`
+        - `defaultNameFn ? ({ config, name, isDal, ... }@moduleArgs: if isDal then null else name)`:
           Function to compute the default `name` for entries. Recieves the submodule arguments.
-        - `dataTypeFn` ? `(elemType: { config, name, isDal, ... }@moduleArgs: elemType)`
+        - `dataTypeFn` ? `(elemType: { config, name, isDal, ... }@moduleArgs: elemType)`:
           Can be used if the type of the `data` field needs to depend upon the submodule arguments.
-        - ...other arguments for `lib.types.submoduleWith`
+        - `dontConvertFunctions ? false`:
+          `true` allows passing function-type submodules as dag entries.
+          If your `data` field's type may contain a function, or is a submodule type itself, this should be left as `false`.
+        - ...other arguments for `lib.types.submoduleWith` (`modules`, `specialArgs`, etc...)
           Passed through to configure submodules in the DAG entries.
 
     - `elemType`: `type`
