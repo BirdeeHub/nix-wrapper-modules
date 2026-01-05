@@ -29,7 +29,6 @@ let
           };
           default = { };
         };
-        config.drv.dontFixup = true;
         config.addFlag = [
           [
             "-c"

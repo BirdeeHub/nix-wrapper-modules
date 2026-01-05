@@ -22,7 +22,6 @@ in
   };
 
   config = {
-    drv.dontFixup = true;
     package = lib.mkDefault pkgs.jujutsu;
     env = {
       JJ_CONFIG = builtins.toString (tomlFmt.generate "jujutsu.toml" config.settings);

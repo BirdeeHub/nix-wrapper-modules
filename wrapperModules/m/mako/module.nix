@@ -47,8 +47,6 @@ in
   config.flags = {
     "--config" = config."--config".path;
   };
-  # mako doesnt like fixupPhase
-  config.drv.dontFixup = true;
 
   config.filesToPatch = [
     "share/dbus-1/services/*.service"

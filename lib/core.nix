@@ -422,7 +422,7 @@ in
 
         If any phases are enabled, also runs the enabled phases after the `config.symlinkScript` command has ran.
 
-        NOTE: often you may prefer to use things like `drv.dontFixup = true;`,
+        NOTE: often you may prefer to use things like `drv.doDist = true;`,
         or even `drv.phases = [ ... "buildPhase" etc ... ];` instead,
         to override this choice in a more fine-grained manner
       '';
@@ -526,6 +526,7 @@ in
             dontUnpack = true;
             dontConfigure = true;
             dontPatch = true;
+            dontFixup = true;
             name = package.pname or package.name or binName;
             pname = package.pname or package.name or binName;
             inherit outputs;
