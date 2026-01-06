@@ -161,12 +161,28 @@ in
     package = lib.mkOption {
       apply =
         package:
-        builtins.foldl' (acc: v: acc.${v.type} v.data) package (
-          wlib.dag.sortAndUnwrap {
-            name = "overrides";
-            dag = config.overrides;
-          }
-        );
+        builtins.foldl'
+          (
+            acc: v:
+            builtins.addErrorContext "config.overrides type error in ${acc} wrapper module!" (
+              if v.type == null then
+                builtins.addErrorContext "If `type` is `null`, then `data` must be a function!" (v.data acc)
+              else
+                builtins.addErrorContext "while calling: (${acc}).${v.type}:" (
+                  builtins.addErrorContext
+                    "If `type` is a string, then `config.package` must have that field, and it must be a function!"
+                    acc.${v.type}
+                    v.data
+                )
+            )
+          )
+          package
+          (
+            wlib.dag.sortAndUnwrap {
+              name = "overrides";
+              dag = config.overrides;
+            }
+          );
       type = lib.types.package;
       description = ''
         The base package to wrap.
@@ -194,12 +210,17 @@ in
                 modules = [
                   {
                     options.type = lib.mkOption {
-                      type = either (enum [
-                        "override"
-                        "overrideAttrs"
-                      ]) str;
+                      type = lib.types.nullOr (
+                        either (enum [
+                          "override"
+                          "overrideAttrs"
+                        ]) str
+                      );
+                      default = null;
                       description = ''
                         The attribute of `config.package` to pass the override argument to.
+
+                        If null, then data receives and returns the package instead.
                       '';
                     };
                   }
@@ -229,16 +250,20 @@ in
 
         Accessing `config.package` will return the package with all overrides applied.
 
-        Accepts a list of `{ type, data, name ? null, before ? [], after ? [] }`
+        Accepts a list of `{ data, type ? null, name ? null, before ? [], after ? [] }`
 
-        `type` is a string like `override` or `overrideAttrs`
+        If `type == null` then `data` must be a function. It will receive and return the package.
+
+        If `type` is a string like `override` or `overrideAttrs`, it represents the attribute of `config.package` to pass the `data` field to.
+
+        If a raw value is given, it will be used as the `data` field, and `type` will be `null`.
 
         ```nix
         config.package = pkgs.mpv;
         config.overrides = [
-          {
-            after = [ "MPV_SCRIPTS" ];
+          { # If they don't have a name they cannot be targeted!
             type = "override";
+            after = [ "MPV_SCRIPTS" ];
             data = (prev: {
               scripts = (prev.scripts or []) ++ [ pkgs.mpvScripts.visualizer ];
             });
@@ -247,19 +272,35 @@ in
             name = "MPV_SCRIPTS";
             type = "override";
             data = (prev: {
-              scripts = (prev.scripts or []) ++ config.scripts;
+              scripts = (prev.scripts or []) ++ [ pkgs.mpvScripts.modernz ];
             });
           }
+          # the default `type` is `null`
+          (pkg: pkg.override (prev: {
+            scripts = (prev.scripts or []) ++ [ pkgs.mpvScripts.autocrop ];
+          }))
           {
-            type = "override";
-            data = (prev: {
-              scripts = (prev.scripts or []) ++ [ pkgs.mpvScripts.autocrop ];
-            });
+            type = null;
+            before = [ "MPV_SCRIPTS" ];
+            data = (pkg: pkg.override (prev: {
+              scripts = (prev.scripts or []) ++ config.scripts;
+            }));
+          }
+          { # It was already after "MPV_SCRIPTS" so this will stay where it is
+            type = "overrideAttrs";
+            after = [ "MPV_SCRIPTS" ];
+            data = prev: {
+              name = prev.name + "-wrapped";
+            };
           }
         ];
         ```
 
-        The above will add `config.scripts`, then `pkgs.mpvScripts.visualizer` and finally `pkgs.mpvScripts.autocrop`
+        The above will add `config.scripts`, then `modernz` then `visualizer` and finally `autocrop`
+
+        Then it will add `-wrapped` to the end of `config.package`'s `name` attribute.
+
+        The sort will not always put the value directly after the targeted value, it fulfils the requested `before` or `after` dependencies and no more.
       '';
     };
     passthru = lib.mkOption {
@@ -506,19 +547,18 @@ in
           meta = (package.meta or { }) // {
             mainProgram = binName;
           };
+          version =
+            package.version or meta.version or package.revision or meta.revision or package.rev or meta.rev
+              or package.release or meta.release or package.releaseDate or meta.releaseDate or "master";
           drvargs = {
             passthru = passthru;
             dontUnpack = true;
             dontConfigure = true;
             dontPatch = true;
             dontFixup = true;
-            name = package.pname or package.name or binName;
-            pname = package.pname or package.name or binName;
-            inherit outputs;
-            inherit meta;
-            version =
-              package.version or meta.version or package.revision or meta.revision or package.rev or meta.rev
-                or package.release or meta.release or package.releaseDate or meta.releaseDate or "master";
+            name = package.name or "${package.pname or binName}-${version}";
+            pname = package.pname or binName;
+            inherit version outputs meta;
             buildPhase = ''
               runHook preBuild
               runHook postBuild
