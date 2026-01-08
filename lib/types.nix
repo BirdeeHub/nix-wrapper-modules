@@ -131,8 +131,10 @@
     - `modules`, `specialArgs`, `class`, `description` are the same as for `submoduleWith`.
     - `mainField ? null` You may specify your main field with this option.
       - If you don't, it will detect this value based on the option you do not give a default value to in your base modules.
-      - You may only have 1 option without a default. If you have more, and do not set `mainField`, it will error, and if you do set it, conversion will fail.
-        In that case a submodule type would be a better match.
+      - You may only have 1 option without a default.
+        - Any nested options will be assumed to have defaults.
+        - If you have more than 1, and do not set `mainField`, it will error, and if you do set it, conversion will fail.
+          In that case a submodule type would be a better match.
     - `dontConvertFunctions ? false`:
       `true` allows passing function-type submodules as specs.
       If your `data` field's type may contain a function, or is a submodule type itself, this should be left as `false`.

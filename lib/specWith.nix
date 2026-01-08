@@ -32,6 +32,7 @@ let
         mkOptionType
         isFunction
         types
+        isOption
         optionalString
         mkOptionDefault
         last
@@ -73,7 +74,9 @@ let
           mainField
         else
           let
-            withoutDefaults = attrNames (filterAttrs (n: v: !(v.isDefined or true)) baseNoCheck.options);
+            withoutDefaults = attrNames (
+              filterAttrs (n: v: isOption v && !(v.isDefined or true)) baseNoCheck.options
+            );
           in
           assert
             length withoutDefaults == 1
