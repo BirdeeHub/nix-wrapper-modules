@@ -155,11 +155,12 @@ It makes a lot of improvements, both to the basic wrapping options, and to the m
 
 Things like:
 
-- A `wlib.types.subWrapperModuleWith` type which works like `lib.types.submoduleWith` (and can be used in other module systems which use the nixpkgs module system)
+- A `wlib.types.subWrapperModuleWith` type which works like `lib.types.submoduleWith` (and can be used in other things which use the nixpkgs module system)
 - Fine-grained control over the actual wrapper derivation you are making with options like `config.drv` and `config.passthru` (and others...)
 - You can call `.extendModules` from the evaluated result without problems.
-- A customizable type which normalizes "specs" for you, and an associated sorting function (`wlib.types` `.dagOf` and `.dalOf` for attribute set and list forms)
-- And for the wrapper options implementation:
+- A customizable type which normalizes "specs" for you, `wlib.types.specWith`/`wlib.types.spec`.
+- `wlib.types.dagOf` (set form) and `wlib.types.dalOf` (list form) use the `spec` type to normalize a list or set of values or specs to a form sortable by `wlib.dag.topoSort`
+- And for the wrapper script generation options:
   - The full suite of options you are used to from `pkgs.makeWrapper`, but in module form, and with full control of the order even across options.
   - Choose between multiple backend implementations with a single line of code without changing any other options:
     - `nix` which is the default, like `shell` but allows runtime variable expansion rather than build time
