@@ -65,49 +65,38 @@ let
         inherit class specialArgs;
         modules = [ { _module.args.name = mkOptionDefault "‹name›"; } ] ++ modules;
       };
-      baseNoCheck = base.extendModules { modules = [ noCheckForDocsModule ]; };
-
       freeformType = base._module.freeformType;
 
+      baseNoCheck = base.extendModules { modules = [ noCheckForDocsModule ]; };
+      withoutDefaults = attrNames (
+        filterAttrs (n: v: isOption v && !(v.isDefined or true)) baseNoCheck.options
+      );
       main_field =
         if isString mainField then
           mainField
+        else if length withoutDefaults == 1 then
+          head withoutDefaults
         else
-          let
-            withoutDefaults = attrNames (
-              filterAttrs (n: v: isOption v && !(v.isDefined or true)) baseNoCheck.options
-            );
-          in
-          assert
-            length withoutDefaults == 1
-            || throw ''
-              If mainField is not set, you must have exactly 1 option without a default value.
-              If it had more than 1, conversion would not be possible.
+          null;
 
-              Consider using a submodule type instead.
-
-              You have the following fields without default values:
-              `${concatStringsSep "`, `" withoutDefaults}`
-            '';
-          head withoutDefaults;
       # returns true if already the submodule type and false if not
       checkMergeDef =
         def:
         if dontConvertFunctions && isFunction def.value then
           true
         else if baseNoCheck._module.freeformType or null != null then
-          isAttrs def.value && def.value ? "${main_field}"
+          isAttrs def.value && def.value ? "${toString main_field}"
         else
           isAttrs def.value
           && all (k: elem k (attrNames baseNoCheck.options)) (attrNames def.value)
-          && def.value ? "${main_field}";
+          && def.value ? "${toString main_field}";
       # converts if not already the submodule type
       maybeConvert =
         def:
         if checkMergeDef def then
           def.value
         else
-          { ${main_field} = if def ? priority then mkOrder def.priority def.value else def.value; };
+          { ${toString main_field} = if def ? priority then mkOrder def.priority def.value else def.value; };
 
       typeMergeMatching =
         lhs: rhs: attr: err:
@@ -127,6 +116,19 @@ let
       inherit name;
       descriptionClass = "composite";
       description =
+        let
+          mainFieldMsg = "`${toString main_field}` of ${
+            let
+              type = baseNoCheck.options.${toString main_field}.type or null;
+            in
+            if type == null then
+              "<unknown>"
+            else
+              optionDescriptionPhrase (class: class == "noun" || class == "composite") (
+                baseNoCheck.options.${toString main_field}.type
+              )
+          }";
+        in
         if description != null then
           description
         else if baseNoCheck._module.freeformType ? description then
@@ -134,17 +136,9 @@ let
             optionDescriptionPhrase (
               class: class == "noun" || class == "composite"
             ) baseNoCheck._module.freeformType
-          } with main field: `${main_field}` of ${
-            optionDescriptionPhrase (class: class == "noun" || class == "composite") (
-              baseNoCheck.options.${main_field}.type or "<unknown>"
-            )
-          }"
+          } with main field: ${mainFieldMsg}"
         else
-          "${name} with main field: `${main_field}` of ${
-            optionDescriptionPhrase (class: class == "noun" || class == "composite") (
-              baseNoCheck.options.${main_field}.type or "<unknown>"
-            )
-          }";
+          "${name} with main field: ${mainFieldMsg}";
       check = {
         __functor = _self: _: true;
         isV2MergeCoherent = true;
@@ -155,6 +149,19 @@ let
           (self.v2 { inherit loc defs; }).value;
         v2 =
           { loc, defs }:
+          assert
+            main_field != null
+            || throw ''
+              If mainField is not set, you must have exactly 1 option without a default value.
+              If it had more than 1, conversion would not be possible.
+
+              If mainField is set, you are allowed to have 0, however.
+
+              Consider using a submodule type instead.
+
+              You have the following fields without default values:
+                `${concatStringsSep "`, `" withoutDefaults}`
+            '';
           let
             definitions = map (def: {
               inherit (def) file;
@@ -198,12 +205,20 @@ let
             modules = m;
           }
         );
-      nestedTypes = optionalAttrs (freeformType != null) {
-        elemType =
-          baseNoCheck.options.${main_field}.type
-            or (throw "Unable to find main field type for a specWith option!");
-        freeformType = freeformType;
-      };
+      nestedTypes =
+        optionalAttrs (freeformType != null) {
+          freeformType = freeformType;
+        }
+        //
+          optionalAttrs
+            (
+              baseNoCheck.options or { } != { } && baseNoCheck.options.${toString main_field}.type or null != null
+            )
+            {
+              elemType =
+                baseNoCheck.options.${toString main_field}.type
+                or (throw "Unable to find main field type for a specWith option!");
+            };
       functor = defaultFunctor name // {
         type = specWith;
         payload = {

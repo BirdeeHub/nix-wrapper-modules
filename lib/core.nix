@@ -219,93 +219,66 @@ in
         values from `config.overrides` applied to it.
       '';
     };
-    overmods = lib.mkOption {
-      type = lib.types.deferredModule;
-      default = { };
-      description = ''
-        Provide a module to modify the `wlib.types.spec` type in `config.overrides`.
-
-        You may use this to change default values, or provide additional options.
-      '';
-    };
     overrides = lib.mkOption {
-      type =
-        let
-          base = lib.types.listOf (
-            wlib.types.specWith {
-              specialArgs = { inherit wlib; };
-              modules = [
-                {
-                  options = {
-                    data = lib.mkOption {
-                      type = lib.types.raw;
-                      description = ''
-                        If type is null, then this is the function to call on the package.
+      type = wlib.types.seriesOf (
+        wlib.types.specWith {
+          specialArgs = { inherit wlib; };
+          modules = [
+            {
+              options = {
+                data = lib.mkOption {
+                  type = lib.types.raw;
+                  description = ''
+                    If type is null, then this is the function to call on the package.
 
-                        If type is a string, then this is the data to pass to the function corresponding with that attribute.
-                      '';
-                    };
-                    type = lib.mkOption {
-                      type = lib.types.nullOr (
-                        lib.types.either (lib.types.enum [
-                          "override"
-                          "overrideAttrs"
-                        ]) lib.types.str
-                      );
-                      default = null;
-                      description = ''
-                        The attribute of `config.package` to pass the override argument to.
-                        If `null`, then data receives and returns the package instead.
+                    If type is a string, then this is the data to pass to the function corresponding with that attribute.
+                  '';
+                };
+                type = lib.mkOption {
+                  type = lib.types.nullOr (
+                    lib.types.either (lib.types.enum [
+                      "override"
+                      "overrideAttrs"
+                    ]) lib.types.str
+                  );
+                  default = null;
+                  description = ''
+                    The attribute of `config.package` to pass the override argument to.
+                    If `null`, then data receives and returns the package instead.
 
-                        If `null`, data must be a function.
-                        If a `string`, `config.package` must have the corresponding attribute, and it must be a function.
-                      '';
-                    };
-                    name = lib.mkOption {
-                      type = lib.types.nullOr lib.types.str;
-                      default = null;
-                      description = ''
-                        The name for targeting from the before or after fields of other specs.
+                    If `null`, data must be a function.
+                    If a `string`, `config.package` must have the corresponding attribute, and it must be a function.
+                  '';
+                };
+                name = lib.mkOption {
+                  type = lib.types.nullOr lib.types.str;
+                  default = null;
+                  description = ''
+                    The name for targeting from the before or after fields of other specs.
 
-                        If `null` it cannot be targeted by other specs.
-                      '';
-                    };
-                    before = lib.mkOption {
-                      type = lib.types.listOf lib.types.str;
-                      default = [ ];
-                      description = ''
-                        Items that this spec should be ordered before.
-                      '';
-                    };
-                    after = lib.mkOption {
-                      type = lib.types.listOf lib.types.str;
-                      default = [ ];
-                      description = ''
-                        Items that this spec should be ordered after.
-                      '';
-                    };
-                  };
-                }
-                config.overmods
-              ];
+                    If `null` it cannot be targeted by other specs.
+                  '';
+                };
+                before = lib.mkOption {
+                  type = lib.types.listOf lib.types.str;
+                  default = [ ];
+                  description = ''
+                    Items that this spec should be ordered before.
+                  '';
+                };
+                after = lib.mkOption {
+                  type = lib.types.listOf lib.types.str;
+                  default = [ ];
+                  description = ''
+                    Items that this spec should be ordered after.
+                  '';
+                };
+              };
             }
-          );
-        in
-        base
-        // {
-          merge =
-            loc: defs:
-            # NOTE: we want low&old -> high&new
-            # but we get low&new -> high&old
-            # so we reverse the sort so that mkBefore, mkAfter, override and overrideAttrs
-            # don't happen in reverse of what we expect
-            base.merge loc (
-              builtins.sort (
-                a: b:
-                (a.priority or lib.modules.defaultOrderPriority) <= (b.priority or lib.modules.defaultOrderPriority)
-              ) defs
-            );
-        };
+            config.overmods
+          ];
+        }
+      );
       default = [ ];
       description = ''
         the list of `.override` and `.overrideAttrs` to apply to `config.package`
@@ -363,6 +336,21 @@ in
         Then it will add `-wrapped` to the end of `config.package`'s `name` attribute.
 
         The sort will not always put the value directly after the targeted value, it fulfils the requested `before` or `after` dependencies and no more.
+
+        You can modify the specs!
+
+        The type supports type merging, so you may redeclare it in order to add more options or change default values.
+
+        ```nix
+        { config, lib, wlib, pkgs, ... }:{
+          options.overrides = lib.mkOption {
+            type = wlib.types.seriesOf (wlib.types.spec ({ config, ... }: {
+              options = {};
+              config = {};
+            }));
+          };
+        }
+        ```
       '';
     };
     passthru = lib.mkOption {
@@ -827,6 +815,47 @@ in
       internal = true;
       default = null;
       description = "DEPRECATED";
+    };
+    overmods = lib.mkOption {
+      type = lib.types.nullOr lib.types.deferredModule;
+      default = null;
+      internal = true;
+      description = "DEPRECATED";
+      apply =
+        x:
+        let
+          msg = ''
+            Attention: config.overmods is deprecated!
+
+            Why? You could already do it like this!
+
+            ```nix
+            { config, lib, wlib, pkgs, ... }:{
+              options.overrides = lib.mkOption {
+                type = wlib.types.seriesOf (wlib.types.spec ({ config, ... }: {
+                  options = {}; # spec types support type merging!
+                  config = {};
+                }));
+              };
+            }
+            ```
+
+            Before the addition of `wlib.types.seriesOf`,
+            trying that with `listOf` would mess up the ordering.
+
+            You could reimplement this option yourself like the following example.
+            Don't forget to declare the option you want to use for it!
+
+            ```nix
+            { config, lib, wlib, ... }:{
+              options.overrides = lib.mkOption {
+                type = wlib.types.seriesOf (wlib.types.spec (config.<desired_option_name>));
+              };
+            }
+            ```
+          '';
+        in
+        if x != null then lib.warn msg x else { };
     };
   };
   config.builderFunction = lib.mkIf (config.symlinkScript != null) (

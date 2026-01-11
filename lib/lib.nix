@@ -19,7 +19,7 @@ in
     modulesPath
     ;
 
-  types = import ./types.nix { inherit lib wlib modulesPath; };
+  types = import ./types.nix { inherit lib wlib; };
 
   dag = import ./dag.nix { inherit lib wlib; };
 
@@ -40,7 +40,7 @@ in
         ]
         ++ (evalArgs.modules or [ ]);
         specialArgs = {
-          inherit modulesPath;
+          inherit (wlib) modulesPath;
         }
         // (evalArgs.specialArgs or { })
         // {

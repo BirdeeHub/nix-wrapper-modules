@@ -10,18 +10,12 @@
 #
 # The main differences from this version and the home-manager version are
 #
-# - It has a list form as well
-#
-# - It allows extra fields to be added to what an entry is,
-#   in either a type-safe, or freeform way.
-#
-# - The dag entry type is implemented via the new `spec` type
+# It looks nothing like it anymore
 { wlib, lib }:
 let
   inherit (builtins)
     isAttrs
     attrValues
-    attrNames
     elem
     all
     head
@@ -32,13 +26,10 @@ let
     mapAttrs
     isList
     toJSON
-    removeAttrs
-    concatStringsSep
     ;
   inherit (lib)
-    mkIf
     mkOption
-    mkOptionType
+    optionals
     isFunction
     types
     ;
@@ -49,110 +40,52 @@ let
     entryBetween
     entryAfter
     entriesBetween
-    dagWith
-    dalWith
     topoSort
     gmap
     dagToDal
+    mkDagEntry
+    dagNameModule
     ;
-  mkDagEntry =
-    settings: isDal: elemType:
+  mkDagEntryModule =
+    settings: elemType:
     let
       isStrict =
         if isBool (settings.strict or null) then
           lib.warn "dagWith `strict` setting deprecated, set freeformType from within a module passed to the modules argument instead" settings.strict
         else
           true;
-      dataTypeFn = if isFunction (settings.dataTypeFn or null) then settings.dataTypeFn else x: _: x;
-      defaultNameFn =
-        if isFunction (settings.defaultNameFn or null) then
-          settings.defaultNameFn
-        else
-          { name, isDal, ... }: if isDal then null else name;
       extraOptions =
         if settings ? extraOptions then
           lib.warn
             "Deprecated dagWith/dalWith setting: `extraOptions` set. Use `modules` list instead to provide extra options"
             (if isAttrs (settings.extraOptions or null) then settings.extraOptions else { })
         else
-          { };
-      specType = wlib.types.specWith (
-        {
-          specialArgs = (if isAttrs (settings.specialArgs or null) then settings.specialArgs else { }) // {
-            inherit isDal;
-          };
-          modules =
-            lib.optional (!isStrict) { freeformType = wlib.types.attrsRecursive; }
-            ++ [
-              (
-                # NOTE: if name is not declared, it doesnt get added for defaultNameFn or dataTypeFn
-                { config, name, ... }@args:
-                {
-                  options = (filterAttrs (_: v: !isBool v) extraOptions) // {
-                    name = mkOption {
-                      type = types.nullOr types.str;
-                      default = defaultNameFn args;
-                    };
-                    data = mkOption { type = dataTypeFn elemType args; };
-                    after = mkOption {
-                      type = with types; listOf str;
-                      default = [ ];
-                    };
-                    before = mkOption {
-                      type = with types; listOf str;
-                      default = [ ];
-                    };
-                  };
-                  config =
-                    mkIf
-                      (elemType.name == "submodule" || elemType.name == "subWrapperModule" || elemType.name == "spec")
-                      {
-                        data._module.args.dagName = config.name;
-                      };
-                }
-              )
-            ]
-            ++ (if isList (settings.modules or null) then settings.modules else [ ]);
-        }
-        // removeAttrs settings [
-          "modules"
-          "specialArgs"
-          "defaultNameFn"
-          "dataTypeFn"
-          "strict"
-          "extraOptions"
-        ]
-      );
-    in
-    {
-      type = specType;
-      extraFieldsMsg =
-        let
-          extra-fields = attrNames (
-            filterAttrs (
-              n: v:
-              if
-                {
-                  name = false;
-                  data = false;
-                  before = false;
-                  after = false;
-                }
-                .${n} or true
-              then
-                if v.internal or false == true then false else true
-              else
-                false
-            ) (removeAttrs (specType.getSubOptions [ ]) [ "_module" ])
-          );
-          numfields = length extra-fields;
-        in
-        if numfields > 1 then
-          "(with extra fields: `" + (concatStringsSep "`, `" extra-fields) + "`) "
-        else if numfields > 0 then
-          "(with extra field: `" + (concatStringsSep "`, `" extra-fields) + "`) "
+          null;
+      dataOptFn =
+        if isFunction (settings.dataTypeFn or null) then
+          settings.dataTypeFn elemType
         else
-          "";
+          _: { type = elemType; };
+    in
+    wlib.types.specWith {
+      specialArgs = settings.specialArgs or { };
+      class = settings.class or null;
+      description = settings.description or null;
+      mainField = settings.mainField or null;
+      dontConvertFunctions = settings.dontConvertFunctions or false;
+      modules =
+        optionals (!isStrict) [ { freeformType = wlib.types.attrsRecursive; } ]
+        ++ [
+          (mkDagEntry {
+            dataOptFn = if isFunction (settings.dataOptFn or null) then settings.dataOptFn else dataOptFn;
+            defaultNameFn =
+              if isFunction (settings.defaultNameFn or null) then settings.defaultNameFn else null;
+            isDal = if isBool (settings.isDal or null) then settings.isDal else false;
+          })
+        ]
+        ++ optionals (elemType.name == "submodule" || elemType.name == "spec") [ dagNameModule ]
+        ++ optionals (extraOptions != null) [ { options = filterAttrs (_: v: !isBool v) extraOptions; } ]
+        ++ optionals (isList (settings.modules or null)) settings.modules;
     };
 in
 {
@@ -175,30 +108,10 @@ in
     - To add extra type-checked fields, use the `modules` attribute, which is passed through to `wlib.types.specWith`.
       The allowed dag fields will be automatically generated from the base set of modules passed.
     - The `config.optionname` value from the associated option will be normalized so that all items become valid DAG entries.
-    - If `elemType` is a `submodule`, `subWrapperModule`, or `spec`, a `dagName` argument will automatically be injected to access the actual attribute name.
+    - If `elemType` is a `submodule` or `spec`, a `parentName` argument will automatically be injected to access the actual attribute name.
   */
   dagWith =
-    settings: elemType:
-    let
-      entry = mkDagEntry settings false elemType;
-      attrEquivalent = types.attrsOf entry.type;
-    in
-    mkOptionType rec {
-      name = "dagOf";
-      description = "DAG ${entry.extraFieldsMsg}of ${elemType.description}";
-      inherit (attrEquivalent) check merge emptyValue;
-      inherit (elemType) getSubModules;
-      getSubOptions = prefix: elemType.getSubOptions (prefix ++ [ "<name>" ]);
-      substSubModules = m: dagWith settings (elemType.substSubModules m);
-      functor = {
-        name = name;
-        type = dagWith settings;
-        wrapped = elemType;
-        payload = elemType;
-        binOp = a: b: a;
-      };
-      nestedTypes.elemType = elemType;
-    };
+    settings: elemType: types.attrsOf (mkDagEntryModule (settings // { isDal = true; }) elemType);
 
   /**
     Arguments:
@@ -219,28 +132,76 @@ in
     - To add extra type-checked fields, use the `modules` attribute, which is passed through to `wlib.types.specWith`.
       The allowed dag fields will be automatically generated from the base set of modules passed.
     - The `config.optionname` value from the associated option will be normalized so that all items become valid DAG entries.
-    - If `elemType` is a `submodule`, `subWrapperModule`, or `spec`, a `dagName` argument will automatically be injected to access the actual attribute name.
+    - If `elemType` is a `submodule` or `spec`, a `parentName` argument will automatically be injected to access the actual attribute name.
   */
   dalWith =
-    settings: elemType:
-    let
-      entry = mkDagEntry settings true elemType;
-      listEquivalent = types.listOf entry.type;
-    in
-    mkOptionType rec {
-      name = "dalOf";
-      description = "DAG LIST ${entry.extraFieldsMsg}of ${elemType.description}";
-      inherit (listEquivalent) check merge emptyValue;
-      inherit (elemType) getSubModules getSubOptions;
-      substSubModules = m: dalWith settings (elemType.substSubModules m);
-      functor = {
-        name = name;
-        type = dalWith settings;
-        wrapped = elemType;
-        payload = elemType;
-        binOp = a: b: a;
+    settings: elemType: types.listOf (mkDagEntryModule (settings // { isDal = false; }) elemType);
+
+  /**
+    Arguments:
+
+    ```nix
+    {
+      dataOptFn, # <- receives the submodule arguments. Returns a set for `lib.mkOption` (`internal = true` will be added unless you set it otherwise)
+      defaultNameFn ? { name, isDal, ... }@moduleArgs: if isDal then null else name,
+      isDal ? false, # <- added to `config._module.args`
+    }:
+    ```
+
+    `dataOptFn` receives `config`, `options`, `name`, and `isDal`. Returns a set for `lib.mkOption`
+
+    Creates a module with a `name`, `data`, `before`, and `after` field,
+    which can be passed to `wlib.types.specWith` or `wlib.types.spec`,
+    to create a spec type which can be used with all the `wlib.dag` functions.
+  */
+  mkDagEntry =
+    {
+      dataOptFn,
+      defaultNameFn ? { name, isDal, ... }@moduleArgs: if isDal then null else name,
+      isDal ? false,
+    }@settings:
+    { name, isDal, ... }@args:
+    {
+      config._module.args.isDal = if isBool (settings.isDal or null) then settings.isDal else false;
+      options = {
+        data = mkOption ({ internal = true; } // dataOptFn args);
+        name = mkOption {
+          internal = true;
+          type = types.nullOr types.str;
+          default =
+            if isFunction defaultNameFn then
+              defaultNameFn args
+            else if isDal then
+              null
+            else
+              name;
+        };
+        before = mkOption {
+          internal = true;
+          type = with types; listOf str;
+          default = [ ];
+        };
+        after = mkOption {
+          internal = true;
+          type = with types; listOf str;
+          default = [ ];
+        };
       };
-      nestedTypes.elemType = elemType;
+    };
+
+  /**
+    If, when constructing your own DAG type with `mkDagEntry`, your `data` field accepts submodules, you should also supply this module to `specWith`
+    in order to set `config.data._module.args.dagName`.
+
+    You would do this because the name argument of that submodule will receive the field it was in,
+    not the one from the parent `attrsOf` type.
+
+    If you use `dagWith` or `dalWith`, this is done for you for `submodule` and `spec`.
+  */
+  dagNameModule =
+    { config, name, ... }:
+    {
+      config.data._module.args.dagName = config.name or name;
     };
 
   /**
