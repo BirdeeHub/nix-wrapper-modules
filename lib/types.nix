@@ -1,7 +1,6 @@
 {
   wlib,
   lib,
-  modulesPath,
 }:
 {
 
@@ -27,6 +26,13 @@
       class ? null
     }:
     ```
+
+    In fact, it IS a submodule.
+
+    This function simply adds `wlib.core` to the list of modules you pass,
+    and both `wlib` and `modulesPath` (from wlib.modulesPath) to the specialArgs argument you pass.
+
+    To perform type-merging with this type, use `lib.types.submodule` or `lib.types.submoduleWith`
   */
   subWrapperModuleWith =
     {
@@ -37,76 +43,35 @@
       class ? null,
       ...
     }@args:
-    assert
-      !lib.isFunction (args.mkModuleAfter or null)
-      || throw ''
-        mkModuleAfter has been removed from wlib.types.subWrapperModuleWith
-
-        You may instead call `config.optionname.extendModules`,
-        and use `config.optionname.extendModules.options` within it
-        in order to achieve a similar result.
-
-        If you wish it to happen automatically for an option,
-        you may call it in the `apply` field for `lib.mkOption`
-
-        It was removed rather than deprecated because:
-
-        It existed for 2 days and was very likely never used.
-
-        It added a lot of complexity to this type.
-      '';
-    let
-      name = "subWrapperModule";
-      base = lib.types.submoduleWith (
-        args
-        // {
-          modules = [ wlib.core ] ++ modules;
-          specialArgs = {
-            inherit modulesPath;
-          }
-          // specialArgs
-          // {
-            inherit wlib;
-          };
+    lib.types.submoduleWith (
+      args
+      // {
+        modules = [ wlib.core ] ++ modules;
+        specialArgs = {
+          inherit (wlib) modulesPath;
         }
-      );
-      desc = base.description;
-    in
-    lib.mkOptionType {
-      inherit name;
-      inherit (base)
-        check
-        merge
-        emptyValue
-        nestedTypes
-        getSubOptions
-        ;
-      description =
-        if description != null then
-          description
-        else if lib.hasPrefix "open submodule" desc then
-          "open subWrapperModule" + builtins.substring 14 (builtins.stringLength desc - 14) desc
-        else if lib.hasPrefix "submodule" desc then
-          "subWrapperModule" + builtins.substring 9 (builtins.stringLength desc - 9) desc
-        else
-          name;
-      getSubModules = modules;
-      substSubModules =
-        m:
-        wlib.types.subWrapperModuleWith (
-          args
-          // {
-            modules = m;
-          }
-        );
-      functor = lib.defaultFunctor name // {
-        type = wlib.types.subWrapperModuleWith;
-        payload = base.functor.payload // {
-          inherit modules specialArgs;
+        // specialArgs
+        // {
+          inherit wlib;
         };
-        inherit (base.functor) binOp;
+      }
+    );
+
+  /**
+    ```nix
+    wlib.types.subWrapperModule = module: wlib.types.subWrapperModuleWith { modules = lib.toList module; };
+    ```
+
+    i.e.
+
+    ```nix
+      options.myopts.xplr = lib.mkOption {
+        type = wlib.types.subWrapperModule wlib.wrapperModules.xplr;
       };
-    };
+      # and access config.myopts.xplr.wrapped and set settings and options within it.
+    ```
+  */
+  subWrapperModule = module: wlib.types.subWrapperModuleWith { modules = lib.toList module; };
 
   /**
     Modified submoduleWith type for making options which are either an item, or a set with the item in it.
@@ -178,6 +143,9 @@
 
     If you wish to alter the type, you may provide different options
     to `wlib.dag.dalWith` by updating this type `wlib.types.dalOf // { strict = false; }`
+
+    You can further modify the type with type merging!
+    Redefine the option with the type `lib.types.listOf (wlib.types.spec ({ your module here }))`
   */
   dalOf = {
     __functor = self: wlib.dag.dalWith (removeAttrs self [ "__functor" ]);
@@ -210,10 +178,67 @@
 
     If you wish to alter the type, you may provide different options
     to `wlib.dag.dagWith` by updating this type `wlib.types.dagOf // { strict = false; }`
+
+    You can further modify the type with type merging!
+    Redefine the option with the type `lib.types.attrsOf (wlib.types.spec ({ your module here }))`
   */
   dagOf = {
     __functor = self: wlib.dag.dagWith (removeAttrs self [ "__functor" ]);
   };
+
+  /**
+    This type functions like the `lib.types.listOf` type, but has reversed order across imports.
+    The individual lists assigned are unaffected.
+
+    This means, when you import a module, and it sets `config.optionwiththistype`,
+    it will _append_ to the _importing_ module's definitions rather than prepending to them.
+
+    This type is sometimes very useful when you want multiple `.wrap`, `.apply`, `.eval`, and `.extendModules`
+    calls in series to apply to this option in a particular way.
+
+    This is because in that case with `lib.types.listOf`,
+    each successive call will place its new items BEFORE the last call.
+
+    In some cases, where the first item will win, e.g. `lndir` this makes sense, or is inconsequential.
+
+    In others, (for example, with the `config.overrides` field from the core module) you really want them to run in series. So you can use `seriesOf`!
+  */
+  seriesOf =
+    elemType:
+    let
+      base = lib.types.listOf elemType;
+      name = "seriesOf";
+    in
+    lib.mkOptionType rec {
+      inherit name;
+      inherit (base)
+        getSubOptions
+        getSubModules
+        check
+        emptyValue
+        nestedTypes
+        descriptionClass
+        ;
+      description = "series of ${
+        lib.types.optionDescriptionPhrase (class: class == "noun" || class == "composite") elemType
+      }";
+      merge = {
+        __functor =
+          self: loc: defs:
+          (self.v2 { inherit loc defs; }).value;
+        v2 =
+          { loc, defs }:
+          base.merge.v2 {
+            defs = lib.reverseList defs;
+            inherit loc;
+          };
+      };
+      substSubModules = m: wlib.types.seriesOf (elemType.substSubModules m);
+      functor = base.functor // {
+        inherit name;
+        type = payload: wlib.types.seriesOf payload.elemType;
+      };
+    };
 
   /**
     same as `dalOf` except with an extra field `esc-fn`
@@ -228,6 +253,9 @@
         options.esc-fn = lib.mkOption {
           type = lib.types.nullOr (lib.types.functionTo lib.types.str);
           default = null;
+          description = ''
+            A per-item override of the default string escape function
+          '';
         };
       }
     ];
@@ -421,5 +449,4 @@
       in
       mergeFunction loc defs;
   };
-
 }

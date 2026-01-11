@@ -23,6 +23,9 @@
             options.sep = lib.mkOption {
               type = nullOr str;
               default = null;
+              description = ''
+                A per-item override of the default separator used for flags and their values
+              '';
             };
           }
         ];
