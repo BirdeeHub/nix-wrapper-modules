@@ -126,7 +126,7 @@ in
 
     They are always imported with every module evaluation.
 
-    They are very minimal by design.
+    They are somewhat minimal by design. They pertain to building the derivation, not the wrapper script.
 
     The default `builderFunction` value provides no options.
 
@@ -135,6 +135,8 @@ in
     `wlib.modules.default` provides great values for these options, and creates many more for you to use.
 
     But you may want to wrap your package via different means, provide different options, or provide modules for others to use to help do those things!
+
+    Doing it this way allows wrapper modules to do anything you might wish involving wrapping some source/package in a derivation.
 
     Excited to see what ways to use these options everyone comes up with! Docker helpers? BubbleWrap? If it's a derivation, it should be possible!
 

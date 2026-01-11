@@ -204,47 +204,24 @@ in
       config.data._module.args.dagName = config.name or name;
     };
 
-  /**
-    Determines whether a value is a valid DAG entry (allows extra values)
-  */
-  isEntry =
-    e:
-    e ? data
-    && (if e ? after then isList e.after && all isString e.after else true)
-    && (if e ? before then isList e.before && all isString e.before else true)
-    && (if e ? name then e.name == null || isString e.name else true);
-
-  /**
-    determines whether a value is of the attrset type and all values are dag entries
-
-    Allows entries to have extra values
-  */
-  isDag = dag: isAttrs dag && all isEntry (attrValues dag);
-
-  /**
-    determines whether a value is of the list type and all values are dag entries
-
-    Allows entries to have extra values
-  */
-  isDal = dal: isList dal && all isEntry dal;
-
   /*
-    Takes an attribute set containing entries built by entryAnywhere,
-    entryAfter, and entryBefore to a topologically sorted list of
+    Takes an attribute set or list containing attrsets with (optional)
+    `name`, `before` and `after` fields.
+
+    It then sorts them into a topologically sorted list of
     entries.
 
-    Alternatively, it can take a `dal` (dependency list) instead.
-    Which is a list of such entries.
+    It does not perform any normalization of the entries themselves.
 
-    Requires values to all be DAG entries (in other words, have a `value.data` field)
+    Internally this function uses the `toposort` function in
+    `<nixpkgs/lib/lists.nix>` and it returns the same thing.
 
-    Internally this function uses the `topoSort` function in
-    `<nixpkgs/lib/lists.nix>` and its value is accordingly.
+    It returns an object which is like a "result"
 
     Specifically, the result on success is
 
     ```nix
-       { result = [ { name = ?; data = ?; } … ] }
+       { result = [ { name = ?; data = ?; … } … ] }
     ```
 
     For example
@@ -257,13 +234,13 @@ in
                    d = entryBefore [ "e" ] "4";
                    e = entryAnywhere "5";
                  } == {
-                   result = [
-                     { data = "1"; name = "a"; }
-                     { data = "3"; name = "c"; }
-                     { data = "2"; name = "b"; }
-                     { data = "4"; name = "d"; }
-                     { data = "5"; name = "e"; }
-                   ];
+                  result = [
+                    { data = "1"; name = "a"; after = [ ]; before = [ ]; }
+                    { data = "3"; name = "c"; after = [ ]; before = [ "d" ]; }
+                    { data = "2"; name = "b"; after = [ "a" "c" ]; before = [ ]; }
+                    { data = "4"; name = "d"; after = [ ]; before = [ "e" ]; }
+                    { data = "5"; name = "e"; after = [ ]; before = [ ]; }
+                  ];
                  }
        true
     ```
@@ -287,15 +264,15 @@ in
                    d = entryAfter [ "b" ] "4";
                    e = entryAnywhere "5";
                  } == {
-                   cycle = [
-                     { after = [ "a" "c" ]; data = "2"; name = "b"; }
-                     { after = [ "d" ]; data = "3"; name = "c"; }
-                     { after = [ "b" ]; data = "4"; name = "d"; }
-                   ];
-                   loops = [
-                     { after = [ "a" "c" ]; data = "2"; name = "b"; }
-                   ];
-                 }
+                  cycle = [
+                    { data = "2"; name = "b"; after = [ "a" "c" ]; before = [ ]; }
+                    { data = "3"; name = "c"; after = [ "d" ]; before = [ ]; }
+                    { data = "4"; name = "d"; after = [ "b" ]; before = [ ]; }
+                  ];
+                  loops = [
+                    { data = "2"; name = "b"; after = [ "a" "c" ]; before = [ ]; }
+                  ];
+                }
        true
     ```
   */
@@ -313,23 +290,46 @@ in
     toposort before (if isList dag then dag else dagToDal dag);
 
   /**
-    Applies a function to each element of the given DAG.
+    Convenience function for resolving a DAG or DAL and getting the result in a sorted list of DAG entries
 
-    Requires values to all be DAG entries (in other words, have a `value.data` field)
+    Unless you make use of mapIfOk, the result is still a DAL, but sorted.
+
+    Arguments:
+    ```nix
+    {
+      dag,
+      name ? "DAG", # for error message
+      mapIfOk ? null,
+    }
+    ```
+
+    Accepts the same types in its dag argument as `wlib.dag.topoSort`.
+
+    But it returns the resulting list directly, and generates an error message if there is a cycle
   */
-  gmap = f: mapAttrs (n: v: v // { data = f n v.data; });
-
-  /**
-    wlib.dag.gmap but returns the result as a DAL
-
-    Requires values to all be DAG entries (in other words, have a `value.data` field)
-  */
-  mapDagToDal = f: dag: dagToDal (gmap f dag);
+  sortAndUnwrap =
+    {
+      name ? "DAG",
+      dag,
+      mapIfOk ? null,
+    }:
+    let
+      sortedDag = topoSort dag;
+      result =
+        if sortedDag ? result then
+          if isFunction mapIfOk then map mapIfOk sortedDag.result else sortedDag.result
+        else
+          throw ("Dependency cycle in ${name}: " + toJSON sortedDag);
+    in
+    result;
 
   /**
     converts a DAG to a DAL
 
-    Requires values to all be DAG entries (in other words, have a `value.data` field)
+    Accepts the same types as `wlib.dag.topoSort`.
+
+    It is the normalization function used by `topoSort`
+    when the argument is not a list prior to sorting the list.
   */
   dagToDal =
     dag:
@@ -350,11 +350,55 @@ in
     );
 
   /**
+    Determines whether a value is a valid DAG entry (allows extra values)
+
+    Will return true if the item meets the following criteria:
+
+    Has a data field.
+    If it has a name field that field is a string.
+    If it has a before or after field that field is a list of strings.
+
+    It allows entries to have extra values not mentioned above.
+  */
+  isEntry =
+    e:
+    e ? data
+    && (if e ? after then isList e.after && all isString e.after else true)
+    && (if e ? before then isList e.before && all isString e.before else true)
+    && (if e ? name then e.name == null || isString e.name else true);
+
+  /**
+    determines whether a value is of the attrset type and all values meet the criteria of `wlib.dag.isEntry`
+
+    Allows entries to have extra values
+  */
+  isDag = dag: isAttrs dag && all isEntry (attrValues dag);
+
+  /**
+    determines whether a value is of the list type and all values meet the criteria of `wlib.dag.isEntry`
+  */
+  isDal = dal: isList dal && all isEntry dal;
+
+  /**
     Applies a function to each element of the given DAL.
 
-    Requires values to all be DAG entries (in other words, have a `value.data` field)
+    Requires values to meet the criteria of `wlib.dag.isEntry`
   */
   lmap = f: map (v: v // { data = f v.data; });
+
+  /**
+    Applies a function to each element of the given DAG.
+
+    Requires values to meet the criteria of `wlib.dag.isEntry`
+  */
+  gmap = f: mapAttrs (n: v: v // { data = f n v.data; });
+
+  /**
+    wlib.dag.gmap but returns the result as a DAL
+
+    Requires values to meet the criteria of `wlib.dag.isEntry`
+  */
+  mapDagToDal = f: dag: dagToDal (gmap f dag);
 
   /**
     Creates a DAG entry with specified `before` and `after` dependencies.
@@ -420,38 +464,6 @@ in
     Convenience function for creating multiple entries that must be before another entry
   */
   entriesBefore = tag: before: entriesBetween tag before [ ];
-
-  /**
-    Convenience function for resolving a DAG or DAL and getting the result in a sorted list of DAG entries
-
-    Unless you make use of mapIfOk, the result is still a DAL, but sorted.
-
-    Arguments:
-    ```nix
-    {
-      name ? "DAG", # for error message
-      dag,
-      mapIfOk ? null,
-    }
-    ```
-
-    Requires values to all be DAG entries (in other words, have a `value.data` field)
-  */
-  sortAndUnwrap =
-    {
-      name ? "DAG",
-      dag,
-      mapIfOk ? null,
-    }:
-    let
-      sortedDag = topoSort dag;
-      result =
-        if sortedDag ? result then
-          if isFunction mapIfOk then map mapIfOk sortedDag.result else sortedDag.result
-        else
-          abort ("Dependency cycle in ${name}: " + toJSON sortedDag);
-    in
-    result;
 
   dagOf = lib.warn "wlib.dag.dagOf deprecated. Use wlib.types.dagOf instead." wlib.types.dagOf;
   dalOf = lib.warn "wlib.dag.dalOf deprecated. Use wlib.types.dalOf instead." wlib.types.dalOf;
