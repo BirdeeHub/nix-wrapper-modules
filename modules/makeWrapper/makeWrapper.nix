@@ -107,19 +107,14 @@ let
     "${placeholder "out"}/bin/${config.binName}"
   ];
   resArgs = lib.pipe finalArgs [
-    (
-      dag:
-      wlib.dag.sortAndUnwrap {
-        name = "makeWrapper";
-        inherit dag;
-        mapIfOk =
-          v:
-          let
-            esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
-          in
-          if builtins.isList v.data then map esc-fn v.data else esc-fn v.data;
-      }
-    )
+    (wlib.dag.unwrapSort "makeWrapper")
+    (map (
+      v:
+      let
+        esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
+      in
+      if builtins.isList v.data then map esc-fn v.data else esc-fn v.data
+    ))
     lib.flatten
   ];
 in

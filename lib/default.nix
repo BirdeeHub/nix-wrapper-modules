@@ -6,7 +6,7 @@
   wrapperModules ? wrappers_dir.wrapperModules or { },
   modules ? modules_dir.modules or { },
   maintainers ? import ../maintainers { inherit lib; },
-  modulesPath ? ../.,
+  modulesPath ? toString ../.,
   wlib ? import ./lib.nix {
     inherit
       lib

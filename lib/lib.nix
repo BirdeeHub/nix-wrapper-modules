@@ -23,7 +23,7 @@ in
 
   dag = import ./dag.nix { inherit lib wlib; };
 
-  core = ./core.nix;
+  core = toString ./core.nix;
 
   /**
     calls `nixpkgs.lib.evalModules` with the core module imported and `wlib` added to `specialArgs`

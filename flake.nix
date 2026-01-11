@@ -55,7 +55,9 @@
               self = self;
             };
           };
-          checksFromModules = builtins.listToAttrs (lib.mapAttrsToList importModuleCheck self.lib.checks);
+          checksFromModules = builtins.listToAttrs (
+            builtins.filter (v: v.value or null != null) (lib.mapAttrsToList importModuleCheck self.lib.checks)
+          );
         in
         checksFromDir // checksFromModules
       );

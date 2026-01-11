@@ -45,6 +45,7 @@ let
     dagToDal
     mkDagEntry
     dagNameModule
+    unwrapSort
     ;
   mkDagEntryModule =
     settings: elemType:
@@ -292,7 +293,26 @@ in
   /**
     Convenience function for resolving a DAG or DAL and getting the result in a sorted list of DAG entries
 
-    Unless you make use of mapIfOk, the result is still a DAL, but sorted.
+    `wlib.dag.unwrapSort "name_for_error" { a = { before = [ "b" ]; }; b = { data = 1; }; }`
+
+    The result is a sorted DAL, the result field from calling `wlib.dag.topoSort`
+
+    Accepts the same types in its dag argument as `wlib.dag.topoSort`.
+
+    But it returns the resulting list directly, and throws an error message if there is a cycle
+  */
+  unwrapSort =
+    name: dag:
+    let
+      sortedDag = topoSort dag;
+    in
+    if sortedDag ? result then
+      sortedDag.result
+    else
+      throw ("Dependency cycle in ${toString name}: " + toJSON sortedDag);
+
+  /**
+    Same as unwrapSort but its argument is a set and it optionally accepts a function to map over the result
 
     Arguments:
     ```nix
@@ -302,10 +322,6 @@ in
       mapIfOk ? null,
     }
     ```
-
-    Accepts the same types in its dag argument as `wlib.dag.topoSort`.
-
-    But it returns the resulting list directly, and generates an error message if there is a cycle
   */
   sortAndUnwrap =
     {
@@ -313,15 +329,7 @@ in
       dag,
       mapIfOk ? null,
     }:
-    let
-      sortedDag = topoSort dag;
-      result =
-        if sortedDag ? result then
-          if isFunction mapIfOk then map mapIfOk sortedDag.result else sortedDag.result
-        else
-          throw ("Dependency cycle in ${name}: " + toJSON sortedDag);
-    in
-    result;
+    if isFunction mapIfOk then map mapIfOk (unwrapSort name dag) else unwrapSort name dag;
 
   /**
     converts a DAG to a DAL

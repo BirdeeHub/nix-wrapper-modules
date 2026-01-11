@@ -186,28 +186,20 @@ in
     package = lib.mkOption {
       apply =
         package:
-        builtins.foldl'
-          (
-            acc: v:
-            builtins.addErrorContext "config.overrides type error in ${acc} wrapper module!" (
-              if v.type == null then
-                builtins.addErrorContext "If `type` is `null`, then `data` must be a function!" (v.data acc)
-              else
-                builtins.addErrorContext "while calling: (${acc}).${v.type}:" (
-                  builtins.addErrorContext
-                    "If `type` is a string, then `config.package` must have that field, and it must be a function!"
-                    acc.${v.type}
-                    v.data
-                )
-            )
+        builtins.foldl' (
+          acc: v:
+          builtins.addErrorContext "config.overrides type error in ${acc} wrapper module!" (
+            if v.type == null then
+              builtins.addErrorContext "If `type` is `null`, then `data` must be a function!" (v.data acc)
+            else
+              builtins.addErrorContext "while calling: (${acc}).${v.type}:" (
+                builtins.addErrorContext
+                  "If `type` is a string, then `config.package` must have that field, and it must be a function!"
+                  acc.${v.type}
+                  v.data
+              )
           )
-          package
-          (
-            wlib.dag.sortAndUnwrap {
-              name = "overrides";
-              dag = config.overrides;
-            }
-          );
+        ) package (wlib.dag.unwrapSort "overrides" config.overrides);
       type = lib.types.addCheck wlib.types.stringable (
         v: if builtins.isString v then wlib.types.nonEmptyline.check v else true
       );

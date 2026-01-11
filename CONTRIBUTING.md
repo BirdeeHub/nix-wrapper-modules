@@ -151,6 +151,18 @@ pkgs.runCommand "git-test" { } ''
 ''
 ```
 
+If your module declares a list of valid platforms via its `meta.platforms` option, you should disable your test on the relevant platforms like so:
+
+```nix
+if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappedModules.waybar.meta.platforms then
+  pkgs.runCommand "waybar-test" { } ''
+    "${waybarWrapped}/bin/waybar" --version | grep -q "${waybarWrapped.version}"
+    touch $out
+  ''
+else
+  null
+```
+
 # Commit Messages
 
 Changes to wrapper modules should be titled `type(wrapperModules.<name>): some description`.

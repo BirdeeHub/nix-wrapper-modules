@@ -18,7 +18,7 @@ let
       # This gets you a list of each module, and those they import
       getGraph = import ./eval-graph.nix {
         inherit pkgs wlib;
-        rootPath = ../.;
+        rootPath = wlib.modulesPath;
       };
       corelist = builtins.attrNames (wlib.evalModule { }).options;
       graph = getGraph module;
@@ -93,8 +93,8 @@ let
           echo ${lib.escapeShellArg "  <summary></summary>"} >> $out
           echo >> $out
           cat ${doc.optionsCommonMark} | \
-            sed 's|file://${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
-            sed 's|${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
+            sed 's|file://${wlib.modulesPath}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
+            sed 's|${wlib.modulesPath}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
           echo >> $out
           echo ${lib.escapeShellArg "</details>"} >> $out
           echo >> $out
@@ -147,8 +147,8 @@ let
           echo ${lib.escapeShellArg desc.pre} > $out
           echo >> $out
           cat ${coreopts.optionsCommonMark} | \
-            sed 's|file://${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
-            sed 's|${../.}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
+            sed 's|file://${wlib.modulesPath}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
+            sed 's|${wlib.modulesPath}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
           echo >> $out
           echo ${lib.escapeShellArg desc.post} >> $out
         ''

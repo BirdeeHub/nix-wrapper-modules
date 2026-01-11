@@ -35,4 +35,4 @@ if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappedModules.rofi.meta.p
     touch $out
   ''
 else
-  pkgs.runCommand "rofi-test-disabled" { } "touch $out"
+  null

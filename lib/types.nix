@@ -130,7 +130,7 @@
 
     If a name is not given, it cannot be targeted by other values.
 
-    Can be used in conjunction with `wlib.dag.topoSort` and `wlib.dag.sortAndUnwrap`
+    Can be used in conjunction with `wlib.dag.topoSort`, `wlib.dag.sortAndUnwrap`, and `wlib.dag.unwrapSort`
 
     Note, if the element type is a submodule then the `name` argument
     will always be set to the string "data" since it picks up the
@@ -165,7 +165,7 @@
 
     `name` defaults to the key in the set.
 
-    Can be used in conjunction with `wlib.dag.topoSort` and `wlib.dag.sortAndUnwrap`
+    Can be used in conjunction with `wlib.dag.topoSort`, `wlib.dag.sortAndUnwrap`, and `wlib.dag.unwrapSort`
 
     Note, if the element type is a submodule then the `name` argument
     will always be set to the string "data" since it picks up the

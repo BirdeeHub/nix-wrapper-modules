@@ -18,6 +18,4 @@ if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappedModules.mako.meta.p
     touch $out
   ''
 else
-  pkgs.runCommand "mako-test-disabled" { } ''
-    touch $out
-  ''
+  null

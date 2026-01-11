@@ -65,12 +65,7 @@ let
     if builtins.isString config.luaInit then
       config.luaInit
     else
-      builtins.filter (v: v.enable) (
-        wlib.dag.sortAndUnwrap {
-          name = "xplr_init";
-          dag = config.luaInit;
-        }
-      );
+      builtins.filter (v: v.enable) (wlib.dag.unwrapSort "xplr_init" config.luaInit);
   hasFnl = builtins.any (v: v.type == "fnl") initDal;
   basePluginDir = "${placeholder "out"}/${config.binName}-plugins";
 in
@@ -255,14 +250,9 @@ in
         (v: if builtins.isString v then [ ] else v)
         (map (v: if v.plugin or null != null then v // { data = v.plugin; } else null))
         (builtins.filter (v: v != null))
-        (
-          dal:
-          wlib.dag.sortAndUnwrap {
-            name = "xplr_plugins";
-            dag = builtins.filter (v: v.enable) (wlib.dag.dagToDal config.plugins) ++ dal;
-            mapIfOk = v: (mkLinkCommand v.name v.data);
-          }
-        )
+        (dal: builtins.filter (v: v.enable) (wlib.dag.dagToDal config.plugins) ++ dal)
+        (wlib.dag.unwrapSort "xplr_plugins")
+        (map (v: mkLinkCommand v.name v.data))
         (builtins.concatStringsSep "\n")
       ];
     in
