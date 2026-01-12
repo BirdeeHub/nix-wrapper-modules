@@ -64,11 +64,7 @@ in
     "share/systemd/user/waybar.service"
   ];
   config.meta.maintainers = [
-    {
-      name = "Patrick Widmer";
-      github = "patwid";
-      githubId = 1428207;
-    }
+    wlib.maintainers.patwid
   ];
   config.meta.platforms = lib.platforms.linux;
 }
