@@ -127,7 +127,7 @@ if config.binName == "" then
   ""
 else
   ''
-    $(
+    (
       ${srcsetup dieHook}
       ${srcsetup (if config.wrapperImplementation == "shell" then makeWrapper else makeBinaryWrapper)}
       makeWrapper ${baseArgs} ${builtins.concatStringsSep " " resArgs}
