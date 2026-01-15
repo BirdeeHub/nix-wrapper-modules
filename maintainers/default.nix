@@ -6,4 +6,9 @@
     github = "patwid";
     githubId = 1428207;
   };
+  rencire = {
+    name = "rencire";
+    github = "rencire";
+    githubId = 546296;
+  };
 }
