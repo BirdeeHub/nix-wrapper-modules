@@ -8,11 +8,6 @@
         system:
         if inputs.pkgs.stdenv.hostPlatform.system or null == system then
           inputs.pkgs
-        else if inputs.nixpkgs.legacyPackages.${system} or null != null then
-          import inputs.nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-          }
         else
           import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) {
             inherit system;
