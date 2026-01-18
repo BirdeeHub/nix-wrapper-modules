@@ -53,7 +53,7 @@ config.hosts.neovide =
 - In order to prevent path collisions when installing multiple neovim derivations via home.packages or environment.systemPackages
 
 ```nix
-# set this to false
+# set this to true
 config.settings.dont_link = true;
 # and make sure these dont share values:
 config.binName = "nvim";

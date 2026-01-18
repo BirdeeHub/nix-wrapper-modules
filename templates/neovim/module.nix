@@ -115,7 +115,7 @@ inputs:
   # If you want to install multiple neovim derivations via home.packages or environment.systemPackages
   # in order to prevent path collisions:
 
-  # set this to false:
+  # set this to true:
   # config.settings.dont_link = true;
 
   # and make sure these dont share values:
