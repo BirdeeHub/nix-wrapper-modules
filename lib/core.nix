@@ -149,7 +149,7 @@ in
   options = {
     meta = {
       maintainers = lib.mkOption {
-        description = ''Maintainers of this module.'';
+        description = "Maintainers of this module.";
         type = maintainersWithFiles;
         default = [ ];
       };
@@ -671,11 +671,11 @@ in
             if builtins.isList phases then
               (lib.pipe phases [
                 (builtins.concatMap (n: [
-                  ''''${pre${capitalize n}s[*]:-}''
+                  "\${pre${capitalize n}s[*]:-}"
                   "${n}"
                 ]))
                 (v: if builtins.length v > 0 then builtins.tail v else [ ])
-                (v: [ ''''${prePhases[*]:-}'' ] ++ v ++ [ ''''${postPhases[*]:-}'' ])
+                (v: [ "\${prePhases[*]:-}" ] ++ v ++ [ "\${postPhases[*]:-}" ])
                 (builtins.concatStringsSep " ")
                 wlib.escapeShellArgWithEnv
                 (v: "\n" + ''if [ -z "''${phases[*]:-}" ]; then phases=${v}; fi'' + "\n")

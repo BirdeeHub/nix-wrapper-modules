@@ -133,7 +133,7 @@ in
       pathStr = toString path;
       name = baseNameOf pathStr;
     in
-    pkgs.runCommandLocal name { } ''ln -s ${lib.escapeShellArg pathStr} $out'';
+    pkgs.runCommandLocal name { } "ln -s ${lib.escapeShellArg pathStr} $out";
 
   /**
     getPackageOutputsSet ::
