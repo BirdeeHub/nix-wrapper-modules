@@ -9,9 +9,15 @@
         if inputs.pkgs.stdenv.hostPlatform.system or null == system then
           inputs.pkgs
         else if inputs.nixpkgs.legacyPackages.${system} or null != null then
-          inputs.nixpkgs.legacyPackages.${system}
+          import inputs.nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          }
         else
-          import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) { inherit system; };
+          import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) {
+            inherit system;
+            config.allowUnfree = true;
+          };
       lib = inputs.pkgs.lib or inputs.nixpkgs.lib or (import "${inputs.nixpkgs or <nixpkgs>}/lib");
       forAllSystems = lib.genAttrs lib.platforms.all;
     in

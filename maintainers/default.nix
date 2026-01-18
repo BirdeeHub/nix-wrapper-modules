@@ -11,4 +11,9 @@
     github = "rencire";
     githubId = 546296;
   };
+  vinnymeller = {
+    name = "Vinny Meller";
+    github = "vinnymeller";
+    githubId = 19894025;
+  };
 }
