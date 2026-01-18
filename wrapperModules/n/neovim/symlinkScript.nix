@@ -74,7 +74,7 @@ finalDrv
     cp -r ${package}/nix-support/* $out/nix-support
 
   ''
-  + lib.optionalString (stdenv.isLinux) ''
+  + lib.optionalString stdenv.isLinux ''
     mkdir -p $out/share/applications
     substitute ${
       lib.escapeShellArgs [
