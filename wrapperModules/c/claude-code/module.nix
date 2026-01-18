@@ -35,7 +35,7 @@ in
     };
 
     mcpConfig = lib.mkOption {
-      type = lib.jsonFmt.type;
+      type = jsonFmt.type;
       default = { };
       description = ''
         MCP Server configuration
