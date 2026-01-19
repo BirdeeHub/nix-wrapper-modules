@@ -72,9 +72,10 @@ let
       outputs = {
         "DP-3" = {
           position = {
-            x = 1440;
-            y = 1080;
-            _keys = true;
+            _attrs = {
+              x = 1440;
+              y = 1080;
+            };
           };
           background-color = "#003300";
           hot-corners = {
