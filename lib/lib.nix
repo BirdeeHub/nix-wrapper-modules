@@ -86,8 +86,8 @@ in
         { inherit pkgs; }
         ({ pkgs, wlib, lib, ... }: {
           imports = [ wlib.modules.default ];
-          package = pkgs.yourpackage;
-          flags."--config" = ./idk;
+          package = pkgs.hello;
+          flags."--greeting" = "greetings!";
         })
       ])
       (wlib.evalPackage [
