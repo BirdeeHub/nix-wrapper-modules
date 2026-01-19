@@ -17,7 +17,7 @@ let
     }).wrapper;
 in
 pkgs.runCommand "mpv-test" { } ''
-  res=$(${mpvWrapped}/bin/mpv --version)
+  res="$(${mpvWrapped}/bin/mpv --version)"
   if ! echo "$res" | grep -q "mpv"; then
     echo "failed to run wrapped package!"
     echo "wrapper content for ${mpvWrapped}/bin/mpv"

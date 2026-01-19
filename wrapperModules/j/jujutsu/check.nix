@@ -15,7 +15,7 @@ let
   };
 in
 pkgs.runCommand "jujutsu-test" { } ''
-  res=$(${jujutsuWrapped}/bin/jj config list --user)
+  res="$(${jujutsuWrapped}/bin/jj config list --user)"
   if ! echo "$res" | grep -q 'Test User'; then
     echo "failed to list test user!"
     echo "wrapper contents for ${jujutsuWrapped}/bin/jj"
