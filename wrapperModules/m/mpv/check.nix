@@ -15,24 +15,20 @@ let
         vo=null
       '';
     }).wrapper;
-
 in
-null
-/*
-  TODO: determine what about this test makes it flaky in actions.
-  pkgs.runCommand "mpv-test" { } ''
-    if ! "${mpvWrapped}/bin/mpv" --version | grep -q "mpv"; then
-      echo "failed to run wrapped package!"
-      echo "wrapper content for ${mpvWrapped}/bin/mpv"
-      cat "${mpvWrapped}/bin/mpv"
-      exit 1
-    fi
-    if ! cat "${mpvWrapped.configuration.package}/bin/mpv" | LC_ALL=C grep -a -F -q "share/mpv/scripts/visualizer.lua"; then
-      echo "failed to find added script when inspecting overriden package value"
-      echo "overriden package value ${mpvWrapped.configuration.package}/bin/mpv"
-      cat "${mpvWrapped.configuration.package}/bin/mpv"
-      exit 1
-    fi
-    touch $out
-  ''
-*/
+pkgs.runCommand "mpv-test" { } ''
+  res=$(${mpvWrapped}/bin/mpv --version)
+  if ! echo "$res" | grep -q "mpv"; then
+    echo "failed to run wrapped package!"
+    echo "wrapper content for ${mpvWrapped}/bin/mpv"
+    cat "${mpvWrapped}/bin/mpv"
+    exit 1
+  fi
+  if ! cat "${mpvWrapped.configuration.package}/bin/mpv" | LC_ALL=C grep -a -F -q "share/mpv/scripts/visualizer.lua"; then
+    echo "failed to find added script when inspecting overriden package value"
+    echo "overriden package value ${mpvWrapped.configuration.package}/bin/mpv"
+    cat "${mpvWrapped.configuration.package}/bin/mpv"
+    exit 1
+  fi
+  touch $out
+''

@@ -13,26 +13,22 @@ let
       };
     };
   };
-
 in
-null
-/*
-  TODO: determine what about this test makes it flaky in actions.
-  pkgs.runCommand "jujutsu-test" { } ''
-    if ! "${jujutsuWrapped}/bin/jj" config list --user | grep -q 'Test User'; then
-      echo "failed to list test user!"
-      echo "wrapper contents for ${jujutsuWrapped}/bin/jj"
-      cat "${jujutsuWrapped}/bin/jj"
-      exit 1
-    fi
-    if ! "${jujutsuWrapped}/bin/jj" config list --user | grep -q -F 'test@example.com'; then
-      echo "failed to list test email!"
-      echo "wrapper contents for ${jujutsuWrapped}/bin/jj"
-      cat "${jujutsuWrapped}/bin/jj"
-      cat "${jujutsuWrapped.configuration.env.JJ_CONFIG.data}"
-      "${jujutsuWrapped}/bin/jj" config list --user
-      exit 1
-    fi
-    touch $out
-  ''
-*/
+pkgs.runCommand "jujutsu-test" { } ''
+  res=$(${jujutsuWrapped}/bin/jj config list --user)
+  if ! echo "$res" | grep -q 'Test User'; then
+    echo "failed to list test user!"
+    echo "wrapper contents for ${jujutsuWrapped}/bin/jj"
+    cat "${jujutsuWrapped}/bin/jj"
+    exit 1
+  fi
+  if ! echo "$res" | grep -q 'test@example.com'; then
+    echo "failed to list test email!"
+    echo "wrapper contents for ${jujutsuWrapped}/bin/jj"
+    cat "${jujutsuWrapped}/bin/jj"
+    cat "${jujutsuWrapped.configuration.env.JJ_CONFIG.data}"
+    "${jujutsuWrapped}/bin/jj" config list --user
+    exit 1
+  fi
+  touch $out
+''
