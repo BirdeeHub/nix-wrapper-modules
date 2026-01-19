@@ -81,7 +81,8 @@ in
       DISABLE_INSTALLATION_CHECKS = "1";
     };
     flags = {
-      "--mcp-config" = jsonFmt.generate "claude-mcp-config.json" { mcpServers = config.settings; };
+
+      "--mcp-config" = jsonFmt.generate "claude-mcp-config.json" { mcpServers = config.mcpConfig; };
       "--strict-mcp-config" = config.strictMcpConfig;
       "--settings" = jsonFmt.generate "claude-settings.json" config.settings;
     };

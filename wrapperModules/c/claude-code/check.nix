@@ -16,6 +16,11 @@ let
   };
 in
 pkgs.runCommand "claude-code-test" { } ''
-  "${claudeCodeWrapped}/bin/claude" mcp get nixos
+  claude="${claudeCodeWrapped}/bin/claude"
+  if ! grep -q -- "--strict-mcp-config" "$claude"; then
+    echo "FAIL: --strict-mcp-config flag not found in wrapped claude binary"
+    cat "$claude"
+    exit 1
+  fi
   touch $out
 ''
