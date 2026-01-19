@@ -155,7 +155,7 @@ let
       v.data.name
     else if v.name or null != null then
       v.name
-    else if wlib.types.stringable.check v.data then
+    else if wlib.types.stringable.check (v.data or null) then
       if baseNameOf (v.data or "") != "" then
         baseNameOf v.data
       else if lib.getName (v.data or "") != "" then
