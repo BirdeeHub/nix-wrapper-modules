@@ -339,7 +339,12 @@
       config.package = lib.makeOverridable pkgs.bundlerEnv {
         name = "neovim-ruby-host";
         postBuild = "ln -sf ${pkgs.ruby}/bin/* $out/bin";
-        gemdir = "${pkgs.path}/pkgs/applications/editors/neovim/ruby_provider";
+        gemdir = config.gemdir;
+      };
+      options.gemdir = lib.mkOption {
+        type = wlib.types.stringable;
+        default = "${pkgs.path}/pkgs/applications/editors/neovim/ruby_provider";
+        description = "The path to the ruby gem directory with the neovim gem as required by `pkgs.bundlerEnv`";
       };
       config.exePath = "bin/neovim-ruby-host";
       config.binName = "neovim-ruby-host";
