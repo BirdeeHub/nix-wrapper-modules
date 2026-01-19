@@ -133,10 +133,10 @@ in
     ./packDir.nix
     ./default-config.nix
   ];
-  config.package = pkgs.neovim-unwrapped;
+  config.package = lib.mkOptionDefault pkgs.neovim-unwrapped;
   config.builderFunction = lib.mkDefault (import ./symlinkScript.nix);
   config.wrapperFunction = lib.mkOverride 999 (import ./makeWrapper);
-  config.meta.maintainers = lib.mkDefault [ wlib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
   config.meta.description = {
     pre = builtins.readFile ./pre_desc.md;
     post = builtins.readFile ./post_desc.md;
