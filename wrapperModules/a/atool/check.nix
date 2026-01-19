@@ -16,9 +16,9 @@ pkgs.runCommand "atool-test" { } ''
   cd $out
   echo 'hello world' > testfile
 
-  "${atoolWrapped}/bin/apack" --explain archive.zip testfile 2>&1 >/dev/null | grep -q "${pkgs.zip}/bin/zip -r archive.zip testfile"
-  "${atoolWrapped}/bin/als" --explain archive.zip 2>&1 >/dev/null | grep -q "${pkgs.unzip}/bin/unzip -l archive.zip"
-  "${atoolWrapped}/bin/acat" --explain archive.zip testfile 2>&1 >/dev/null | grep -q "${pkgs.unzip}/bin/unzip -p archive.zip testfile"
+  "${atoolWrapped}/bin/apack" --explain archive.zip testfile 2>&1 >/dev/null | grep "${pkgs.zip}/bin/zip -r archive.zip testfile"
+  "${atoolWrapped}/bin/als" --explain archive.zip 2>&1 >/dev/null | grep "${pkgs.unzip}/bin/unzip -l archive.zip"
+  "${atoolWrapped}/bin/acat" --explain archive.zip testfile 2>&1 >/dev/null | grep "${pkgs.unzip}/bin/unzip -p archive.zip testfile"
   "${atoolWrapped}/bin/arepack" archive.zip archive.tar.gz
-  "${atoolWrapped}/bin/aunpack" --explain archive.tar.gz 2>&1 >/dev/null | grep -q  "${pkgs.gnutar}/bin/tar xvzf archive.tar.gz"
+  "${atoolWrapped}/bin/aunpack" --explain archive.tar.gz 2>&1 >/dev/null | grep "${pkgs.gnutar}/bin/tar xvzf archive.tar.gz"
 ''
