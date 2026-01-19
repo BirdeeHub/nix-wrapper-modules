@@ -54,7 +54,8 @@ in
 
     Evaluates the module along with the core options, using `lib.evalModules`
 
-    Takes a module as its argument. Returns the result from `lib.evalModules` directly.
+    Takes a module (or list of modules) as its argument.
+    Returns the result from `lib.evalModules` directly.
 
     To submit a module to this repo, this function must be able to evaluate it.
 
@@ -65,6 +66,41 @@ in
     - Provides `options` for introspection and documentation
   */
   evalModule = module: wlib.evalModules { modules = toList module; };
+
+  /**
+    ```nix
+    evalProgram = module: (wlib.evalModules { modules = lib.toList module; }).config.wrapper;
+    ```
+
+    Evaluates the module along with the core options, using `lib.evalModules`
+
+    Takes a module (or list of modules) as its argument.
+
+    Returns the final wrapped package from `eval_result.config.wrapper` directly.
+
+    Requires a `pkgs` to be set.
+
+    ```nix
+    home.packages = [
+      (wlib.evalProgram [
+        { inherit pkgs; }
+        ({ pkgs, wlib, lib, ... }: {
+          imports = [ wlib.modules.default ];
+          package = pkgs.yourpackage;
+          flags."--config" = ./idk;
+        })
+      ])
+      (wlib.evalProgram [
+        { inherit pkgs; }
+        ({ pkgs, wlib, lib, ... }: {
+          imports = [ wlib.wrapperModules.tmux ];
+          plugins = [ pkgs.tmuxPlugins.onedark-theme ];
+        })
+      ])
+    ];
+    ```
+  */
+  evalProgram = module: (wlib.evalModules { modules = toList module; }).config.wrapper;
 
   /**
     Creates a reusable wrapper module.
@@ -106,17 +142,17 @@ in
   /**
     Imports `wlib.modules.default` then evaluates the module. It then returns the wrapped package.
 
-    Use this when you want to quickly create a wrapped package directly. Requires a `pkgs` to be set.
+    Use this when you want to quickly create a wrapped package directly, which does not have an existing module already.
+
+    Requires a `pkgs` to be set.
 
     Equivalent to:
 
     ```nix
-    wrapModule = (wlib.evalModule wlib.modules.default).config.wrap;
+    wrapPackage = module: wlib.evalProgram ([ wlib.modules.default ] ++ toList module);
     ```
   */
-  wrapPackage =
-    module:
-    (wlib.evalModules { modules = [ wlib.modules.default ] ++ (toList module); }).config.wrapper;
+  wrapPackage = module: wlib.evalProgram ([ wlib.modules.default ] ++ toList module);
 
   /**
     mkOutOfStoreSymlink :: pkgs -> path -> { out = ...; ... }
