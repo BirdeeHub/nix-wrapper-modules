@@ -448,8 +448,8 @@ in
                   '';
                 };
                 config = lib.mkOption {
-                  type = types.lines;
-                  default = "";
+                  type = types.nullOr types.lines;
+                  default = null;
                   description = ''
                     A snippet of config for this spec.
                   '';

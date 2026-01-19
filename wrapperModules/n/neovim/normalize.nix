@@ -223,7 +223,7 @@ in
 {
   inherit hasFennel mappedSpecs;
   infoPluginInitMain = lib.pipe mappedSpecs [
-    (builtins.filter (v: v.config or null != null))
+    (builtins.filter (v: v.config or null != null && v.config or "" != ""))
     (map (
       v:
       let
