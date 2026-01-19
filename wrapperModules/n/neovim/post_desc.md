@@ -42,6 +42,14 @@ config.specs.treesj = config.nvim-lib.mkPlugin "treesj" inputs.treesj;
 
 ---
 
+- To use a different version of neovim, set `config.package` to the version you want to use!
+
+```nix
+config.package = inputs.neovim-nightly-overlay.packages.${pkgs.stdenv.hostPlatform.system}.neovim;
+```
+
+---
+
 - Make a new host!
 
 ```nix
