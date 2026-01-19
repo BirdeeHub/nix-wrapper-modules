@@ -149,14 +149,14 @@ packageAgain = apackage.wrap ({config, pkgs, ...}: {
 })) # .config.wrapper to grab the final package! Only works if pkgs was supplied.
 ```
 
-`wrapProgram` comes with `wlib.modules.default` already included, and outputs the package directly!
+`wrapPackage` comes with `wlib.modules.default` already included, and outputs the package directly!
 
 Use this for quickly creating a custom wrapped program within your configuration!
 
 ```nix
 { pkgs, wrappers, ... }:
 
-wrappers.lib.wrapProgram ({ config, wlib, lib, ... }: {
+wrappers.lib.wrapPackage ({ config, wlib, lib, ... }: {
   inherit pkgs; # you can only grab the final package if you supply pkgs!
   package = pkgs.curl;
   extraPackages = [ pkgs.jq ];
