@@ -102,25 +102,48 @@
     );
     flags = {
       # Alternatively, config options can be set in a config file specified with --config
-      "--option" = lib.attrsets.mapAttrsToList (name: value: "${name}=${value}") config.settings;
+      "--option" = {
+        sep = "=";
+        data = lib.attrsets.mapAttrsToList (name: value: "${name}=${value}") config.settings;
+      };
     };
 
     # These tools are symlinks to the atool executable, and atool determines
     # which one to run by the program basename. When atool is wrapped, the wrapper
     # script executes the original atool such that the basename is always atool, which
-    # breaks these shortcuts. In order to keep these shortcuts functional, the symlinks
-    # are replaced by wrapper scripts based on the atool wrapper which executes the
-    # symlink from the wrapped package.
-    drv.postBuild = ''
-      rm $out/bin/acat $out/bin/adiff $out/bin/als $out/bin/apack $out/bin/arepack $out/bin/aunpack
-      sed 's/\/bin\/atool/\/bin\/acat/' $out/bin/atool > $out/bin/acat
-      sed 's/\/bin\/atool/\/bin\/adiff/' $out/bin/atool > $out/bin/adiff
-      sed 's/\/bin\/atool/\/bin\/als/' $out/bin/atool > $out/bin/als
-      sed 's/\/bin\/atool/\/bin\/apack/' $out/bin/atool > $out/bin/apack
-      sed 's/\/bin\/atool/\/bin\/arepack/' $out/bin/atool > $out/bin/arepack
-      sed 's/\/bin\/atool/\/bin\/aunpack/' $out/bin/atool > $out/bin/aunpack
-      chmod +x $out/bin/acat $out/bin/adiff $out/bin/als $out/bin/apack $out/bin/arepack $out/bin/aunpack
-    '';
+    # breaks these shortcuts. In order to keep these shortcuts functional, we wrap each one
+    drv.buildPhase =
+      let
+        inherit (import wlib.modules.makeWrapper) wrapperFunction;
+        binNames = [
+          "acat"
+          "adiff"
+          "als"
+          "apack"
+          "arepack"
+          "aunpack"
+        ];
+      in
+      "runHook preBuild\n"
+      + lib.pipe binNames [
+        (map (n: "$out/bin/${n}"))
+        (builtins.concatStringsSep " ")
+        (s: "rm " + s + "\n")
+      ]
+      + lib.pipe binNames [
+        (map (
+          n:
+          pkgs.callPackage wrapperFunction {
+            inherit wlib;
+            config = config // {
+              exePath = "bin/${n}";
+              binName = n;
+            };
+          }
+        ))
+        (builtins.concatStringsSep "\n")
+      ]
+      + "\nrunHook postBuild";
 
     meta.maintainers = [ wlib.maintainers.jomarm ];
   };
