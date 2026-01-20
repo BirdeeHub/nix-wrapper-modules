@@ -91,6 +91,76 @@
             Path to the `7z` executable.
           '';
         };
+        lha = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.lhasa}/bin/lha";
+          description = ''
+            Path to the `lha` executable.
+          '';
+        };
+        arj = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.arj}/bin/arj";
+          description = ''
+            Path to the `arj` executable.
+          '';
+        };
+        rpm = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.rpm}/bin/rpm";
+          description = ''
+            Path to the `rpm` executable.
+          '';
+        };
+        rpm2cpio = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.rpm}/bin/rpm2cpio";
+          description = ''
+            Path to the `rpm2cpio` executable.
+          '';
+        };
+        dpkg_deb = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.dpkg}/bin/dpkg-deb";
+          description = ''
+            Path to the `dpkg-deb` executable.
+          '';
+        };
+        cabextract = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.cabextract}/bin/cabextract";
+          description = ''
+            Path to the `cabextract` executable.
+          '';
+        };
+        lzop = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.lzop}/bin/lzop";
+          description = ''
+            Path to the `lzop` executable.
+          '';
+        };
+        rzip = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.rzip}/bin/rzip";
+          description = ''
+            Path to the `rzip` executable.
+          '';
+        };
+        lrzip = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.lrzip}/bin/lrzip";
+          description = ''
+            Path to the `lrzip` executable.
+          '';
+        };
+        cpio = lib.mkOption {
+          type = lib.types.str;
+          default = "${pkgs.cpio}/bin/cpio";
+          description = ''
+            Path to the `cpio` executable.
+          '';
+        };
       };
     };
   };
