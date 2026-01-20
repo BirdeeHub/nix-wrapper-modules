@@ -1,6 +1,6 @@
 { lib }:
 {
-  inherit (lib.maintainers) birdee;
+  inherit (lib.maintainers) birdee ameer;
   patwid = {
     name = "Patrick Widmer";
     github = "patwid";
