@@ -2,10 +2,20 @@
 
 This library provides two main components:
 
+It provides the core system via its `lib` output, internally called `wlib`
 - `lib.evalModule`: Function to create reusable wrapper modules with type-safe configuration options
-  - And related, `lib.wrapPackage`: an alias for `evalModule` which returns the package directly and pre-imports the `wlib.modules.default` module for convenience
-- `wrapperModules`: Pre-made wrapper modules for common packages (`tmux`, `wezterm`, etc.)
-- `wrappedModules`: `wrapperModules` output, but partially evaluated for easier access to `.wrap` and other values in the module system.
+  - And related:
+    - `lib.evalPackage`: an alias for `evalModule` which returns the package directly
+    - `lib.wrapPackage`, which is the same but pre-imports the `wlib.modules.default` module for convenience in creating ad-hoc wrappers
+    - A module implementation of `pkgs.makeWrapper` and friends.
+    - Several useful nix module system types.
+    - etc...
+
+And it serves as a repository for modules for wrapping the programs themselves, allowing knowledge to be shared for you to use!
+
+For that it offers:
+- `wlib.wrapperModules`: Pre-made wrapper modules for common packages (`tmux`, `wezterm`, etc.)
+- `outputs.wrappedModules`: a flake output containing partially evaluated forms of the modules in `wrapperModules` for easier access to `.wrap` and other values in the module system directly.
 
 ## Usage
 
@@ -19,9 +29,10 @@ They will get you started with a module file and the default one also gives you 
 {
   inputs.wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
   outputs = { self, wrappers }: {
-    packages.x86_64-linux.default =
-      wrappers.wrappedModules.wezterm.wrap ({ lib, ... }: {
+    packages.x86_64-linux.default = wrappers.lib.evalPackage
+      ({ config, lib, wlib, pkgs, ... }: {
         pkgs = wrappers.inputs.nixpkgs.legacyPackages.x86_64-linux;
+        imports = [ wlib.wrapperModules.wezterm ];
         luaInfo = {
           keys = [
             {
