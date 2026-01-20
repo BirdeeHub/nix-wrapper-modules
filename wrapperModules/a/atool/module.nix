@@ -91,13 +91,6 @@
             Path to the `7z` executable.
           '';
         };
-        lha = lib.mkOption {
-          type = lib.types.str;
-          default = "${pkgs.lhasa}/bin/lha";
-          description = ''
-            Path to the `lha` executable.
-          '';
-        };
         arj = lib.mkOption {
           type = lib.types.str;
           default = "${pkgs.arj}/bin/arj";
@@ -184,7 +177,6 @@
     # breaks these shortcuts. In order to keep these shortcuts functional, we wrap each one
     drv.buildPhase =
       let
-        inherit (import wlib.modules.makeWrapper) wrapperFunction;
         binNames = [
           "acat"
           "adiff"
@@ -203,7 +195,7 @@
       + lib.pipe binNames [
         (map (
           n:
-          pkgs.callPackage wrapperFunction {
+          pkgs.callPackage config.wrapperFunction {
             inherit wlib;
             config = config // {
               exePath = "bin/${n}";
