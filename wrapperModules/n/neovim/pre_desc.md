@@ -8,7 +8,7 @@ The first thing to notice is `config.settings.config_directory`
 
 Set it to an in-store, out-of-store, or `lib.generators.mkLuaInline` value!
 
-It will be loaded just like a normal neovim configuration directory.
+It will be loaded just like a normal `neovim` configuration directory.
 
 Plugins are provided via the `config.specs` option.
 
@@ -18,18 +18,23 @@ Each item that accepts a plugin may also be a `spec` with the plugin as its `.da
 which may optionally be customized by `config.specMods` and then further processed by `config.specCollect` (not too hard) and `config.specMaps` (advanced).
 
 The spec forms offer the ability to provide plugins, configuration (in `lua`, `vimscript`, or `fennel`),
-along with automatically translated lua values in a finely controlled order.
+along with automatically translated lua values from nix in a finely controlled order.
 
-A plugin may be an in-store or out-of-store path, but may not be a lua inline value.
+A plugin may be an in-store or out-of-store path, but may not be an inline lua value.
 
-Optionally supports the ability to avoid path collisions when installing multiple configured neovim packages!
+Optionally supports the ability to avoid path collisions when installing multiple configured `neovim` packages!
 
 You may do this via a combination of `config.binName` and `config.settings.dont_link` options.
 
-Fully supports remote plugin hosts,
-and allows arbitrary other items to be bundled into the context of your nvim derivation, such as `neovide`,
+This module provides an info plugin you can access in lua to get metadata about your nix install, as well as ad-hoc values you pass.
+
+This module fully supports remote plugin hosts.
+
+By the same mechanism, it also allows arbitrary other items to be bundled into the context of your `neovim` derivation, such as `neovide`,
 via an option which accepts wrapper modules for maximum flexibility.
 
-That is also why there are so many options listed. Skip past the `hosts` options to get to the good stuff.
+That is also why there are so many options listed.
+
+Skip past the `hosts` options to get to the good stuff. After you are done reading those, there is also a tips and tricks section at the bottom.
 
 ## All Options:
