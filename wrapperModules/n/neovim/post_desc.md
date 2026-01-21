@@ -1,4 +1,4 @@
-# Tips and Tricks:
+## Tips and Tricks:
 
 The main `init.lua` of your config directory is added to the specs DAG under the name `INIT_MAIN`.
 
