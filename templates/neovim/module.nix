@@ -97,13 +97,16 @@ inputs:
 
   # These specMods are modules which modify your specs in config.specs
   # you can override defaults, or make your own options.
-  config.specMods =
-    { parentSpec, ... }:
-    {
-      config.collateGrammars = lib.mkDefault (parentSpec.collateGrammars or true);
-    };
+  # config.specMods =
+  #   { parentSpec, ... }:
+  #   {
+  #     config.collateGrammars = lib.mkDefault (parentSpec.collateGrammars or false);
+  #     config.autoconfig = lib.mkDefault (parentSpec.autoconfig or false);
+  #     config.runtimeDeps = lib.mkDefault (parentSpec.runtimeDeps or false);
+  #     config.pluginDeps = lib.mkDefault (parentSpec.pluginDeps or false);
+  #   };
   # or, if you dont care about propagating parent values:
-  # config.specMods.collateGrammars = lib.mkDefault true;
+  # config.specMods.collateGrammars = lib.mkDefault false;
 
   # There are some default hosts!
   # python, ruby, and node are enabled by default
