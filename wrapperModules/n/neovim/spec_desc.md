@@ -100,7 +100,7 @@ config.specMods = { parentSpec, ... }: {
     desc = "A description for myopt";
   };
   # Or change a default!
-  config.collateGrammars = parentSpec.collateGrammars or true;
+  config.collateGrammars = parentSpec.collateGrammars or false;
   config.type = parentSpec.type or "fnl";
 };
 ```

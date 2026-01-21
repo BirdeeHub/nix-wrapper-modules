@@ -48,7 +48,7 @@
       };
       options.collateGrammars = lib.mkOption {
         type = lib.types.bool;
-        default = parentSpec.collateGrammars or false;
+        default = parentSpec.collateGrammars or true;
         description = ''
           If this plugin, or any of its dependencies from pluginDeps option,
           are a treesitter grammar passed through `nvim-treesitter.grammarToPlugin`,
@@ -156,7 +156,7 @@
         list:
         lib.concatMap (
           v:
-          lib.optional (v.value.data.passthru.initLua or null != null && v.value.autoconfig or true) {
+          lib.optional (v.value.data.passthru.initLua or null != null && v.value.autoconfig or false) {
             name = v.name;
             type = v.type;
             value = {

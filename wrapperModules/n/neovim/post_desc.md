@@ -173,7 +173,7 @@ in {
 
 ```nix
 config.specMods = { parentSpec, ... }: {
-  config.collateGrammars = lib.mkDefault (parentSpec.collateGrammars or true);
+  config.collateGrammars = lib.mkDefault (parentSpec.collateGrammars or false);
 };
 ```
 
@@ -266,4 +266,32 @@ As a reminder, the fetcher function form is:
 local nixInfo = require(vim.g.nix_info_plugin_name)
 local default = nil
 local value = nixInfo(default, "path", "to", "value", "in", "plugin")
+```
+
+---
+
+- Stylix colorscheme integration (requires somewhere with stylix installed to get the colors from):
+
+```nix
+{ pkgs, ... }: {
+  config.specs.base16 = {
+    # install a plugin to handle the colors
+    data = pkgs.vimPlugins.mini-base16;
+    # run before the main init.lua
+    before = [ "INIT_MAIN" ];
+
+    # get the colors from your system and pass it
+    info = pkgs.lib.filterAttrs (
+      k: v: builtins.match "base0[0-9A-F]" k != null
+    ) your-system-config.lib.stylix.colors.withHashtag;
+
+    # call the plugin with the colors
+    config = /* lua */ ''
+      local info, pname, lazy = ...
+      require("mini.base16").setup({
+        palette = info,
+      })
+    '';
+  };
+}
 ```

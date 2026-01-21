@@ -396,7 +396,7 @@ in
 
         ```nix
         config.specMods = { parentSpec, ... }: {
-          config.collateGrammars = lib.mkDefault (parentSpec.collateGrammars or true);
+          config.collateGrammars = lib.mkDefault (parentSpec.collateGrammars or false);
         };
         ```
 
