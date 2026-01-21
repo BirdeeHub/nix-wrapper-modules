@@ -236,8 +236,7 @@ trying to use the same config directory without using nix to install it.
 
 ```lua
 do
-  local ok
-  ok, _G.nixInfo = pcall(require, vim.g.nix_info_plugin_name)
+  local ok = pcall(require, vim.g.nix_info_plugin_name)
   if not ok then
     package.loaded[vim.g.nix_info_plugin_name] = setmetatable({}, {
       __call = function (_, default) return default end
