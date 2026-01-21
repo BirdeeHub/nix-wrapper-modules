@@ -187,13 +187,15 @@
                 isGram =
                   v.value.collateGrammars or false
                   && v.value.data or null != null
-                  && !builtins.isString v.value.data
                   && (
                     v.value.data.passthru.isTreesitterGrammar or false == true
                     || v.value.data.passthru.isTreesitterQuery or false == true
-                    ||
-                      builtins.match "^vimplugin-(nvim-)?treesitter-(grammar|queries)-.*" (lib.getName v.value.data)
-                      != null
+                    || (
+                      !builtins.isString v.value.data
+                      &&
+                        builtins.match "^vimplugin-(nvim-)?treesitter-(grammar|queries)-.*" (lib.getName v.value.data)
+                        != null
+                    )
                   );
               in
               {
