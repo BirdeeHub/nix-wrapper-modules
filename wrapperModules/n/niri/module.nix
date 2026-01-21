@@ -60,7 +60,7 @@ let
     ) a;
   mkTagged =
     t: k: v:
-    "${t} ${k}=${toVal v}";
+    "${t} ${mkAttrs { ${k} = v; }}";
   mkRule =
     block: r:
     let
