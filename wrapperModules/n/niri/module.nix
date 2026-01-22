@@ -6,115 +6,112 @@
 }:
 let
   # implements kdl with niri semantic knowledge to convert the data-format
-  inherit
-    (rec {
-      #allow modifiers to be set for blocks
-      leftpad = v: lib.strings.concatMapStrings (v: "  ${v}\n") (lib.strings.splitString "\n" v);
-      mkBlock =
-        n: v:
-        if v != "" then
-          ''
-            ${n.name or n} ${
-              # attrs must be qouted
-              let
-                attr = n._attrs or "";
-              in
-              if attr != "" then ''"${attr}"'' else ""
-            } {
-            ${leftpad v}
-            }''
-        else
-          "";
-      # surround strings with qoutes
-      toVal =
-        v:
-        if lib.isString v then
-          ''"${v}"''
-        else if lib.isBool v then
-          (if v then "true" else "false")
-        else
-          toString v;
-      mkKeyVal =
-        k: v: "${k} ${if lib.isList v then lib.strings.concatStringsSep " " (map toVal v) else toVal v}";
-      attrsToKdl =
-        a:
-        lib.concatMapAttrsStringSep "\n" (
-          n: v:
-          # turn null values into flags
+
+  # allow modifiers to be set for blocks
+  leftpad = v: lib.strings.concatMapStrings (v: "  ${v}\n") (lib.strings.splitString "\n" v);
+  # attrs must be quoted
+  mkAttrs =
+    attrs:
+    if lib.isAttrs attrs then
+      lib.concatMapAttrsStringSep " " (
+        n: v: if builtins.isNull v then ''"${n}"'' else ''"${n}"=${toVal v}''
+      ) attrs
+    else
+      "";
+  mkBlock =
+    n: v:
+    let
+      attrs = mkAttrs (n._attrs or null);
+    in
+    if v != "" then
+      ''
+        ${n.name or n} ${attrs} {
+        ${leftpad v}
+        }''
+    else
+      "${n.name or n} ${attrs}";
+  # surround strings with qoutes
+  toVal =
+    v:
+    if lib.isString v then
+      ''"${v}"''
+    else if lib.isBool v then
+      (if v then "true" else "false")
+    else
+      toString v;
+  mkKeyVal =
+    k: v: "${k} ${if lib.isList v then lib.strings.concatStringsSep " " (map toVal v) else toVal v}";
+  attrsToKdl =
+    a:
+    lib.concatMapAttrsStringSep "\n" (
+      n: v:
+      # turn null values into flags
+      if builtins.isNull v then
+        n
+      else if lib.isAttrs v then
+        mkBlock {
+          name = n;
+          _attrs = v._attrs or null;
+        } (attrsToKdl (lib.removeAttrs v [ "_attrs" ]))
+      else if lib.isList v && lib.all lib.isAttrs v then
+        mkBlock n (lib.concatMapStringsSep "\n" attrsToKdl v)
+      else
+        mkKeyVal n v
+    ) a;
+  mkTagged =
+    t: k: v:
+    "${t} ${mkAttrs { ${k} = v; }}";
+  mkRule =
+    block: r:
+    let
+      matches = map (lib.concatMapAttrsStringSep "\n" (mkTagged "match")) r.matches or [ ];
+      excludes = map (lib.concatMapAttrsStringSep "\n" (mkTagged "exclude")) r.excludes or [ ];
+      misc = attrsToKdl (
+        lib.attrsets.removeAttrs r [
+          "matches"
+          "excludes"
+        ]
+      );
+    in
+    mkBlock block (
+      lib.strings.concatLines (
+        lib.lists.flatten [
+          matches
+          excludes
+          misc
+        ]
+      )
+    );
+  mkWorkspaces =
+    w:
+    map attrsToKdl (
+      lib.mapAttrsToList (n: v: {
+        # use the attr name as attribute for the workspace node
+        workspace =
           if builtins.isNull v then
             n
-          else if lib.isAttrs v then
-            #move attrs to name and continue recursively building the kdl
-            if v._keys or false then
-              "${n} ${
-                (lib.concatMapAttrsStringSep " " (key: val: "${key}=${toVal val}") (lib.removeAttrs v [ "_keys" ]))
-              }\n"
-            else
-              mkBlock {
-                name = n;
-                _attrs = v._attrs or "";
-              } (attrsToKdl (lib.removeAttrs v [ "_attrs" ]))
-          else if lib.isList v && lib.all lib.isAttrs v then
-            mkBlock n (lib.concatMapStringsSep "\n" attrsToKdl v)
           else
-            mkKeyVal n v
-        ) a;
-      mkTagged =
-        t: k: v:
-        "${t} ${k}=${toVal v}";
-      mkRule =
-        block: r:
-        let
-          matches = map (lib.concatMapAttrsStringSep "\n" (mkTagged "match")) r.matches or [ ];
-          excludes = map (lib.concatMapAttrsStringSep "\n" (mkTagged "exclude")) r.excludes or [ ];
-          misc = attrsToKdl (
-            lib.attrsets.removeAttrs r [
-              "matches"
-              "excludes"
-            ]
-          );
-        in
-        mkBlock block (
-          lib.strings.concatLines (
-            lib.lists.flatten [
-              matches
-              excludes
-              misc
-            ]
-          )
-        );
-      mkWorkspaces =
-        w:
-        map attrsToKdl (
-          lib.mapAttrsToList (n: v: {
-            # use the attr name as attribute for the workspace node
-            workspace =
-              if builtins.isNull v then
-                n
-              else
-                {
-                  _attrs = n;
-                }
-                // v;
-          }) w
-        );
-      mkOutputs =
-        w:
-        map attrsToKdl (
-          lib.mapAttrsToList (n: v: {
-            # use the attr name as attribute for the workspace node
-            output = {
-              _attrs = n;
+            {
+              _attrs = {
+                ${n} = null;
+              };
             }
             // v;
-          }) w
-        );
-    })
-    attrsToKdl
-    mkRule
-    mkWorkspaces
-    mkOutputs
-    ;
+      }) w
+    );
+  mkOutputs =
+    w:
+    map attrsToKdl (
+      lib.mapAttrsToList (n: v: {
+        # use the attr name as attribute for the workspace node
+        output = {
+          _attrs = {
+            ${n} = null;
+          };
+        }
+        // v;
+      }) w
+    );
 in
 {
   imports = [ wlib.modules.default ];
@@ -142,6 +139,12 @@ in
                 "create-windown"
               ];
               "Mod+0".focus-workspace = 0;
+              "Mod+Escape" = {
+                _attrs = {
+                  allow-inhibiting = false;
+                };
+                toggle-keyboard-shortcuts-inhibit = null;
+              };
             };
           };
           layout = lib.mkOption {
@@ -291,6 +294,10 @@ in
                 tap
                 natural-scroll
             }
+
+            focus-follows-mouse = {
+              _attrs = { max-scroll-amount = "0%"; };
+            };
           }
         '';
       };
