@@ -464,7 +464,7 @@ in
                   '';
                 };
                 before = lib.mkOption {
-                  type = with types; listOf str;
+                  type = types.listOf types.str;
                   default = [ ];
                   description = ''
                     Sort this spec before the list of spec names
