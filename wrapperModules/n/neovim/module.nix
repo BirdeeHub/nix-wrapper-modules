@@ -224,49 +224,67 @@ in
       );
     };
     specs = lib.mkOption {
-      type =
-        wlib.dag.dagWith
-          {
-            modules = [ config.specMods ];
-            specialArgs = {
-              parentSpec = null;
-              parentOpts = null;
-            };
-            dataTypeFn =
-              let
-                inherit (config) specMods;
-              in
-              elemType:
-              {
-                config,
-                options,
-                ...
-              }:
-              types.nullOr (
-                types.either wlib.types.stringable (
-                  wlib.dag.dalWith {
-                    modules = [ specMods ];
-                    specialArgs = {
-                      parentSpec = config;
-                      parentOpts = options;
-                    };
-                  } (types.nullOr wlib.types.stringable)
-                )
-              );
-          }
-          (
-            types.nullOr (
-              types.either wlib.types.stringable (
-                wlib.dag.dalWith {
-                  modules = [ config.specMods ];
-                  specialArgs = {
-                    parentSpec = null;
-                    parentOpts = null;
+      type = lib.types.attrsOf (
+        wlib.types.specWith {
+          specialArgs = {
+            parentSpec = null;
+            parentOpts = null;
+            parentName = null;
+          };
+          modules =
+            let
+              inherit (config) specMods;
+            in
+            [
+              (
+                {
+                  config,
+                  options,
+                  name,
+                  ...
+                }:
+                {
+                  options.data = lib.mkOption {
+                    description = ''
+                      A list of specs or plugins, or a plugin, or null
+
+                      A plugin can be a derivation,
+                      or an impure string path for testing!
+                    '';
+                    type = types.nullOr (
+                      lib.types.either wlib.types.stringable (
+                        types.listOf (
+                          wlib.types.specWith {
+                            specialArgs = {
+                              parentSpec = config;
+                              parentOpts = options;
+                              parentName = name;
+                            };
+                            modules = [
+                              {
+                                options.data = lib.mkOption {
+                                  type = types.nullOr wlib.types.stringable;
+                                  description = ''
+                                    A plugin (or null)
+
+                                    A plugin can be a derivation,
+                                    or an impure string path for testing!
+                                  '';
+                                };
+                              }
+                              specMods
+                            ];
+                          }
+                        )
+                      )
+                    );
                   };
-                } (types.nullOr wlib.types.stringable)
+                }
               )
-            )
-          );
+              specMods
+            ];
+        }
+      );
       default = { };
       description = builtins.readFile ./spec_desc.md;
     };
@@ -384,23 +402,29 @@ in
     specMods = lib.mkOption {
       default = { };
       description = ''
-        extra module for the plugin spec submodules (provided to `wlib.dag.dagWith` or `wlib.dag.dalWith`)
+        extra module for the plugin spec submodules (provided to `wlib.types.specWith`)
 
-        These modules recieve `parentSpec` and `parentOpts` via `specialArgs`
+        These modules recieve some `specialArgs`!
 
-        If the spec is a parent, this will be `null`
+        `parentSpec`, `parentOpts`, and `parentName`
 
-        If the spec is a child, it will be the `config` argument of the parent spec.
+        If the spec is a parent, these will be `null`
+
+        If the spec is a child, `parentSpec` will be the `config` argument of the parent spec.
+
+        Likewise, `parentOpts` will be the `options` argument and `parentName` the name argument.
 
         You may use this to change defaults and allow parent overrides of the default to propagate default values to child specs.
 
         ```nix
-        config.specMods = { parentSpec, ... }: {
+        config.specMods = {
+          parentSpec, config, parentOpts, options, parentName, ...
+        }: {
           config.collateGrammars = lib.mkDefault (parentSpec.collateGrammars or false);
         };
         ```
 
-        You could also declare entirely new items for the spec to process in `specMaps` and `specCollect`.
+        You could also declare entirely new items for the spec to process with `specMaps` and `specCollect`.
       '';
       type = types.deferredModuleWith {
         staticModules = [
@@ -410,10 +434,13 @@ in
               options,
               parentSpec ? null,
               parentOpts ? null,
+              parentName ? null,
+              name,
               ...
             }:
             {
               # NOTE: for docgen
+              config._module.args.parentName = lib.mkOptionDefault null;
               config._module.args.parentSpec = lib.mkOptionDefault null;
               config._module.args.parentOpts = lib.mkOptionDefault null;
               options = {
@@ -424,6 +451,30 @@ in
                     Enable the value
 
                     If this is in the inner list, then the default value from the parent spec will be used.
+                  '';
+                };
+                name = lib.mkOption {
+                  type = types.nullOr types.str;
+                  default = if parentName != null then null else name;
+                  description = ''
+                    The name of this spec in the DAG of specs
+
+                    May differ from the name of the plugin,
+                    which is controlled by the `pname` option.
+                  '';
+                };
+                before = lib.mkOption {
+                  type = with types; listOf str;
+                  default = [ ];
+                  description = ''
+                    Sort this spec before the list of spec names
+                  '';
+                };
+                after = lib.mkOption {
+                  type = types.listOf types.str;
+                  default = [ ];
+                  description = ''
+                    Sort this spec after the list of spec names
                   '';
                 };
                 pname = lib.mkOption {

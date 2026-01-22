@@ -176,7 +176,9 @@ You have full control over them via the module system! This module will apply to
 
 In the outer set, `parentSpec` is `null` and in the inner lists, it receives the `config` argument from the outer set!
 
-It also receives `parentOpts`, which contains the `options` argument.
+It also receives `parentOpts`, which contains the `options` argument, and `parentName` with the name argument of the outer spec.
+
+It also receives the normal module arguments, like `config` from the current module.
 
 ---
 

@@ -173,12 +173,14 @@ inputs:
     {
       # When this module is ran in an inner list,
       # this will contain `config` of the parent spec
-      parentSpec,
+      parentSpec ? null,
       # and this will contain `options`
       # otherwise they will be `null`
-      parentOpts,
+      parentOpts ? null,
+      parentName ? null,
       # and then config from this one, as normal
       config,
+      # and the other module arguments.
       ...
     }:
     {
