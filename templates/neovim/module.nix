@@ -65,8 +65,11 @@ inputs:
   # and grab it in lua with `require(vim.g.nix_info_plugin_name)(nil, "info", "testvalue", "some") == "stuff"`
   # Tip: in your nvim command line run:
   # `:lua require('lzextras').debug.display(require(vim.g.nix_info_plugin_name))`
+  config.settings.anothertestvalue = {
+    settings = "can also accept freeform values";
+  };
 
-  # if defaults is fine, you can just provide the `.data` field
+  # If the defaults are fine, you can just provide the `.data` field
   # In this case, a list of specs, instead of a single plugin like above
   config.specs.lze = [
     # if defaults is fine, you can just provide the `.data` field

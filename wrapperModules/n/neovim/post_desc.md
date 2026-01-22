@@ -71,11 +71,6 @@ See [lze](https://github.com/BirdeeHub/lze) and [lz.n](https://github.com/nvim-n
 
 They also work great with the builtin `neovim` plugin manager, `vim.pack.add`!
 
-`lze` can also be used to do some interesting bulk modifications to your plugins.
-You might want to disable the ones nix didn't install automatically, for example.
-You could use the `modify` field of a `handler` with `set_lazy = false` also set within it to do that,
-using one of the functions from the previous tip.
-
 ---
 
 - To use a different version of `neovim`, set `config.package` to the version you want to use!
@@ -86,7 +81,7 @@ config.package = inputs.neovim-nightly-overlay.packages.${pkgs.stdenv.hostPlatfo
 
 ---
 
-- In order to prevent path collisions when installing multiple neovim derivations via home.packages or environment.systemPackages
+- In order to prevent path collisions when installing multiple neovim derivations via `home.packages` or `environment.systemPackages`
 
 ```nix
 # set this to true
@@ -257,8 +252,8 @@ do
 end
 ```
 
-You would have to have a file that installs the plugins with `vim.pack.add` if not nix
-and install the lsps some other way.
+You would have to have a file that installs the plugins with `vim.pack.add` if not using nix,
+and install the lsps some other way as well.
 
 As a reminder, the fetcher function form is:
 
