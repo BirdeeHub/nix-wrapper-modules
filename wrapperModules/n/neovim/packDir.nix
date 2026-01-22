@@ -129,7 +129,7 @@ in
           if type(tbl) ~= "table" then return default end
           tbl = tbl[key]
         end
-        return tbl
+        return (tbl ~= nil) and tbl or default
       end
     })
   '';
