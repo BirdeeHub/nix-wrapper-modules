@@ -212,20 +212,31 @@ vim.keymap.set({'n', 'v', 'x'}, '<leader>p', '"+p', { noremap = true, silent = t
 vim.keymap.set('i', '<C-p>', '<C-r><C-p>+', { noremap = true, silent = true, desc = 'Paste from clipboard from within insert mode' })
 vim.keymap.set("x", "<leader>P", '"_dP', { noremap = true, silent = true, desc = 'Paste over selection without erasing unnamed register' })
 
--- NOTE: lazy loaded colorscheme. Run it after the main init so that lze knows about the plugin to use
--- This means you will need to add the colorscheme to lze sometime before your init.lua and its required files are finished
-vim.schedule(function()
-  vim.cmd.colorscheme(nixInfo("onedark_dark", "settings", "colorscheme"))
-  vim.schedule(function()
-    -- I like this color. Use vim.schedule again to set it after the colorscheme is finished
-    vim.cmd([[hi LineNr guifg=#bb9af7]])
-  end)
-end)
 -- NOTE: You will likely want to break this up into more files.
 -- You can call this more than once.
 -- You can also include other files from within the specs via an `import` spec.
 -- see https://github.com/BirdeeHub/lze?tab=readme-ov-file#structuring-your-plugins
 nixInfo.lze.load {
+  {
+    -- lze specs need a name
+    "trigger_colorscheme",
+    -- lazy loaded colorscheme.
+    -- This means you will need to add the colorscheme you want to lze sometime before VimEnter is done
+    event = "VimEnter",
+    -- Also, lze can load more than just plugins.
+    -- The default load field contains vim.cmd.packadd
+    -- Here we override it to schedule when our colorscheme is loaded
+    load = function(_name)
+      -- schedule so it runs after VimEnter
+      vim.schedule(function()
+        vim.cmd.colorscheme(nixInfo("onedark_dark", "settings", "colorscheme"))
+        vim.schedule(function()
+          -- I like this color. Use vim.schedule again to set it after the colorscheme is finished
+          vim.cmd([[hi LineNr guifg=#bb9af7]])
+        end)
+      end)
+    end
+  },
   {
     -- NOTE: view these names in the info plugin!
     -- :lua nixInfo.lze.debug.display(nixInfo.plugins)
