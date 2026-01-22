@@ -1,3 +1,6 @@
+-- NOTE: Welcome to your neovim configuration
+-- The first 100ish lines are setup,
+-- The rest is usage of lze and various core plugins!
 vim.loader.enable() -- <- bytecode caching
 do
   -- Set up a global in a way that also handles non-nix compat
