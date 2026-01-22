@@ -104,7 +104,7 @@ in
       plugins = ${lib.generators.toLua { } plugins4lua},
       settings = ${
         lib.generators.toLua { } (
-          config.settings
+          lib.filterAttrsRecursive (_: v: !builtins.isFunction v) config.settings
           // {
             nvim_lua_env =
               (config.package.lua.withPackages or pkgs.luajit.withPackages)
