@@ -42,6 +42,8 @@ inputs:
     type = lib.types.str;
     default = "onedark_dark";
   };
+  config.settings.colorscheme = "moonfly"; # <- just demonstrating that it is an option
+  # and grab it in lua with `require(vim.g.nix_info_plugin_name)("onedark_dark", "settings", "colorscheme") == "moonfly"`
   config.specs.colorscheme = {
     lazy = true;
     data = builtins.getAttr config.settings.colorscheme (
@@ -55,6 +57,14 @@ inputs:
       }
     );
   };
+  # If you don't want the boilerplate of a whole option in settings, you could just pass stuff
+  config.info.testvalue = {
+    some = "stuff";
+    goes = "here";
+  };
+  # and grab it in lua with `require(vim.g.nix_info_plugin_name)(nil, "info", "testvalue", "some") == "stuff"`
+  # Tip: in your nvim command line run:
+  # `:lua require('lzextras').debug.display(require(vim.g.nix_info_plugin_name))`
 
   # if defaults is fine, you can just provide the `.data` field
   # In this case, a list of specs, instead of a single plugin like above
