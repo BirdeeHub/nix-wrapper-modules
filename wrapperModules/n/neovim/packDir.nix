@@ -7,18 +7,6 @@
 }:
 let
   inherit
-    (pkgs.callPackage ./normalize.nix {
-      inherit (config.settings) info_plugin_name;
-      inherit wlib opt-dir start-dir;
-      inherit (config) specs specMaps;
-    })
-    plugins4lua
-    hasFennel
-    infoPluginInitMain
-    buildPackDir
-    mappedSpecs
-    ;
-  inherit
     (
       let
         initial = lib.pipe config.hosts [
@@ -44,7 +32,7 @@ let
         ];
       in
       {
-        collectedHosts = lib.pipe initial [
+        hosts = lib.pipe initial [
           (map (v: {
             name = v.attrname;
             value = {
@@ -83,14 +71,26 @@ let
         ];
       }
     )
-    collectedHosts
+    hosts
     hostLuaCmd
     hostLinkCmd
     ;
-  final-packdir = "${placeholder "out"}/${config.binName}-packdir";
-  start-dir = "${final-packdir}/pack/myNeovimPackages/start";
-  opt-dir = "${final-packdir}/pack/myNeovimPackages/opt";
-  info-plugin-path = "${start-dir}/${config.settings.info_plugin_name}";
+  inherit
+    (pkgs.callPackage ./normalize.nix {
+      inherit (config.settings) info_plugin_name;
+      inherit wlib opt_dir start_dir;
+      inherit (config) specs specMaps;
+    })
+    plugins
+    hasFennel
+    infoPluginInitMain
+    buildPackDir
+    mappedSpecs
+    ;
+  vim_pack_dir = "${placeholder "out"}/${config.binName}-packdir";
+  start_dir = "${vim_pack_dir}/pack/myNeovimPackages/start";
+  opt_dir = "${vim_pack_dir}/pack/myNeovimPackages/opt";
+  info_plugin_path = "${start_dir}/${config.settings.info_plugin_name}";
 in
 {
   config.drv.manifestLua = hostLuaCmd;
@@ -100,27 +100,25 @@ in
   config.drv.buildPackDir = buildPackDir;
   config.specCollect = fn: first: builtins.foldl' fn first mappedSpecs;
   config.drv.infoPluginText = /* lua */ ''
-    return setmetatable({
-      plugins = ${lib.generators.toLua { } plugins4lua},
-      settings = ${
-        lib.generators.toLua { } (
-          lib.filterAttrsRecursive (_: v: !builtins.isFunction v) config.settings
-          // {
-            nvim_lua_env =
-              (config.package.lua.withPackages or pkgs.luajit.withPackages)
-                config.settings.nvim_lua_env;
-          }
-        )
-      },
-      wrapper_drv = ${builtins.toJSON "${placeholder "out"}"},
-      binName = ${builtins.toJSON config.binName},
-      info = ${lib.generators.toLua { } config.info},
-      hosts = ${lib.generators.toLua { } collectedHosts},
-      info_plugin_path = ${builtins.toJSON info-plugin-path},
-      vim_pack_dir = ${builtins.toJSON final-packdir},
-      start_dir = ${builtins.toJSON start-dir},
-      opt_dir = ${builtins.toJSON opt-dir},
-      progpath = ${builtins.toJSON "${placeholder "out"}/bin/${config.binName}"},
+    return setmetatable(${
+      lib.generators.toLua { } {
+        settings = lib.filterAttrsRecursive (_: v: !builtins.isFunction v) config.settings // {
+          nvim_lua_env =
+            (config.package.lua.withPackages or pkgs.luajit.withPackages)
+              config.settings.nvim_lua_env;
+        };
+        wrapper_drv = placeholder "out";
+        progpath = "${placeholder "out"}/bin/${config.binName}";
+        inherit (config) info binName;
+        inherit
+          plugins
+          hosts
+          info_plugin_path
+          vim_pack_dir
+          start_dir
+          opt_dir
+          ;
+      }
     }, {
       __call = function(self, default, ...)
         if select('#', ...) == 0 then return default end

@@ -1,6 +1,6 @@
 {
-  opt-dir,
-  start-dir,
+  opt_dir,
+  start_dir,
   specs,
   specMaps,
   info_plugin_name,
@@ -235,12 +235,12 @@ in
   buildPackDir = lib.pipe allPlugins [
     (map (
       v:
-      "ln -s ${lib.escapeShellArg v.data} ${lib.escapeShellArg "${if v.lazy then opt-dir else start-dir}/${v.name}"}"
+      "ln -s ${lib.escapeShellArg v.data} ${lib.escapeShellArg "${if v.lazy then opt_dir else start_dir}/${v.name}"}"
     ))
     (builtins.concatStringsSep "\n")
   ];
 
-  plugins4lua = lib.pipe allPlugins (
+  plugins = lib.pipe allPlugins (
     let
       foldplugins = (builtins.foldl' (acc: v: acc // { ${v.name} = v.data; }) { });
     in
