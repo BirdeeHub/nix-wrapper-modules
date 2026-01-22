@@ -153,8 +153,6 @@ let
       v.data.meta.mainProgram
     else if v.data.name or null != null then
       v.data.name
-    else if v.name or null != null then
-      v.name
     else if wlib.types.stringable.check (v.data or null) then
       if baseNameOf (v.data or "") != "" then
         baseNameOf v.data
@@ -162,6 +160,8 @@ let
         baseNameOf v.data
       else
         null
+    else if v.name or null != null then
+      v.name
     else
       null;
 
