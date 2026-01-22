@@ -74,7 +74,7 @@ nixInfo.lze.register_handlers {
 -- Because we have the paths, we can set a more performant fallback function
 -- for when you don't provide a filetype to trigger on yourself.
 -- If you do provide a filetype, this will never be called.
-require('lze').h.lsp.set_ft_fallback(function(name)
+nixInfo.lze.h.lsp.set_ft_fallback(function(name)
   local lspcfg = nixInfo.get_nix_plugin_path "nvim-lspconfig"
   if lspcfg then
     local ok, cfg = pcall(dofile, lspcfg .. "/lsp/" .. name .. ".lua")
