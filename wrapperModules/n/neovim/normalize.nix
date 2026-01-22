@@ -120,11 +120,13 @@ let
             data = null;
             type = "lua";
             config = /* lua */ ''
-              local cfgdir = require(${builtins.toJSON info_plugin_name}).settings.config_directory
-              if vim.fn.filereadable(cfgdir .. "/init.lua") == 1 then
-                dofile(cfgdir .. "/init.lua")
-              elseif vim.fn.filereadable(cfgdir .. "/init.vim") == 1 then
-                vim.cmd.source(cfgdir .. "/init.vim")
+              local cfgdir = (require(${builtins.toJSON info_plugin_name}).settings or {}).config_directory
+              if cfgdir then
+                if vim.fn.filereadable(cfgdir .. "/init.lua") == 1 then
+                  dofile(cfgdir .. "/init.lua")
+                elseif vim.fn.filereadable(cfgdir .. "/init.vim") == 1 then
+                  vim.cmd.source(cfgdir .. "/init.vim")
+                end
               end
             '';
           }
