@@ -1,3 +1,4 @@
+maybe_compile:
 {
   config,
   wlib,
@@ -204,7 +205,7 @@ else
       echo -e "\nGenerating rplugin.vim failed!"
       exit 1
     fi
-    { [ -e "$setupLuaPath" ] && cat "$setupLuaPath" || echo "$setupLua"; } > ${lib.escapeShellArg luarc-path}
+    { [ -e "$setupLuaPath" ] && cat "$setupLuaPath" || echo "$setupLua"; } ${maybe_compile}> ${lib.escapeShellArg luarc-path}
     echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${bin-path}
     ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
     ${builtins.concatStringsSep "\n" (shellcmds true)}

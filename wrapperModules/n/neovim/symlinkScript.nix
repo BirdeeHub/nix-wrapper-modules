@@ -7,6 +7,7 @@
   lndir,
   stdenv,
   luajitPackages,
+  luajit,
   ...
 }:
 finalDrv:
@@ -38,6 +39,11 @@ let
         vim.opt.runtimepath:remove(configdir .. "/after")
       ''}
     '';
+  maybe_compile = "${lib.optionalString (config.settings.compile_generated_lua or false != false)
+    "| ${config.package.lua or luajit}/bin/lua -e 'local src=io.read([[*a]]); local f,err=load(src); if not f then error(err) end; io.write(string.dump(f${
+      lib.optionalString (config.settings.compile_generated_lua or false != "debug") ", true"
+    }))' "
+  }";
 in
 finalDrv
 // {
@@ -116,13 +122,13 @@ finalDrv
     [ -e "$buildPackDirPath" ] && . "$buildPackDirPath" || runHook buildPackDir
     {
       [ -e "$infoPluginTextPath" ] && cat "$infoPluginTextPath" || echo "$infoPluginText";
-    } > ${lib.escapeShellArg "${info-plugin-path}/lua/${info_plugin_name}.lua"}
+    } ${maybe_compile}> ${lib.escapeShellArg "${info-plugin-path}/lua/${info_plugin_name}.lua"}
     {
       [ -e "$infoPluginInitMainPath" ] && cat "$infoPluginInitMainPath" || echo "$infoPluginInitMain";
     } ${
       lib.optionalString (finalDrv.hasFennel or false)
-        "| ${config.package.lua.pkgs.fennel or luajitPackages.fennel}/bin/fennel --compile -"
-    } > ${lib.escapeShellArg "${info-plugin-path}/lua/${info_plugin_name}/init_main.lua"}
+        "| ${config.package.lua.pkgs.fennel or luajitPackages.fennel}/bin/fennel --compile - "
+    }${maybe_compile}> ${lib.escapeShellArg "${info-plugin-path}/lua/${info_plugin_name}/init_main.lua"}
     mkdir -p ${lib.escapeShellArg "${final-packdir}/nix-support"}
     for i in $(find -L ${lib.escapeShellArg final-packdir} -name propagated-build-inputs ); do
       cat "$i" >> ${lib.escapeShellArg "${final-packdir}/nix-support/propagated-build-inputs"}

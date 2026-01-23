@@ -396,6 +396,26 @@ in
             default = [ ];
             description = "Aliases for the package to also be added to the PATH";
           };
+          compile_generated_lua = lib.mkOption {
+            type = lib.types.enum [
+              true
+              false
+              "debug"
+            ];
+            default = true;
+            description = ''
+              Compile the generated lua files this wrapper creates beforehand
+
+              Set to `"debug"` to retain debug information
+
+              Only compiles the generated files, does not compile the whole packpath, or your configuration.
+
+              That would technically be possible to add yourself via a `config.drv` hook,
+              however, it is recommended to use `vim.loader.enable()` to handle those instead.
+
+              This option exists because the affected files are ran before you have the opportunity to enable it.
+            '';
+          };
         };
       };
     };

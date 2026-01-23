@@ -1,3 +1,4 @@
+maybe_compile:
 {
   config,
   wlib,
@@ -206,7 +207,7 @@ else
         exit 1
       fi
       rm -f "$out/bin/${config.binName}"
-      { [ -e "$setupLuaPath" ] && cat "$setupLuaPath" || echo "$setupLua"; } > ${lib.escapeShellArg luarc-path}
+      { [ -e "$setupLuaPath" ] && cat "$setupLuaPath" || echo "$setupLua"; } ${maybe_compile}> ${lib.escapeShellArg luarc-path}
       ${makeWrapperCmd true}
     )
   ''
