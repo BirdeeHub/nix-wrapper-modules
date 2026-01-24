@@ -13,23 +13,25 @@ in
 
   options = {
 
-    settings = lib.mkOption {
+    agents = lib.mkOption {
       type = jsonFmt.type;
       default = { };
       description = ''
-        Claude Code settings
+        Custom agents to add to Claude Code.
 
-        These settings will override local, project, and user scoped settings.
-
-        See <https://code.claude.com/docs/en/settings>
+        See <https://code.claude.com/docs/en/sub-agents>
       '';
       example = {
-        includeCoAuthoredBy = false;
-        permissions = {
-          deny = [
-            "Bash(sudo:*)"
-            "Bash(rm -rf:*)"
+        code-reviewer = {
+          description = "Expert code reviewer. Use proactively after code changes.";
+          prompt = "You are a senior code reviewer. Focus on code quality, security, and best practices.";
+          tools = [
+            "Read"
+            "Grep"
+            "Glob"
+            "Bash"
           ];
+          model = "sonnet";
         };
       };
     };
@@ -48,6 +50,43 @@ in
         nixos = {
           command = "${pkgs.mcp-nixos}/bin/mcp-nixos";
           type = "stdio";
+        };
+      };
+    };
+
+    pluginDirs = lib.mkOption {
+      type = lib.types.listOf wlib.types.stringable;
+      default = [ ];
+      description = ''
+        Additional directories to search for Claude Code plugins, in addition to the standard locations.
+
+        This can be used to either load arbitrary directories of plugins, or include non-flake plugin repos managed via Nix.
+
+        See <https://code.claude.com/docs/en/plugins>
+      '';
+      example = [
+        "~/.custom-claude-plugins"
+        "\${inputs.claude-plugins-official}/plugins/ralph-loop"
+      ];
+    };
+
+    settings = lib.mkOption {
+      type = jsonFmt.type;
+      default = { };
+      description = ''
+        Claude Code settings
+
+        These settings will override local, project, and user scoped settings.
+
+        See <https://code.claude.com/docs/en/settings>
+      '';
+      example = {
+        includeCoAuthoredBy = false;
+        permissions = {
+          deny = [
+            "Bash(sudo:*)"
+            "Bash(rm -rf:*)"
+          ];
         };
       };
     };
@@ -81,10 +120,11 @@ in
       DISABLE_INSTALLATION_CHECKS = "1";
     };
     flags = {
-
+      "--agents" = builtins.toJSON config.agents;
       "--mcp-config" = jsonFmt.generate "claude-mcp-config.json" { mcpServers = config.mcpConfig; };
-      "--strict-mcp-config" = config.strictMcpConfig;
+      "--plugin-dir" = config.pluginDirs;
       "--settings" = jsonFmt.generate "claude-settings.json" config.settings;
+      "--strict-mcp-config" = config.strictMcpConfig;
     };
     meta.maintainers = [ wlib.maintainers.vinnymeller ];
   };
