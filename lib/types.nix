@@ -47,11 +47,8 @@
       args
       // {
         modules = [ wlib.core ] ++ modules;
-        specialArgs = {
+        specialArgs = specialArgs // {
           inherit (wlib) modulesPath;
-        }
-        // specialArgs
-        // {
           inherit wlib;
         };
       }

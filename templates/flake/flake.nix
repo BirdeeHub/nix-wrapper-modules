@@ -20,7 +20,7 @@
         ${wrapper.config.binName} = wrapper.config.wrap { pkgs = prev; };
       };
       wrapperModules.default = module;
-      wrappedModules.default = wrapper.config;
+      wrappers.default = wrapper.config;
       packages = forAllSystems (
         system:
         let

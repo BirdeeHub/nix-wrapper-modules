@@ -3,7 +3,7 @@
   self,
 }:
 let
-  claudeCodeWrapped = self.wrappedModules.claude-code.wrap {
+  claudeCodeWrapped = self.wrappers.claude-code.wrap {
     inherit pkgs;
 
     mcpConfig = {

@@ -10,6 +10,6 @@ They include shortlist options for common configuration settings, and/or for pro
 
 The flake also exports wrapper modules that have been partially evaluated for convenience.
 
-This allows you to do something like `inputs.nix-wrapper-modules.wrappedModules.tmux.wrap { inherit pkgs; prefix = "C-Space"; }`, to build a package with a particular configuration quickly!
+This allows you to do something like `inputs.nix-wrapper-modules.wrappers.tmux.wrap { inherit pkgs; prefix = "C-Space"; }`, to build a package with a particular configuration quickly!
 
 You can then export that package, and somebody else could call `.wrap` on it as well to change it again!

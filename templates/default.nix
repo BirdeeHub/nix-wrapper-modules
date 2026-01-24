@@ -7,4 +7,8 @@
     path = ./neovim;
     description = "An example flake showing basic usage of the neovim module";
   };
+  flake-parts = {
+    path = ./flake-parts;
+    description = "An example flake using flake-parts with the provided flake-parts module";
+  };
 }

@@ -5,7 +5,7 @@
 
 let
   notmuchWrapped =
-    (self.wrappedModules.notmuch.apply {
+    (self.wrappers.notmuch.apply {
       inherit pkgs;
       settings = {
         database.path = "/tmp/test-mail";

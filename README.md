@@ -76,7 +76,7 @@ What if I told you, you can solve all those problems, and gain a really nice, co
 And it uses something you already know! The module system!
 
 ```nix
-inputs.nix-wrapper-modules.wrappedModules.alacritty.wrap {
+inputs.nix-wrapper-modules.wrappers.alacritty.wrap {
   inherit pkgs;
   settings.terminal.shell.program = "${pkgs.zsh}/bin/zsh";
   settings.terminal.shell.args = [ "-l" ];

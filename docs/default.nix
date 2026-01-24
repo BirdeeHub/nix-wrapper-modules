@@ -201,12 +201,12 @@ let
     echo >> $out/src/SUMMARY.md
     echo '- [Intro](./home.md)' >> $out/src/SUMMARY.md
     echo '- [Getting Started](./getting-started.md)' >> $out/src/SUMMARY.md
-    echo '- [Core Options Set](./core.md)' >> $out/src/SUMMARY.md
-    echo '- [`wlib.modules.default`](./default.md)' >> $out/src/SUMMARY.md
     echo '- [Lib Functions](./lib-intro.md)' >> $out/src/SUMMARY.md
     echo '  - [`wlib`](./wlib.md)' >> $out/src/SUMMARY.md
     echo '  - [`wlib.types`](./types.md)' >> $out/src/SUMMARY.md
     echo '  - [`wlib.dag`](./dag.md)' >> $out/src/SUMMARY.md
+    echo '- [Core Options Set](./core.md)' >> $out/src/SUMMARY.md
+    echo '- [`wlib.modules.default`](./default.md)' >> $out/src/SUMMARY.md
     echo '- [Helper Modules](./helper-modules.md)' >> $out/src/SUMMARY.md
     ${mkSubLinks (builtins.removeAttrs module_docs [ "default" ])}
     echo '- [Wrapper Modules](./wrapper-modules.md)' >> $out/src/SUMMARY.md

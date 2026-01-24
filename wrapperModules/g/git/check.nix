@@ -4,7 +4,7 @@
 }:
 
 let
-  gitWrapped = self.wrappedModules.git.wrap {
+  gitWrapped = self.wrappers.git.wrap {
     inherit pkgs;
     settings = {
       user = {

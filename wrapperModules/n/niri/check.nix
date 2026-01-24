@@ -4,7 +4,7 @@
 }:
 
 let
-  niriWrapped = self.wrappedModules.niri.wrap {
+  niriWrapped = self.wrappers.niri.wrap {
     inherit pkgs;
 
     settings = {
@@ -97,7 +97,7 @@ let
     };
   };
 in
-if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappedModules.niri.meta.platforms then
+if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.niri.meta.platforms then
   pkgs.runCommand "niri-test" { } ''
     cat ${niriWrapped}/bin/niri
     "${niriWrapped}/bin/niri" --version | grep -q "${niriWrapped.version}"

@@ -5,7 +5,7 @@
 
 let
   mpvWrapped =
-    (self.wrappedModules.mpv.apply {
+    (self.wrappers.mpv.apply {
       inherit pkgs;
       scripts = [
         pkgs.mpvScripts.visualizer

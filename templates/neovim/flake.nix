@@ -34,9 +34,9 @@
         default = module;
         neovim = self.wrapperModules.default;
       };
-      wrappedModules = {
+      wrappers = {
         default = wrapper.config;
-        neovim = self.wrappedModules.default;
+        neovim = self.wrappers.default;
       };
       packages = forAllSystems (
         system:

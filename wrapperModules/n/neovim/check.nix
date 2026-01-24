@@ -5,7 +5,7 @@
 }:
 let
   runpkg = pkg: "${pkg}/bin/${pkg.configuration.binName} --headless";
-  nvimpkg = self.wrappedModules.neovim.wrap [
+  nvimpkg = self.wrappers.neovim.wrap [
     { inherit pkgs; }
     (
       {
