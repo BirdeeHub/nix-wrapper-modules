@@ -203,7 +203,7 @@ in
           )
         ) package (wlib.dag.unwrapSort "overrides" config.overrides);
       type = lib.types.addCheck wlib.types.stringable (
-        v: if builtins.isString v then wlib.types.nonEmptyline.check v else true
+        v: if builtins.isString v then wlib.types.nonEmptyLine.check v else true
       );
       description = ''
         The base package to wrap.
@@ -373,7 +373,7 @@ in
       '';
     };
     binName = lib.mkOption {
-      type = wlib.types.nonEmptyline;
+      type = wlib.types.nonEmptyLine;
       default = baseNameOf (
         builtins.addErrorContext ''
           `config.package`: ${config.package} is not a derivation.
@@ -387,7 +387,7 @@ in
       '';
     };
     exePath = lib.mkOption {
-      type = wlib.types.nonEmptyline;
+      type = wlib.types.nonEmptyLine;
       default = lib.removePrefix "/" (
         lib.removePrefix "${config.package}" (
           builtins.addErrorContext ''

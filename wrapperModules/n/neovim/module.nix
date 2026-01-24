@@ -61,21 +61,21 @@ let
               description = "placeholder option";
             };
             enabled_variable = lib.mkOption {
-              type = wlib.types.nonEmptyline;
+              type = wlib.types.nonEmptyLine;
               default = "${name}_host_prog";
               description = ''
                 vim.g.<value> will be set to the path to this wrapped host when the nvim host is enabled
               '';
             };
             disabled_variable = lib.mkOption {
-              type = wlib.types.nonEmptyline;
+              type = wlib.types.nonEmptyLine;
               default = "loaded_${name}_provider";
               description = ''
                 vim.g.<value> will be set to 0 when the nvim host is disabled
               '';
             };
             var_path = lib.mkOption {
-              type = wlib.types.nonEmptyline;
+              type = wlib.types.nonEmptyLine;
               default = "${placeholder "out"}/bin/${config.binName}-${name}";
               description = ''
                 The path to be added to `vim.g.<enabled_variable>`
@@ -98,7 +98,7 @@ let
               '';
             };
             package = lib.mkOption {
-              type = wlib.types.nonEmptyline;
+              type = wlib.types.nonEmptyLine;
               default = "${hostConfig.wrapper}/bin/${hostConfig.binName}";
               description = ''
                 The full path to be added to the `PATH` alongside the main nvim wrapper.
@@ -373,7 +373,7 @@ in
           };
 
           info_plugin_name = lib.mkOption {
-            type = lib.types.addCheck wlib.types.nonEmptyline (v: !lib.hasInfix "." v);
+            type = lib.types.addCheck wlib.types.nonEmptyLine (v: !lib.hasInfix "." v);
             default = "nix-info";
             description = ''
               The name to use to require the info plugin

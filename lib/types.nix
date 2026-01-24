@@ -311,8 +311,8 @@
   /**
     A single-line, non-empty string
   */
-  nonEmptyline = lib.mkOptionType {
-    name = "nonEmptyline";
+  nonEmptyLine = lib.mkOptionType {
+    name = "nonEmptyLine";
     description = "non-empty line";
     descriptionClass = "noun";
     check =
@@ -320,6 +320,7 @@
       lib.types.str.check x && builtins.match "[ \t\n]*" x == null && builtins.match "[^\n\r]*" != null;
     inherit (lib.types.str) merge;
   };
+  nonEmptyline = lib.warn "`wlib.types.nonEmptyline` is deprecated due to having a mistake in its name, use `wlib.types.nonEmptyLine`" wlib.types.nonEmptyLine;
 
   /**
     Arguments:
