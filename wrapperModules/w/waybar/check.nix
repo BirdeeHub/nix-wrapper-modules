@@ -3,7 +3,7 @@
   self,
 }:
 let
-  waybarWrapped = self.wrappedModules.waybar.wrap {
+  waybarWrapped = self.wrappers.waybar.wrap {
     inherit pkgs;
 
     settings = {
@@ -17,7 +17,7 @@ let
   };
 
 in
-if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappedModules.waybar.meta.platforms then
+if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.waybar.meta.platforms then
   pkgs.runCommand "waybar-test" { } ''
     "${waybarWrapped}/bin/waybar" --version | grep -q "${waybarWrapped.version}"
     touch $out

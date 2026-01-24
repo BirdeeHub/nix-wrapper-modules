@@ -5,14 +5,14 @@
 
 let
   rofiWrapped =
-    (self.wrappedModules.rofi.apply {
+    (self.wrappers.rofi.apply {
       inherit pkgs;
 
       theme.foo = "bar";
     }).wrapper;
 
 in
-if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappedModules.rofi.meta.platforms then
+if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.rofi.meta.platforms then
   pkgs.runCommand "rofi-test" { } ''
     # Rofi attempts to create some directories when first ran which doesn't work in a nix build
     export XDG_CACHE_HOME=/tmp

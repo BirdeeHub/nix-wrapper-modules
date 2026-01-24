@@ -3,7 +3,7 @@
   self,
 }:
 let
-  xplr = self.wrappedModules.xplr.wrap (
+  xplr = self.wrappers.xplr.wrap (
     { lib, ... }:
     {
       inherit pkgs;
@@ -36,7 +36,7 @@ let
       };
     }
   );
-  xplr_linux_only_check = self.wrappedModules.xplr.wrap (
+  xplr_linux_only_check = self.wrappers.xplr.wrap (
     { lib, ... }:
     {
       inherit pkgs;

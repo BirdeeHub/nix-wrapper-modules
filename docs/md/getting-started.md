@@ -15,7 +15,7 @@ And it serves as a repository for modules for wrapping the programs themselves, 
 
 For that it offers:
 - `wlib.wrapperModules`: Pre-made wrapper modules for common packages (`tmux`, `wezterm`, etc.)
-- `outputs.wrappedModules`: a flake output containing partially evaluated forms of the modules in `wrapperModules` for easier access to `.wrap` and other values in the module system directly.
+- `outputs.wrappers`: a flake output containing partially evaluated forms of the modules in `wrapperModules` for easier access to `.wrap` and other values in the module system directly.
 
 ## Usage
 
@@ -56,7 +56,7 @@ They will get you started with a module file and the default one also gives you 
     forAllSystems = with nixpkgs.lib; genAttrs platforms.all;
   in {
     packages = forAllSystems (system: {
-      default = wrappers.wrappedModules.mpv.wrap (
+      default = wrappers.wrappers.mpv.wrap (
         {config, wlib, lib, pkgs, ...}: {
           pkgs = import nixpkgs { inherit system; };
           scripts = [ pkgs.mpvScripts.mpris ];
@@ -89,7 +89,7 @@ The package (via `passthru`) and the modules under `.config` both offer all 3 fu
 ```nix
 # Apply initial configuration
 # you can use `.eval` `.apply` or `.wrap` for this.
-initialConfig = (wrappers.wrappedModules.tmux.eval ({config, pkgs, ...}{
+initialConfig = (inputs.wrappers.wrappers.tmux.eval ({config, pkgs, ...}{
   # but if you don't plan to provide pkgs yet, you can't use `.wrap` or `.wrapper` yet.
   # config.pkgs = pkgs;
   # but we can still use `pkgs` before that inside!
@@ -128,15 +128,19 @@ packageAgain = apackage.wrap ({config, pkgs, ...}: {
 ### Creating Custom Wrapper Modules
 
 ```nix
-{ wlib, lib }:
-
-(wlib.evalModule ({ config, wlib, lib, pkgs, ... }: {
+inputs:
+(inputs.wrappers.lib.evalModule ({ config, wlib, lib, pkgs, ... }: {
   # You can only grab the final package if you supply pkgs!
   # But if you were making it for someone else, you would want them to do that!
 
   # config.pkgs = pkgs;
 
-  imports = [ wlib.modules.default ]; # <-- includes wlib.modules.symlinkScript and wlib.modules.makeWrapper
+  # include wlib.modules.makeWrapper and wlib.modules.symlinkScript
+  imports = [ wlib.modules.default ];
+  # The core options are focused on building a wrapper derivation.
+  # different wrapper options may be implemented on top, for things like bubblewrap or other tools.
+  # `wlib.modules.default` gives you a great module-based pkgs.makeWrapper to use.
+
   options = {
     profile = lib.mkOption {
       type = lib.types.enum [ "fast" "quality" ];
@@ -162,27 +166,161 @@ packageAgain = apackage.wrap ({config, pkgs, ...}: {
 
 `wrapPackage` comes with `wlib.modules.default` already included, and outputs the package directly!
 
-Use this for quickly creating a custom wrapped program within your configuration!
+Use this for quickly creating a one-off wrapped program within your configuration!
 
 ```nix
-{ pkgs, wrappers, ... }:
-
-wrappers.lib.wrapPackage ({ config, wlib, lib, ... }: {
-  inherit pkgs; # you can only grab the final package if you supply pkgs!
-  package = pkgs.curl;
-  extraPackages = [ pkgs.jq ];
-  env = {
-    CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+inputs: # <- get the lib somehow
+{ pkgs, ... }: {
+  home.shellAliases = let
+    curlwrapped = inputs.wrappers.lib.wrapPackage ({ config, wlib, lib, ... }: {
+      inherit pkgs; # you can only grab the final package if you supply pkgs!
+      package = pkgs.curl;
+      extraPackages = [ pkgs.jq ];
+      env = {
+        CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+      };
+      flags = {
+        "--silent" = true;
+        "--connect-timeout" = "30";
+      };
+      flagSeparator = "=";  # Use --flag=value instead of --flag value (default is " ")
+      runShell = [
+      ''
+        echo "Making request..." >&2
+      ''
+      ];
+    });
+  in {
+    runCurl = "${lib.getExe curlwrapped}";
   };
-  flags = {
-    "--silent" = true;
-    "--connect-timeout" = "30";
-  };
-  flagSeparator = "=";  # Use --flag=value instead of --flag value (default is " ")
-  runShell = [
-  ''
-    echo "Making request..." >&2
-  ''
-  ];
-})
+}
 ```
+
+### `nixos`, `home-manager`, And Friends
+
+Because it uses the regular module system and evaluates as a `lib.types.submodule` option,
+this library has excellent integration with `nixos`, `home-manager`, `nix-darwin` and any other such systems.
+
+With a single, simple function, you can use any wrapper module directly as a module in `configuration.nix` or `home.nix`!
+
+```nix
+# in a nixos module
+{ ... }: {
+  imports = [
+    (inputs.wrappers.lib.mkInstallModule { name = "tmux"; value = inputs.wrappers.lib.wrapperModules.tmux; })
+  ];
+  config.wrappers.tmux = {
+    enable = true;
+    modeKeys = "vi";
+    statusKeys = "vi";
+    vimVisualKeys = true;
+  };
+}
+```
+
+```nix
+# in a home-manager module
+{ config, lib, ... }: {
+  imports = [
+    (inputs.wrappers.lib.mkInstallModule {
+      loc = [ "home" "packages" ];
+      name = "neovim";
+      value = inputs.wrappers.lib.wrapperModules.neovim;
+    })
+  ];
+  config.wrappers.neovim = { pkgs, lib, ... }: {
+    enable = true;
+    settings.config_directory = ./nvim;
+    specs.stylix = {
+      data = pkgs.vimPlugins.mini-base16;
+      before = [ "INIT_MAIN" ];
+      info = lib.filterAttrs (
+        k: v: builtins.match "base0[0-9A-F]" k != null
+      ) config.lib.stylix.colors.withHashtag;
+      config = /* lua */ ''
+        local info, pname, lazy = ...
+        require("mini.base16").setup({ palette = info, })
+      '';
+    };
+  };
+  home.sessionVariables = let
+    # You can still grab the value from config if desired!
+    nvimpath = lib.getExe config.wrappers.neovim.wrapper;
+  in {
+    EDITOR = nvimpath;
+    MANPAGER = "${nvimpath} +Man!";
+  };
+}
+```
+
+See the [`wlib.mkInstallModule`](./wlib.html#function-library-wlib.mkInstallModule) documentation for more info!
+
+### `flake-parts`
+
+This repository also offers a [`flake-parts`](https://github.com/hercules-ci/flake-parts) module!
+
+It offers a template! `nix flake init -t github:BirdeeHub/nix-wrapper-modules`
+
+```nix
+{
+  description = ''
+    Uses flake-parts to set up the flake outputs:
+
+    `wrappers`, `wrapperModules` and `packages.*.*`
+  '';
+  inputs.wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
+  inputs.wrappers.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  inputs.flake-parts.url = "github:hercules-ci/flake-parts";
+  inputs.flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
+  outputs =
+    {
+      self,
+      nixpkgs,
+      wrappers,
+      flake-parts,
+      ...
+    }@inputs:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = nixpkgs.lib.platforms.all;
+      # Import the flake-parts module:
+      imports = [ wrappers.flakeModules.wrappers ];
+
+      perSystem =
+        { pkgs, ... }:
+        {
+          # wrappers.pkgs = pkgs; # choose a different `pkgs`
+          wrappers.control_type = "exclude"; # | "build" (default: "exclude")
+          wrappers.packages = {
+            alacritty = true; # <- set to true to exclude from being built into `packages.*.*` flake output
+          };
+        };
+      flake.wrappers.alacritty = { pkgs, wlib, ... }: {
+        imports = [ wlib.wrapperModules.alacritty ];
+        settings.terminal.shell.program = "${pkgs.zsh}/bin/zsh";
+        settings.terminal.shell.args = [ "-l" ];
+      };
+      flake.wrappers.tmux =
+        { wlib, pkgs, ... }:
+        {
+          imports = [ wlib.wrapperModules.tmux ];
+          plugins = with pkgs.tmuxPlugins; [ onedark-theme ];
+        };
+      flake.wrappers.xplr = wrappers.lib.wrapperModules.xplr;
+    };
+}
+```
+
+The above flake will export the partially evaluated submodule from `outputs.wrappers` as it shows.
+
+However, it also offers the values in importable form from `outputs.wrapperModules` for you!
+
+In addition to that, it will build `packages.*.*` for each of the systems and wrappers for you.
+
+`perSystem.wrappers` options control which packages get built, and with what `pkgs`.
+
+`wrappers.control_type` controls how `wrappers.packages` is handled.
+
+If `wrappers.control_type` is `"exclude"`, then including `true` for a value will exclude its `packages` output.
+
+If you change it to `"build"`, then you must include `true` for all you want to be built.

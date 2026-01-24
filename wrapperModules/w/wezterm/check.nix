@@ -3,7 +3,7 @@
   self,
 }:
 let
-  weztermWrapped = self.wrappedModules.wezterm.wrap (
+  weztermWrapped = self.wrappers.wezterm.wrap (
     { lib, ... }:
     {
       inherit pkgs;

@@ -1,6 +1,6 @@
 { pkgs, self }:
 let
-  atoolWrapped = self.wrappedModules.atool.wrap {
+  atoolWrapped = self.wrappers.atool.wrap {
     inherit pkgs;
     tools.enable = true;
     tools.paths.zip = "${pkgs.zip}/bin/zip";
