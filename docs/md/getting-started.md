@@ -259,7 +259,7 @@ See the [`wlib.mkInstallModule`](./wlib.html#function-library-wlib.mkInstallModu
 
 This repository also offers a [`flake-parts`](https://github.com/hercules-ci/flake-parts) module!
 
-It offers a template! `nix flake init -t github:BirdeeHub/nix-wrapper-modules`
+It offers a template! `nix flake init -t github:BirdeeHub/nix-wrapper-modules#flake-parts`
 
 ```nix
 {
