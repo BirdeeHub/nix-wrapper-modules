@@ -364,4 +364,153 @@ in
   */
   escapeShellArgWithEnv = arg: ''"${lib.escape [ ''\'' ''"'' ] (toString arg)}"'';
 
+  /**
+    Wrap a function (or callable attribute set) to make it customizable via a
+    named override entry.
+
+    A slightly generalized version of `nixpkgs.lib.makeOverridable`, with explicit
+    support for:
+    - custom override names
+    - configurable argument-merging semantics
+    - preserving override entry points across common derivation-like patch
+      functions (e.g. `override`, `overrideAttrs`, `overrideDerivation`)
+
+    This helper turns `f` into a functor that:
+    - Preserves the original argument signature of `f`
+    - Exposes an override function under the attribute `${name}`
+    - Recomputes `f` when arguments are overridden
+    - Re-attaches `${name}` to selected callable attributes on the result of `f`,
+      so that chaining through derivation-style patch functions does not lose
+      the custom override entry
+
+    Signature:
+
+    ```nix
+    makeCustomizable =
+      name:
+      {
+        patches ? [
+          "override"
+          "overrideAttrs"
+          "overrideDerivation"
+        ],
+        mergeArgs ?
+          origArgs: newArgs:
+            origArgs // (if lib.isFunction newArgs then newArgs origArgs else newArgs),
+      }@opts:
+      f:
+    ```
+
+    Parameters:
+    - `name`:
+        The attribute name under which the override function is exposed
+        (e.g. `customize`, `withPackages`). This attribute is attached both to `f`
+        itself and to applicable results returned by calling `f`.
+
+    - `opts.patches`:
+        A list of attribute names on the *result* of `f` that should propagate
+        the named override. Each listed attribute is expected to be callable
+        when present. This is primarily intended for derivation-like results,
+        ensuring that calling methods such as `override`, `overrideAttrs`,
+        or `overrideDerivation` preserves the custom override entry rather than
+        discarding it. It will only patch the value if present.
+
+    - `opts.mergeArgs`:
+        A function controlling how new arguments are merged with the original
+        arguments when overriding. It receives `origArgs` and `newArgs` and
+        must return the argument used to re-invoke `f`. By default, this
+        performs a shallow merge, evaluating `newArgs` if it is a function.
+
+    - `f`:
+        The function (or callable attribute set) to wrap. If `f` is an attribute
+        set, its additional attributes are preserved, and an existing `${name}`
+        entry (if present) is composed rather than replaced.
+
+    Semantics:
+    - Argument overrides recompute `f` with merged arguments.
+    - Result-level patches recompute `f` and then delegate to the corresponding
+      callable attribute on the result.
+    - Returned attribute sets and functions gain a `${name}` attribute that can
+      be chained arbitrarily.
+
+    Example:
+
+    ```nix
+      luaEnv = wlib.makeCustomizable
+        "withPackages"
+        { mergeArgs = og: new: lp: og lp ++ new lp; }
+        pkgs.luajit.withPackages
+        (lp: [ lp.inspect ]);
+
+      # inspect + cjson
+      luaEnv2 = luaEnv.withPackages (lp: [ lp.cjson ]);
+      # inspect + cjson + luassert
+      luaEnv3 = luaEnv.withPackages (lp: [ lp.luassert ]);
+    ```
+  */
+  makeCustomizable =
+    # https://github.com/NixOS/nixpkgs/blob/f36330bf81e58a7df04a603806c9d01eefc7a4bb/lib/customisation.nix#L154
+    name:
+    {
+      patches ? [
+        "override"
+        "overrideAttrs"
+        "overrideDerivation"
+      ],
+      mergeArgs ?
+        origArgs: newArgs: origArgs // (if lib.isFunction newArgs then newArgs origArgs else newArgs),
+    }@opts:
+    f:
+    let
+      mkOver = wlib.makeCustomizable name opts;
+      # Creates a functor with the same arguments as f
+      mirrorArgs = lib.mirrorFunctionArgs f;
+      # Recover overrider and additional attributes for f
+      # When f is a callable attribute set,
+      # it may contain its own `f.${name}` and additional attributes.
+      # This helper function recovers those attributes and decorate the overrider.
+      recoverMetadata =
+        if builtins.isAttrs f then
+          fDecorated:
+          # Preserve additional attributes for f
+          f
+          // fDecorated
+          # Decorate f.${name} if presented
+          // {
+            ${if builtins.isString name && f ? "${name}" then name else null} = fdrv: mkOver (f.${name} fdrv);
+          }
+        else
+          (x: x);
+      decorate = f': recoverMetadata (mirrorArgs f');
+    in
+    decorate (
+      origArgs:
+      let
+        result = f origArgs;
+        # Re-call the function but with different arguments
+        overrideArgs = mirrorArgs (newArgs: mkOver f (mergeArgs origArgs newArgs));
+        # Change the result of the function call by applying g to it
+        overrideResult = g: mkOver (mirrorArgs (args: g (f args))) origArgs;
+      in
+      if builtins.isAttrs result then
+        result
+        // lib.pipe patches [
+          (map (patch: {
+            ${if result ? "${patch}" then patch else null} = fdrv: overrideResult (x: x.${patch} fdrv);
+          }))
+          (builtins.foldl' (acc: v: acc // v) { })
+        ]
+        // {
+          ${name} = overrideArgs;
+        }
+      else if builtins.isFunction result then
+        # Transform the result into a functor while propagating its arguments
+        lib.setFunctionArgs result (lib.functionArgs result)
+        // {
+          ${name} = overrideArgs;
+        }
+      else
+        result
+    );
+
 }
