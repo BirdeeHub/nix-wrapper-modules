@@ -55,7 +55,7 @@ pkgs.runCommand "vim-test" { } ''
     exit 1
   fi
 
-  res=$('${vimWrapped}/bin/vim' -es +':redir >> /dev/stdout' +'set tabstop?' +'scriptnames' +'q')
+  res=$('${vimWrapped}/bin/vim' -es +':redir >> /dev/stdout' +'set tabstop?' +'q')
 
   if ! echo "''${res}" | grep -q 'tabstop=17'; then
     echo 'Vim does not apply configuration.'
