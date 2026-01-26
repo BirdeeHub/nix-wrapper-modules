@@ -445,7 +445,7 @@ in
       # inspect + cjson
       luaEnv2 = luaEnv.withPackages (lp: [ lp.cjson ]);
       # inspect + cjson + luassert
-      luaEnv3 = luaEnv.withPackages (lp: [ lp.luassert ]);
+      luaEnv3 = luaEnv2.withPackages (lp: [ lp.luassert ]);
     ```
   */
   makeCustomizable =
