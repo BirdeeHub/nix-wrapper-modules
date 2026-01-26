@@ -209,7 +209,7 @@ With a single, simple function, you can use any wrapper module directly as a mod
   imports = [
     (inputs.wrappers.lib.mkInstallModule { name = "tmux"; value = inputs.wrappers.lib.wrapperModules.tmux; })
   ];
-  config.wrappers.tmux = {
+  wrappers.tmux = {
     enable = true;
     modeKeys = "vi";
     statusKeys = "vi";
@@ -228,7 +228,7 @@ With a single, simple function, you can use any wrapper module directly as a mod
       value = inputs.wrappers.lib.wrapperModules.neovim;
     })
   ];
-  config.wrappers.neovim = { pkgs, lib, ... }: {
+  wrappers.neovim = { pkgs, lib, ... }: {
     enable = true;
     settings.config_directory = ./nvim;
     specs.stylix = {
