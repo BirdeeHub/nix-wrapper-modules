@@ -37,10 +37,7 @@ let
             name = v.attrname;
             value = {
               bin_path =
-                if v ? bin_path then
-                  builtins.toJSON "${placeholder "out"}/bin/${config.binName}-${v.attrname}"
-                else
-                  null;
+                if v ? bin_path then "${placeholder "out"}/bin/${config.binName}-${v.attrname}" else null;
               var_path = lib.generators.mkLuaInline "vim.g[ ${builtins.toJSON v.enabled_variable} ]";
               inherit (v) disabled_variable enabled_variable;
             };
