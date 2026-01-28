@@ -5,6 +5,7 @@
   lib,
   wlib,
   nixdoc,
+  warningsAreErrors ? true,
   ...
 }:
 let
@@ -70,7 +71,7 @@ let
             )
           ];
       get_options = key: mod: {
-        options = builtins.removeAttrs (eval_mod key mod).options corelist;
+        options = removeAttrs (eval_mod key mod).options corelist;
         inherit key;
       };
       optionsList =
@@ -78,7 +79,7 @@ let
         ++ lib.optional include_core {
           key = "lib/core.nix";
           options =
-            builtins.removeAttrs
+            removeAttrs
               (wlib.evalModule {
                 inherit pkgs;
                 package = lib.mkOverride 9001 pkgs.hello;
@@ -102,6 +103,7 @@ let
       commands = map (
         v:
         mkMsg v.key (nixosOptionsDoc {
+          inherit warningsAreErrors;
           inherit (v) options;
         })
       ) optionsList;
@@ -140,7 +142,8 @@ let
             post = "";
           } evaled.config.meta.description;
           coreopts = nixosOptionsDoc {
-            options = builtins.removeAttrs evaled.options [ "_module" ];
+            inherit warningsAreErrors;
+            options = removeAttrs evaled.options [ "_module" ];
           };
         in
         ''
@@ -208,7 +211,7 @@ let
     echo '- [Core Options Set](./core.md)' >> $out/src/SUMMARY.md
     echo '- [`wlib.modules.default`](./default.md)' >> $out/src/SUMMARY.md
     echo '- [Helper Modules](./helper-modules.md)' >> $out/src/SUMMARY.md
-    ${mkSubLinks (builtins.removeAttrs module_docs [ "default" ])}
+    ${mkSubLinks (removeAttrs module_docs [ "default" ])}
     echo '- [Wrapper Modules](./wrapper-modules.md)' >> $out/src/SUMMARY.md
     ${mkSubLinks wrapper_docs}
   '';

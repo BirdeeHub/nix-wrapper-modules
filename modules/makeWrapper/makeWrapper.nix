@@ -33,34 +33,34 @@ let
 
   argv0 = [
     (
-      if builtins.isString config.argv0 then
+      if builtins.isString (config.argv0 or null) then
         {
           data = [
             "--argv0"
             config.argv0
           ];
         }
-      else if config.argv0type == "resolve" then
+      else if config.argv0type or null == "resolve" then
         { data = [ "--resolve-argv0" ]; }
       else
         { data = [ "--inherit-argv0" ]; }
     )
   ];
-  envVarsDefault = lib.optionals (config.envDefault != { }) (
+  envVarsDefault = lib.optionals (config.envDefault or { } != { }) (
     wlib.dag.mapDagToDal (n: v: [
       "--set-default"
       n
       (toString v)
     ]) config.envDefault
   );
-  envVars = lib.optionals (config.env != { }) (
+  envVars = lib.optionals (config.env or { } != { }) (
     wlib.dag.mapDagToDal (n: v: [
       "--set"
       n
       (toString v)
     ]) config.env
   );
-  flags = lib.optionals (config.flags != { }) (
+  flags = lib.optionals (config.flags or { } != { }) (
     generateArgsFromFlags (config.flagSeparator or " ") config.flags
   );
   mapargs =
@@ -80,7 +80,7 @@ let
           "--${argname}"
           (toString v)
         ]
-    ) config.${n};
+    ) (config.${n} or [ ]);
 
   other =
     mapargs "unsetVar" "unset" true
@@ -88,7 +88,7 @@ let
     ++ mapargs "prefixVar" "prefix" false
     ++ mapargs "suffixVar" "suffix" false;
   conditionals =
-    if config.wrapperImplementation != "binary" then
+    if config.wrapperImplementation or null != "binary" then
       mapargs "runShell" "run" true
       ++ mapargs "prefixContent" "prefix-contents" false
       ++ mapargs "suffixContent" "suffix-contents" false
@@ -106,7 +106,12 @@ let
     ++ conditionals;
 
   baseArgs = lib.escapeShellArgs [
-    (if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}")
+    (
+      if !builtins.isString (config.exePath or null) || config.exePath == "" then
+        "${config.package}"
+      else
+        "${config.package}/${config.exePath}"
+    )
     "${placeholder "out"}/bin/${config.binName}"
   ];
   resArgs = lib.pipe finalArgs [
@@ -114,7 +119,8 @@ let
     (map (
       v:
       let
-        esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
+        esc-fn =
+          if v.esc-fn or null != null then v.esc-fn else (config.escapingFunction or lib.escapeShellArg);
       in
       if builtins.isList v.data then map esc-fn v.data else esc-fn v.data
     ))
@@ -123,13 +129,19 @@ let
 
   srcsetup = p: "source ${lib.escapeShellArg "${p}/nix-support/setup-hook"}";
 in
-if config.binName == "" then
+if
+  !builtins.isString (config.binName or null)
+  || config.binName == ""
+  || !(lib.isStringLike (config.package or null))
+then
   ""
 else
   ''
     (
       ${srcsetup dieHook}
-      ${srcsetup (if config.wrapperImplementation == "shell" then makeWrapper else makeBinaryWrapper)}
+      ${srcsetup (
+        if config.wrapperImplementation or null == "shell" then makeWrapper else makeBinaryWrapper
+      )}
       makeWrapper ${baseArgs} ${builtins.concatStringsSep " " resArgs}
     )
   ''

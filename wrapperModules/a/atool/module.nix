@@ -175,38 +175,14 @@
     # which one to run by the program basename. When atool is wrapped, the wrapper
     # script executes the original atool such that the basename is always atool, which
     # breaks these shortcuts. In order to keep these shortcuts functional, we wrap each one
-    drv.buildPhase =
-      let
-        binNames = [
-          "acat"
-          "adiff"
-          "als"
-          "apack"
-          "arepack"
-          "aunpack"
-        ];
-      in
-      "runHook preBuild\n"
-      + lib.pipe binNames [
-        (map (n: "$out/bin/${n}"))
-        (builtins.concatStringsSep " ")
-        (s: "rm " + s + "\n")
-      ]
-      + lib.pipe binNames [
-        (map (
-          n:
-          pkgs.callPackage config.wrapperFunction {
-            inherit wlib;
-            config = config // {
-              exePath = "bin/${n}";
-              binName = n;
-            };
-          }
-        ))
-        (builtins.concatStringsSep "\n")
-      ]
-      + "\nrunHook postBuild";
-
+    wrapperVariants = {
+      acat = { };
+      adiff = { };
+      als = { };
+      apack = { };
+      arepack = { };
+      aunpack = { };
+    };
     meta.maintainers = [ wlib.maintainers.jomarm ];
   };
 }

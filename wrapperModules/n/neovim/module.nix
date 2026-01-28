@@ -6,6 +6,7 @@
   ...
 }:
 let
+  makeWrapper = import wlib.modules.makeWrapper;
   inherit (lib) types;
   luaType =
     types.nullOr (
@@ -30,7 +31,16 @@ let
       specialArgs = { inherit wlib; };
       modules = [
         {
-          imports = [ wlib.modules.makeWrapper ];
+          imports = [
+            (
+              makeWrapper
+              // {
+                excluded_options.wrapperVariants = true;
+                exclude_wrapper = true;
+                exclude_meta = true;
+              }
+            )
+          ];
           options = {
             # These internal options will allow us to call
             # the regular function from the makeWrapper module for each host,
@@ -43,19 +53,8 @@ let
               description = "placeholder option";
             };
             exePath = lib.mkOption {
-              type = lib.types.str;
-              default = "";
-              readOnly = true;
-              internal = true;
-              description = "placeholder option";
-            };
-            meta = lib.mkOption {
               type = lib.types.raw;
-              internal = true;
-              description = "placeholder option";
-            };
-            wrapperFunction = lib.mkOption {
-              type = lib.types.raw;
+              default = null;
               readOnly = true;
               internal = true;
               description = "placeholder option";
@@ -129,19 +128,39 @@ let
 in
 {
   imports = [
-    wlib.modules.makeWrapper
+    (
+      makeWrapper
+      // {
+        wrapperFunction = import ./makeWrapper;
+      }
+    )
     ./packDir.nix
     ./default-config.nix
   ];
   config.package = lib.mkOptionDefault pkgs.neovim-unwrapped;
   config.builderFunction = lib.mkDefault (import ./symlinkScript.nix);
-  config.wrapperFunction = lib.mkOverride 999 (import ./makeWrapper);
   config.meta.maintainers = [ wlib.maintainers.birdee ];
   config.meta.description = {
     pre = builtins.readFile ./pre_desc.md;
     post = builtins.readFile ./post_desc.md;
   };
   options = {
+    wrapperVariants = lib.mkOption {
+      internal = true;
+      type = types.attrsOf (
+        types.submoduleWith {
+          modules = [
+            (
+              { name, ... }:
+              {
+                config.mirror = lib.mkOverride 0 false;
+                config.package = lib.mkOverride 999 (pkgs.${name} or pkgs.hello);
+              }
+            )
+          ];
+        }
+      );
+    };
     hosts = lib.mkOption {
       default = { };
       description = ''

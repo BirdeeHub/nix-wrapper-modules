@@ -51,9 +51,10 @@ let
             if v ? config then
               acc
               ++ [
-                (pkgs.callPackage (import wlib.modules.makeWrapper).wrapperFunction {
+                ((import wlib.modules.makeWrapper).wrapMain {
                   inherit wlib;
                   inherit (v) config;
+                  inherit (pkgs) callPackage;
                 })
               ]
             else if v ? bin_path then

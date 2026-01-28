@@ -292,3 +292,21 @@ local value = nixInfo(default, "path", "to", "value", "in", "plugin")
   };
 }
 ```
+
+---
+
+## NOTE: `wrapperVariants`:
+
+In this module, `config.wrapperVariants` behaves slightly differently.
+
+If you use it, your package is not guaranteed to be compatible with multiple installs.
+
+The `config.wrapperVariants.<name>.package` field defaults to `pkgs.<name>` if not set.
+
+The `config.wrapperVariants.<name>.mirror` field is false and cannot be set to true.
+
+Use it if you need to wrap an extra package in the context of your neovim derivation,
+but `config.hosts` was not suitable for the task.
+
+Again, use of this option is very likely to cause path collisions with
+multiple simultaneous installations.

@@ -387,7 +387,7 @@ in
       '';
     };
     exePath = lib.mkOption {
-      type = wlib.types.nonEmptyLine;
+      type = lib.types.nullOr wlib.types.nonEmptyLine;
       default = lib.removePrefix "/" (
         lib.removePrefix "${config.package}" (
           builtins.addErrorContext ''
