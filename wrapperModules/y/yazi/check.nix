@@ -3,9 +3,10 @@
   self,
 }:
 let
-  yaziWrapped = (self.wrappers.yazi.apply { inherit pkgs; }).wrapper;
+  yaziWrapper = self.wrappers.yazi.apply { inherit pkgs; };
+  cfgdir = yaziWrapper.env.YAZI_CONFIG_HOME.data;
 in
 pkgs.runCommand "yazi-test" { } ''
-  "${yaziWrapped}/bin/yazi" -V | grep -q "${yaziWrapped.version}"
+  "${yaziWrapper.wrapper}/bin/yazi" --debug | grep -q "${cfgdir}"
   touch $out
 ''
