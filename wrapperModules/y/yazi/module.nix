@@ -416,6 +416,10 @@ in
         freeformType = tomlFmt.type;
         options = {
           plugin = lib.mkOption {
+            description = ''
+              Set for plugin settings and paths.
+              See configuration reference at <https://yazi-rs.github.io/docs/cli/#pm>
+            '';
             default = { };
             type = lib.types.submodule {
               freeformType = tomlFmt.type;
@@ -423,7 +427,7 @@ in
                 type = lib.types.listOf tomlFmt.type;
                 default = [ ];
                 description = ''
-                  List of plugins and dependencies
+                  List of plugins and dependencies.
                     See configuration reference at <https://yazi-rs.github.io/docs/cli/#pm>
                 '';
               };
@@ -436,7 +440,7 @@ in
 
   config.package = lib.mkDefault pkgs.yazi;
   config.env = {
-    YAZI_CONFIG_HOME = builtins.toString (
+    YAZI_CONFIG_HOME = toString (
       pkgs.linkFarm "yazi-merged-config" (
         map
           (a: {
