@@ -25,7 +25,6 @@ let
     name: theme:
     if builtins.isPath theme || lib.isStorePath theme then theme else pkgs.writeText "btop.theme" theme;
 
-  binNameEsc = lib.escapeShellArg config.binName;
   themesDir = "${builtins.placeholder "out"}/themes";
 in
 {
