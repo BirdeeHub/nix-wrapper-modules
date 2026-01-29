@@ -91,32 +91,59 @@ let
               default = null;
               description = "Matrix ID";
             };
+            file = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              internal = true;
+              visible = false;
+            };
           };
         }
       );
+      withFiles =
+        elemType:
+        let
+          name = "maintainersWithFiles";
+          base = lib.types.listOf elemType;
+        in
+        lib.mkOptionType {
+          inherit name;
+          inherit (base)
+            check
+            description
+            descriptionClass
+            getSubOptions
+            getSubModules
+            ;
+          substSubModules = m: withFiles (elemType.substSubModules m);
+          merge = {
+            __functor =
+              self: loc: defs:
+              (self.v2 { inherit loc defs; }).value;
+            v2 =
+              { loc, defs }:
+              base.merge.v2 {
+                inherit loc;
+                defs = (
+                  map (
+                    def:
+                    def
+                    // {
+                      value = map (
+                        def':
+                        def'
+                        // {
+                          inherit (def) file;
+                        }
+                      ) def.value;
+                    }
+                  ) defs
+                );
+              };
+          };
+        };
     in
-    lib.types.listOf maintainer
-    // {
-      name = "maintainersWithFiles";
-      getSubModules = null;
-      merge =
-        loc: defs:
-        (lib.types.listOf maintainer).merge loc (
-          map (
-            def:
-            def
-            // {
-              value = map (
-                def':
-                def'
-                // {
-                  inherit (def) file;
-                }
-              ) def.value;
-            }
-          ) defs
-        );
-    };
+    withFiles maintainer;
 in
 {
   config.meta.description = ''
