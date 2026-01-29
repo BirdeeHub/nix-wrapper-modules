@@ -307,9 +307,9 @@ let
             '';
           };
       config.${
-        if excluded.extraPackages or false && excluded.runtimeLibraries or false then "suffixVar" else null
+        if excluded.extraPackages or false && excluded.runtimeLibraries or false then null else "suffixVar"
       } =
-        lib.optional (config.extraPackages != [ ]) {
+        lib.optional (config.extraPackages or [ ] != [ ]) {
           name = "NIX_PATH_ADDITIONS";
           data = [
             "PATH"
@@ -317,7 +317,7 @@ let
             "${lib.makeBinPath config.extraPackages}"
           ];
         }
-        ++ lib.optional (config.runtimeLibraries != [ ]) {
+        ++ lib.optional (config.runtimeLibraries or [ ] != [ ]) {
           name = "NIX_LIB_ADDITIONS";
           data = [
             "LD_LIBRARY_PATH"
