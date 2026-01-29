@@ -101,53 +101,59 @@
                 ++ builtins.concatLists (map (getPluginDeps' false) (plugin.dependencies or [ ]));
             in
             getPluginDeps' true;
-        in
-        lib.pipe list [
-          (lib.filter (v: v.value.pluginDeps or false != false && v.value.data or null != null))
-          (lib.partition (v: v.value.pluginDeps == "startup"))
-          (
-            { right, wrong }:
-            lib.concatMap (
-              v:
-              map (data: {
-                name = "pluginDepsEager";
-                type = "spec";
-                value = (v.value or { }) // {
-                  lazy = false;
-                  name = null;
-                  pname = null;
-                  type = "lua";
-                  enable = true;
-                  config = null;
-                  info = { };
-                  before = [ ];
-                  after = [ ];
-                  inherit data;
-                };
-              }) (getPluginDeps v.value.data)
-            ) right
-            ++ lib.concatMap (
-              v:
-              map (data: {
-                name = "pluginDepsLazy";
-                type = "spec";
-                value = (v.value or { }) // {
+          pluginsPartitioned = lib.pipe list [
+            (lib.filter (v: v.value.pluginDeps or false != false && v.value.data or null != null))
+            (lib.partition (v: v.value.pluginDeps == "startup"))
+          ];
+          defaultspec = {
+            name = null;
+            pname = null;
+            type = "lua";
+            enable = true;
+            config = null;
+            info = { };
+            before = [ ];
+            after = [ ];
+          };
+          opt = lib.concatMap (
+            v:
+            map (data: {
+              name = "pluginDepsLazy";
+              type = "spec";
+              value =
+                (v.value or { })
+                // {
                   lazy = true;
-                  name = null;
-                  pname = null;
-                  type = "lua";
-                  enable = true;
-                  config = null;
-                  info = { };
-                  before = [ ];
-                  after = [ ];
                   inherit data;
-                };
-              }) (getPluginDeps v.value.data)
-            ) wrong
-          )
-          (v: v ++ list)
-        ];
+                }
+                // defaultspec;
+            }) (getPluginDeps v.value.data)
+          ) pluginsPartitioned.wrong;
+          manual = builtins.filter (v: v != null) (map (v: v.value.data or null) (opt ++ list));
+          start = lib.concatMap (
+            v:
+            builtins.filter (v: v != null) (
+              map (
+                data:
+                if builtins.elem data manual then
+                  null
+                else
+                  {
+                    name = "pluginDepsEager";
+                    type = "spec";
+                    value =
+                      (v.value or { })
+                      // {
+                        lazy = false;
+                        inherit data;
+                      }
+                      // defaultspec;
+                  }
+              ) (getPluginDeps v.value.data)
+            )
+          ) pluginsPartitioned.right;
+        in
+        start ++ opt ++ list;
     }
     {
       name = "NIXPKGS_AUTOCONFIGURE";
