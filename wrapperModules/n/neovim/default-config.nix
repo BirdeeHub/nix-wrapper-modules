@@ -64,28 +64,54 @@
         acc: v: acc ++ lib.optionals (v.runtimeDeps or false == "suffix") (v.data.runtimeDeps or [ ])
       ) [ ];
     in
-    lib.optional (autodeps != [ ]) {
-      name = "NIXPKGS_AUTODEPS_SUFFIX";
-      data = [
-        "PATH"
-        ":"
-        "${lib.makeBinPath autodeps}"
-      ];
-    };
+    lib.mkIf
+      (
+        autodeps != [ ]
+        || config.hosts.ruby.nvim-host.enable or false
+        || config.hosts.node.nvim-host.enable or false
+      )
+      (
+        lib.optional (autodeps != [ ]) {
+          name = "NIXPKGS_AUTODEPS_SUFFIX";
+          data = [
+            "PATH"
+            ":"
+            "${lib.makeBinPath autodeps}"
+          ];
+        }
+        ++ lib.optional (config.hosts.ruby.nvim-host.enable or false) {
+          name = "RUBY_HOST_PATH_ADDITIONS";
+          data = [
+            "PATH"
+            ":"
+            "${config.hosts.ruby.wrapper}/bin"
+          ];
+        }
+        ++ lib.optional (config.hosts.node.nvim-host.enable or false) {
+          name = "NODE_HOST_PATH_ADDITIONS";
+          data = [
+            "PATH"
+            ":"
+            "${pkgs.nodejs}/bin"
+          ];
+        }
+      );
   config.prefixVar =
     let
       autodeps = config.specCollect (
         acc: v: acc ++ lib.optionals (v.runtimeDeps or false == "prefix") (v.data.runtimeDeps or [ ])
       ) [ ];
     in
-    lib.optional (autodeps != [ ]) {
-      name = "NIXPKGS_AUTODEPS_PREFIX";
-      data = [
-        "PATH"
-        ":"
-        "${lib.makeBinPath autodeps}"
-      ];
-    };
+    lib.mkIf (autodeps != [ ]) [
+      {
+        name = "NIXPKGS_AUTODEPS_PREFIX";
+        data = [
+          "PATH"
+          ":"
+          "${lib.makeBinPath autodeps}"
+        ];
+      }
+    ];
   config.specMaps = lib.mkOrder 490 [
     {
       name = "NIXPKGS_PLUGIN_DEPS";
@@ -325,7 +351,6 @@
   config.hosts.node =
     {
       config,
-      lib,
       wlib,
       pkgs,
       ...
@@ -361,13 +386,6 @@
       config.exePath = "bin/neovim-ruby-host";
       config.binName = "neovim-ruby-host";
     };
-  config.extraPackages =
-    lib.mkIf
-      (config.hosts.ruby.nvim-host.enable or false || config.hosts.node.nvim-host.enable or false)
-      (
-        lib.optional (config.hosts.ruby.nvim-host.enable or false) config.hosts.ruby.wrapper
-        ++ lib.optional (config.hosts.node.nvim-host.enable or false) pkgs.nodejs
-      );
   config.env.GEM_HOME = lib.mkIf (config.hosts.ruby.nvim-host.enable or false
   ) "${config.hosts.ruby.package}/${config.hosts.ruby.package.ruby.gemPath or pkgs.ruby.gemPath}";
   config.hosts.neovide =
