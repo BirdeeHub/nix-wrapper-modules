@@ -131,8 +131,8 @@
 
     ''
   );
-  config.meta.maintainers = lib.mkDefault [ wlib.maintainers.birdee ];
-  config.meta.description = lib.mkDefault ''
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
+  config.meta.description = ''
     Adds extra options compared to the default `builderFunction` option value.
 
     Imported by `wlib.modules.default`

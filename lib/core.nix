@@ -119,7 +119,7 @@ let
     };
 in
 {
-  config.meta.description = lib.mkOverride 1499 ''
+  config.meta.description = ''
     # Core (builtin) Options set
 
     These are the core options that make everything else possible.
@@ -144,7 +144,7 @@ in
 
     ---
   '';
-  config.meta.maintainers = lib.mkOverride 1499 [ wlib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
   config._module.args.pkgs = config.pkgs;
   options = {
     meta = {
@@ -162,7 +162,7 @@ in
           "aarch64-linux"
         ];
         default = lib.platforms.all;
-        defaultText = "lib.platforms.all";
+        defaultText = lib.literalExpression "lib.platforms.all";
         description = "Supported platforms";
       };
       description = lib.mkOption {
@@ -178,6 +178,7 @@ in
       };
     };
     pkgs = lib.mkOption {
+      type = lib.types.pkgs;
       description = ''
         The nixpkgs pkgs instance to use.
 
@@ -639,7 +640,7 @@ in
               runHook postInstall
             '';
           }
-          // builtins.removeAttrs config.drv [
+          // removeAttrs config.drv [
             "passthru"
             "buildCommand"
             "outputs"

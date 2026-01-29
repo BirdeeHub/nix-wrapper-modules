@@ -106,18 +106,22 @@ let
       options.${if !(excluded.addFlag or false) then "addFlag" else null} = lib.mkOption {
         type = wlib.types.wrapperFlag;
         default = if mainConfig != null && config.mirror or false then mainConfig.addFlag else [ ];
-        example = [
-          "-v"
-          "-f"
+        example = lib.literalMD ''
+          ```nix
           [
-            "--config"
-            "\${./storePath.cfg}"
+            "-v"
+            "-f"
+            [
+              "--config"
+              ./storePath.cfg
+            ]
+            [
+              "-s"
+              "idk"
+            ]
           ]
-          [
-            "-s"
-            "idk"
-          ]
-        ];
+          ```
+        '';
         description = ''
           Wrapper for
 
@@ -139,18 +143,22 @@ let
       options.${if !(excluded.appendFlag or false) then "appendFlag" else null} = lib.mkOption {
         type = wlib.types.wrapperFlag;
         default = if mainConfig != null && config.mirror or false then mainConfig.appendFlag else [ ];
-        example = [
-          "-v"
-          "-f"
+        example = lib.literalMD ''
+          ```nix
           [
-            "--config"
-            "\${./storePath.cfg}"
+            "-v"
+            "-f"
+            [
+              "--config"
+              ./storePath.cfg
+            ]
+            [
+              "-s"
+              "idk"
+            ]
           ]
-          [
-            "-s"
-            "idk"
-          ]
-        ];
+          ```
+        '';
         description = ''
           --append-flag ARG
 
@@ -170,18 +178,22 @@ let
       options.${if !(excluded.prefixVar or false) then "prefixVar" else null} = lib.mkOption {
         type = wlib.types.wrapperFlags 3;
         default = if mainConfig != null && config.mirror or false then mainConfig.prefixVar else [ ];
-        example = [
+        example = lib.literalMD ''
+          ```nix
           [
-            "LD_LIBRARY_PATH"
-            ":"
-            "\${lib.makeLibraryPath (with pkgs; [ ... ])}"
+            [
+              "LD_LIBRARY_PATH"
+              ":"
+              "''${lib.makeLibraryPath (with pkgs; [ ... ])}"
+            ]
+            [
+              "PATH"
+              ":"
+              "''${lib.makeBinPath (with pkgs; [ ... ])}"
+            ]
           ]
-          [
-            "PATH"
-            ":"
-            "\${lib.makeBinPath (with pkgs; [ ... ])}"
-          ]
-        ];
+          ```
+        '';
         description = ''
           --prefix ENV SEP VAL
 
@@ -191,18 +203,22 @@ let
       options.${if !(excluded.suffixVar or false) then "suffixVar" else null} = lib.mkOption {
         type = wlib.types.wrapperFlags 3;
         default = if mainConfig != null && config.mirror or false then mainConfig.suffixVar else [ ];
-        example = [
+        example = lib.literalMD ''
+          ```nix
           [
-            "LD_LIBRARY_PATH"
-            ":"
-            "\${lib.makeLibraryPath (with pkgs; [ ... ])}"
+            [
+              "LD_LIBRARY_PATH"
+              ":"
+              "''${lib.makeLibraryPath (with pkgs; [ ... ])}"
+            ]
+            [
+              "PATH"
+              ":"
+              "''${lib.makeBinPath (with pkgs; [ ... ])}"
+            ]
           ]
-          [
-            "PATH"
-            ":"
-            "\${lib.makeBinPath (with pkgs; [ ... ])}"
-          ]
-        ];
+          ```
+        '';
         description = ''
           --suffix ENV SEP VAL
 
@@ -256,9 +272,13 @@ let
       options.${if !(excluded.flags or false) then "flags" else null} = lib.mkOption {
         type = (import ./genArgsFromFlags.nix { inherit lib wlib; }).flagDag;
         default = if mainConfig != null && config.mirror or false then mainConfig.flags else { };
-        example = {
-          "--config" = "\${./nixPath}";
-        };
+        example = lib.literalMD ''
+          ```nix
+          {
+            "--config" = ./nixPath;
+          }
+          ```
+        '';
         description = ''
           Flags to pass to the wrapper.
           The key is the flag name, the value is the flag value.
@@ -370,7 +390,7 @@ let
                 mainConfig.escapingFunction
               else
                 lib.escapeShellArg;
-            defaultText = "lib.escapeShellArg";
+            defaultText = lib.literalExpression "lib.escapeShellArg";
             description = ''
               The function to use to escape shell values
 
@@ -568,8 +588,8 @@ in
         self.wrapperFunction or (import ./. null)
       );
       config.${if self.exclude_meta or false then null else "meta"} = {
-        maintainers = lib.mkDefault [ wlib.maintainers.birdee ];
-        description = lib.mkDefault {
+        maintainers = [ wlib.maintainers.birdee ];
+        description = {
           pre = ''
             An implementation of the `makeWrapper` interface via type safe module options.
 

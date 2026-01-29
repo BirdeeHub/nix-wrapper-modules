@@ -98,7 +98,13 @@ in
             else
               lib.filterAttrs (n: _: !args ? "${n}") wrappers
           )
-          (builtins.mapAttrs (_: v: v.wrap { inherit (config.wrappers) pkgs; }))
+          (builtins.mapAttrs (
+            _: v:
+            v.wrap {
+              _file = file;
+              inherit (config.wrappers) pkgs;
+            }
+          ))
         ];
       }
     );

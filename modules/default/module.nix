@@ -4,7 +4,7 @@
     wlib.modules.symlinkScript
     wlib.modules.makeWrapper
   ];
-  config.meta.description = lib.mkDefault ''
+  config.meta.description = ''
     This module imports both `wlib.modules.makeWrapper` and `wlib.modules.symlinkScript` for convenience
 
     ## `wlib.modules.makeWrapper`
@@ -33,5 +33,5 @@
 
     ---
   '';
-  config.meta.maintainers = lib.mkDefault [ wlib.maintainers.birdee ];
+  config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

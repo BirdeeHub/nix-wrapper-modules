@@ -201,6 +201,7 @@ in
             (lib.toList value)
             ++ [
               {
+                _file = ./lib.nix;
                 config.pkgs = lib.mkIf (pkgs != null) pkgs;
                 options.enable = lib.mkEnableOption name;
               }
