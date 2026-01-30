@@ -63,14 +63,14 @@ let
               type = wlib.types.nonEmptyLine;
               default = "${name}_host_prog";
               description = ''
-                vim.g.<value> will be set to the path to this wrapped host when the nvim host is enabled
+                `vim.g.<value>` will be set to the path to this wrapped host when the nvim host is enabled
               '';
             };
             disabled_variable = lib.mkOption {
               type = wlib.types.nonEmptyLine;
               default = "loaded_${name}_provider";
               description = ''
-                vim.g.<value> will be set to 0 when the nvim host is disabled
+                `vim.g.<value>` will be set to 0 when the nvim host is disabled
               '';
             };
             var_path = lib.mkOption {
