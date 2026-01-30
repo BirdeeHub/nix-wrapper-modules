@@ -20,28 +20,25 @@ let
       moduleStartsOpen ? null,
     }:
     name: module:
-    let
-      modDoc = wrapperModuleMD (
-        wlib.evalModule [
-          module
-          {
-            _module.check = false;
-            inherit pkgs;
-            ${if package != null then "package" else null} = package;
-          }
-        ]
-        // {
-          inherit includeCore;
-          ${if descriptionStartsOpen != null then "descriptionStartsOpen" else null} = descriptionStartsOpen;
-          ${if descriptionIncluded != null then "descriptionIncluded" else null} = descriptionIncluded;
-          ${if moduleStartsOpen != null then "moduleStartsOpen" else null} = moduleStartsOpen;
-        }
-      );
-    in
     runCommand "${name}-${prefix}-docs"
       {
         passAsFile = [ "modDoc" ];
-        inherit modDoc;
+        modDoc = wrapperModuleMD (
+          wlib.evalModule [
+            module
+            {
+              _module.check = false;
+              inherit pkgs;
+              ${if package != null then "package" else null} = package;
+            }
+          ]
+          // {
+            inherit includeCore;
+            ${if descriptionStartsOpen != null then "descriptionStartsOpen" else null} = descriptionStartsOpen;
+            ${if descriptionIncluded != null then "descriptionIncluded" else null} = descriptionIncluded;
+            ${if moduleStartsOpen != null then "moduleStartsOpen" else null} = moduleStartsOpen;
+          }
+        );
       }
       ''
         echo ${lib.escapeShellArg (if title != null then "# ${title}" else "# `${prefix}${name}`")} > $out
