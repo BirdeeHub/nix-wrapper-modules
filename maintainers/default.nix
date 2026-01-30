@@ -25,6 +25,7 @@
   };
   apetrovic6 = {
     name = "apetrovic6";
+    github = "apetrovic6";
     email = "github.drapery867@simplelogin.com";
     githubId = 31852070;
   };

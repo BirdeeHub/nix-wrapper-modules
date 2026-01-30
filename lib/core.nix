@@ -147,8 +147,6 @@ let
 in
 {
   config.meta.description = ''
-    # Core (builtin) Options set
-
     These are the core options that make everything else possible.
 
     They include the `.extendModules`, `.apply`, `.eval`, and `.wrap` functions, and the `.wrapper` itself
@@ -402,12 +400,19 @@ in
     };
     binName = lib.mkOption {
       type = wlib.types.nonEmptyLine;
-      default = baseNameOf (
-        builtins.addErrorContext ''
-          `config.package`: ${config.package} is not a derivation.
-          You must specify `config.binName` manually.
-        '' (lib.getExe config.package)
-      );
+      default =
+        if config.package.meta.mainProgram or null != null then
+          baseNameOf (
+            builtins.addErrorContext ''
+              `config.package`: ${config.package} is not a derivation.
+              You must specify `config.binName` manually.
+            '' (lib.getExe config.package)
+          )
+        else if builtins.isString config.package || builtins.isPath config.package then
+          baseNameOf (toString config.package)
+        else
+          config.package.pname or config.package.name
+            or (throw "config.binName was not able to be detected!");
       description = ''
         The name of the binary output by `wrapperFunction` to `$out/bin`
 
@@ -416,14 +421,22 @@ in
     };
     exePath = lib.mkOption {
       type = lib.types.nullOr wlib.types.nonEmptyLine;
-      default = lib.removePrefix "/" (
-        lib.removePrefix "${config.package}" (
-          builtins.addErrorContext ''
-            `config.package`: ${config.package} is not a derivation.
-            You must specify `config.exePath` manually.
-          '' (lib.getExe config.package)
-        )
-      );
+      default =
+        if config.package.meta.mainProgram or null != null then
+          lib.removePrefix "/" (
+            lib.removePrefix "${config.package}" (
+              builtins.addErrorContext ''
+                `config.package`: ${config.package} is not a derivation.
+                You must specify `config.exePath` manually.
+              '' (lib.getExe config.package)
+            )
+          )
+        else if builtins.isString config.package || builtins.isPath config.package then
+          "bin/${baseNameOf (toString config.package)}"
+        else
+          "bin/${
+            config.package.pname or config.package.name or (throw "config.binName was not able to be detected!")
+          }";
       description = ''
         The relative path to the executable to wrap. i.e. `bin/exename`
 

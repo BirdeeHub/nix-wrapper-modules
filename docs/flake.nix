@@ -1,7 +1,5 @@
 {
   description = "Generates the website documentation for the nix-wrapper-modules repository";
-  # TODO: make the options expandable sections
-  # TODO: allow filtering/sorting of options by module
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   outputs =
     {
@@ -18,7 +16,10 @@
       packages = forAllSystems (
         system:
         let
-          pkgs = import nixpkgs { inherit system; };
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
         in
         {
           default = pkgs.callPackage ./. {

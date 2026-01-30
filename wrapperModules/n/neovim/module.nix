@@ -146,7 +146,6 @@ in
   };
   options = {
     wrapperVariants = lib.mkOption {
-      internal = true;
       type = types.attrsOf (
         types.submoduleWith {
           modules = [

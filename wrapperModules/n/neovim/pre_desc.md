@@ -33,8 +33,6 @@ This module fully supports remote plugin hosts.
 By the same mechanism, it also allows arbitrary other items to be bundled into the context of your `neovim` derivation, such as `neovide`,
 via an option which accepts wrapper modules for maximum flexibility.
 
-That is also why there are so many options listed.
+Please also check out the [Tips and Tricks](#tips-and-tricks) section for more information!
 
-Skip past the `hosts` options to get to the good stuff. After you are done reading those, there is also a tips and tricks section at the bottom.
-
-## All Options:
+## Options:

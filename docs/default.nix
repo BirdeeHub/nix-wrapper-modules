@@ -1,174 +1,85 @@
 {
   pkgs,
-  nixosOptionsDoc,
   runCommand,
   lib,
   wlib,
   nixdoc,
-  warningsAreErrors ? true,
+  writeShellScriptBin,
   ...
 }:
 let
+  inherit (import ./per-mod { inherit lib wlib; }) wrapperModuleMD;
   buildModuleDocs =
     {
-      prefix,
-      include_core ? false,
+      prefix ? "",
+      title ? null,
+      package ? null,
+      includeCore ? true,
+      descriptionStartsOpen ? null,
+      descriptionIncluded ? null,
+      moduleStartsOpen ? null,
     }:
     name: module:
     let
-      # This gets you a list of each module, and those they import
-      getGraph = import ./eval-graph.nix {
-        inherit pkgs wlib;
-        rootPath = wlib.modulesPath;
-      };
-      corelist = builtins.attrNames (wlib.evalModule { }).options;
-      graph = getGraph module;
-      maineval = wlib.evalModules {
-        modules = [
-          { _module.check = false; }
+      modDoc = wrapperModuleMD (
+        wlib.evalModule [
           module
           {
+            _module.check = false;
             inherit pkgs;
-            package = lib.mkOverride 9001 pkgs.hello;
+            ${if package != null then "package" else null} = package;
           }
-        ];
-      };
-      package = maineval.config.package;
-      eval_mod =
-        key: mod:
-        wlib.evalModules {
-          modules = [
-            { _module.check = false; }
-            {
-              disabledModules = map (v: v.key) (
-                builtins.filter (v: v.key != key && builtins.match ".*:anon-[0-9]+" v.key == null) graph
-              );
-              imports = [ mod ];
-              config.pkgs = pkgs;
-              config.package = lib.mkOverride 9001 package;
-            }
-          ];
-        };
-      module_description =
-        if graph == [ ] then
-          ""
-        else
-          lib.pipe graph [
-            builtins.head
-            (
-              { key, file, ... }:
-              {
-                inherit file;
-                descriptions = (eval_mod key file).config.meta.description;
-              }
-            )
-            (
-              { file, descriptions }:
-              lib.findFirst (v: v.file == file) {
-                pre = "";
-                post = "";
-              } descriptions
-            )
-          ];
-      get_options = key: mod: {
-        options = removeAttrs (eval_mod key mod).options corelist;
-        inherit key;
-      };
-      optionsList =
-        map (v: get_options v.key v.file) graph
-        ++ lib.optional include_core {
-          key = "lib/core.nix";
-          options =
-            removeAttrs
-              (wlib.evalModule {
-                inherit pkgs;
-                package = lib.mkOverride 9001 pkgs.hello;
-              }).options
-              [ "_module" ];
-        };
-      mkMsg =
-        key: doc:
-        lib.optionalString (doc.optionsNix != { }) /* bash */ ''
-          echo ${lib.escapeShellArg "## `${lib.removeSuffix "/module.nix" key}`:"} >> $out
-          echo ${lib.escapeShellArg "<details open>"} >> $out
-          echo ${lib.escapeShellArg "  <summary></summary>"} >> $out
-          echo >> $out
-          cat ${doc.optionsCommonMark} | \
-            sed 's|file://${wlib.modulesPath}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
-            sed 's|${wlib.modulesPath}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
-          echo >> $out
-          echo ${lib.escapeShellArg "</details>"} >> $out
-          echo >> $out
-        '';
-      commands = map (
-        v:
-        mkMsg v.key (nixosOptionsDoc {
-          inherit warningsAreErrors;
-          inherit (v) options;
-        })
-      ) optionsList;
+        ]
+        // {
+          inherit includeCore;
+          ${if descriptionStartsOpen != null then "descriptionStartsOpen" else null} = descriptionStartsOpen;
+          ${if descriptionIncluded != null then "descriptionIncluded" else null} = descriptionIncluded;
+          ${if moduleStartsOpen != null then "moduleStartsOpen" else null} = moduleStartsOpen;
+        }
+      );
     in
-    pkgs.runCommand "${name}-${prefix}-docs" { } (
+    runCommand "${name}-${prefix}-docs"
+      {
+        passAsFile = [ "modDoc" ];
+        inherit modDoc;
+      }
       ''
-        echo ${lib.escapeShellArg "# `${prefix}${name}`"} > $out
+        echo ${lib.escapeShellArg (if title != null then "# ${title}" else "# `${prefix}${name}`")} > $out
         echo >> $out
-        echo ${lib.escapeShellArg module_description.pre} >> $out
-        echo >> $out
-        echo >> $out
-      ''
-      + (builtins.concatStringsSep "\n" commands)
-      + "\n"
-      + ''
-        echo >> $out
-        echo ${lib.escapeShellArg module_description.post} >> $out
-      ''
-    );
+        cat "$modDocPath" >> $out
+      '';
 
-  module_docs = builtins.mapAttrs (buildModuleDocs { prefix = "wlib.modules."; }) wlib.modules;
+  module_docs = builtins.mapAttrs (buildModuleDocs {
+    prefix = "wlib.modules.";
+    package = pkgs.hello;
+    includeCore = false;
+    moduleStartsOpen = _: _: true;
+    descriptionStartsOpen =
+      _: _: _:
+      true;
+    descriptionIncluded =
+      _: _: _:
+      true;
+  }) wlib.modules;
   wrapper_docs = builtins.mapAttrs (buildModuleDocs {
     prefix = "wlib.wrapperModules.";
   }) wlib.wrapperModules;
-
-  coredocs =
-    let
-      result = runCommand "core-wrapper-docs" { } (
-        let
-          evaled = wlib.evalModule {
-            inherit pkgs;
-            package = lib.mkOverride 9001 pkgs.hello;
-          };
-          desc = lib.findFirst (v: v.file == (toString wlib.core)) {
-            pre = "";
-            post = "";
-          } evaled.config.meta.description;
-          coreopts = nixosOptionsDoc {
-            inherit warningsAreErrors;
-            options = removeAttrs evaled.options [ "_module" ];
-          };
-        in
-        ''
-          echo ${lib.escapeShellArg desc.pre} > $out
-          echo >> $out
-          cat ${coreopts.optionsCommonMark} | \
-            sed 's|file://${wlib.modulesPath}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' | \
-            sed 's|${wlib.modulesPath}|https://github.com/BirdeeHub/nix-wrapper-modules/blob/main|g' >> $out
-          echo >> $out
-          echo ${lib.escapeShellArg desc.post} >> $out
-        ''
-      );
-    in
-    {
-      core = result;
-    };
+  coredocs = {
+    core = buildModuleDocs {
+      prefix = "";
+      package = pkgs.hello;
+      title = "Core (builtin) Options set";
+    } "core" wlib.core;
+  };
 
   libdocs = {
-    dag = pkgs.runCommand "wrapper-dag-docs" { } ''
+    dag = runCommand "wrapper-dag-docs" { } ''
       ${nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file ${../lib/dag.nix} --prefix "wlib" >> $out
     '';
-    wlib = pkgs.runCommand "wrapper-lib-docs" { } ''
+    wlib = runCommand "wrapper-lib-docs" { } ''
       ${nixdoc}/bin/nixdoc --category "" --description '`wlib` main set documentation' --file ${../lib/lib.nix} --prefix "wlib" >> $out
     '';
-    types = pkgs.runCommand "wrapper-types-docs" { } ''
+    types = runCommand "wrapper-types-docs" { } ''
       ${nixdoc}/bin/nixdoc --category "types" --description '`wlib.types` set documentation' --file ${../lib/types.nix} --prefix "wlib" >> $out
     '';
   };
@@ -194,7 +105,7 @@ let
     (builtins.concatStringsSep "\n")
   ];
 
-  combined = pkgs.runCommand "book_src" { } ''
+  combined = runCommand "book_src" { } ''
     mkdir -p $out/src
     cp ${./book.toml} $out/book.toml
     ${mkCopyCmds (coredocs // wrapper_docs // module_docs // libdocs)}
@@ -215,13 +126,14 @@ let
     echo '- [Wrapper Modules](./wrapper-modules.md)' >> $out/src/SUMMARY.md
     ${mkSubLinks wrapper_docs}
   '';
-  book = pkgs.runCommand "book_drv" { } ''
+  book = runCommand "book_drv" { } ''
     mkdir -p $out
     ${pkgs.mdbook}/bin/mdbook build ${combined} -d $out
   '';
 in
-pkgs.writeShellScriptBin "copy-docs" ''
-  target=''${1:-./docs/generated}
+writeShellScriptBin "copy-docs" ''
+  target=''${1:-./_site}
   mkdir -p $target
   cp -rf ${book}/* $target
+  chmod -R u+rwX "$target"
 ''
