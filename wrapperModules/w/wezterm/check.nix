@@ -32,12 +32,12 @@ let
 in
 pkgs.runCommand "wezterm-test" { } ''
   res="$(${weztermWrapped}/bin/wezterm show-keys)"
-  if ! echo "$res" | grep -q "SHIFT | ALT | CTRL | SUPER   F12"; then
+  if ! echo "$res" | grep "SHIFT | ALT | CTRL | SUPER   F12"; then
     echo "Wezterm doesn't see custom keybind 1"
     touch $out
     exit 1
   fi
-  if ! echo "$res" | grep -q "SHIFT | ALT | CTRL | SUPER   F13"; then
+  if ! echo "$res" | grep "SHIFT | ALT | CTRL | SUPER   F13"; then
     echo "Wezterm doesn't see custom keybind 2"
     touch $out
     exit 1
