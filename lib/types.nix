@@ -394,7 +394,7 @@
               generated using pkgs.writeText with the attribute name and content.
             '';
             default = pkgs.writeText name config.content;
-            defaultText = "pkgs.writeText name <content>";
+            defaultText = lib.literalExpression "pkgs.writeText name <content>";
           };
         };
       }
