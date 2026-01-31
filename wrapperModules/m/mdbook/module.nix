@@ -261,7 +261,7 @@ in
                 description = ''
                   Values for the `book.toml` file for this book.
 
-                  Reference: https://rust-lang.github.io/mdBook/format/configuration/general.html
+                  Reference: [rust-lang.github.io/mdBook/format/configuration/general.html](https://rust-lang.github.io/mdBook/format/configuration/general.html)
 
                   Any `null` values will be as if not declared.
                 '';
@@ -271,7 +271,7 @@ in
                     description = ''
                       The `book` table of the `book.toml` file.
 
-                      Reference: https://rust-lang.github.io/mdBook/format/configuration/general.html#general-metadata
+                      Reference: [rust-lang.github.io/mdBook/format/configuration/general.html#general-metadata](https://rust-lang.github.io/mdBook/format/configuration/general.html#general-metadata)
                     '';
                     type = lib.types.submodule {
                       freeformType = tomltype;
@@ -343,7 +343,7 @@ in
 
                   For info on what those are:
 
-                  https://rust-lang.github.io/mdBook/format/summary.html
+                  [rust-lang.github.io/mdBook/format/summary](https://rust-lang.github.io/mdBook/format/summary.html)
 
                   In addition, it accepts `name`, `subchapters`, `src`, and `path`.
 
