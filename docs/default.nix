@@ -1,10 +1,7 @@
 {
-  pkgs,
-  runCommand,
   lib,
   wlib,
-  nixdoc,
-  writeShellScriptBin,
+  pkgs,
   ...
 }:
 let
@@ -20,7 +17,7 @@ let
       moduleStartsOpen ? null,
     }:
     name: module:
-    runCommand "${name}-${prefix}-docs"
+    pkgs.runCommand "${name}-${prefix}-docs"
       {
         passAsFile = [ "modDoc" ];
         modDoc = wrapperModuleMD (
@@ -61,76 +58,164 @@ let
   wrapper_docs = builtins.mapAttrs (buildModuleDocs {
     prefix = "wlib.wrapperModules.";
   }) wlib.wrapperModules;
-  coredocs = {
-    core = buildModuleDocs {
-      prefix = "";
-      package = pkgs.hello;
-      title = "Core (builtin) Options set";
-    } "core" wlib.core;
-  };
-
-  libdocs = {
-    dag = runCommand "wrapper-dag-docs" { } ''
-      ${nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file ${../lib/dag.nix} --prefix "wlib" >> $out
-    '';
-    wlib = runCommand "wrapper-lib-docs" { } ''
-      ${nixdoc}/bin/nixdoc --category "" --description '`wlib` main set documentation' --file ${../lib/lib.nix} --prefix "wlib" >> $out
-    '';
-    types = runCommand "wrapper-types-docs" { } ''
-      ${nixdoc}/bin/nixdoc --category "types" --description '`wlib.types` set documentation' --file ${../lib/types.nix} --prefix "wlib" >> $out
-    '';
-  };
-
-  mkCopyCmds = lib.flip lib.pipe [
-    (lib.mapAttrsToList (
-      n: v: {
-        name = n;
-        value = v;
-      }
-    ))
-    (builtins.filter (v: v.value ? outPath))
-    (map (v: ''
-      cp -r ${v.value} $out/src/${v.name}.md
-    ''))
-    (builtins.concatStringsSep "\n")
-  ];
-  mkSubLinks = lib.flip lib.pipe [
-    builtins.attrNames
-    (map (n: ''
-      echo '  - [${n}](./${n}.md)' >> $out/src/SUMMARY.md
-    ''))
-    (builtins.concatStringsSep "\n")
-  ];
-
-  combined = runCommand "book_src" { } ''
-    mkdir -p $out/src
-    cp ${./book.toml} $out/book.toml
-    ${mkCopyCmds (coredocs // wrapper_docs // module_docs // libdocs)}
-    cp ${./md}/* $out/src/
-    cat ${../README.md} | sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' >> $out/src/home.md
-    echo '# Summary' > $out/src/SUMMARY.md
-    echo >> $out/src/SUMMARY.md
-    echo '- [Intro](./home.md)' >> $out/src/SUMMARY.md
-    echo '- [Getting Started](./getting-started.md)' >> $out/src/SUMMARY.md
-    echo '- [Lib Functions](./lib-intro.md)' >> $out/src/SUMMARY.md
-    echo '  - [`wlib`](./wlib.md)' >> $out/src/SUMMARY.md
-    echo '  - [`wlib.types`](./types.md)' >> $out/src/SUMMARY.md
-    echo '  - [`wlib.dag`](./dag.md)' >> $out/src/SUMMARY.md
-    echo '- [Core Options Set](./core.md)' >> $out/src/SUMMARY.md
-    echo '- [`wlib.modules.default`](./default.md)' >> $out/src/SUMMARY.md
-    echo '- [Helper Modules](./helper-modules.md)' >> $out/src/SUMMARY.md
-    ${mkSubLinks (removeAttrs module_docs [ "default" ])}
-    echo '- [Wrapper Modules](./wrapper-modules.md)' >> $out/src/SUMMARY.md
-    ${mkSubLinks wrapper_docs}
-  '';
-  book = runCommand "book_drv" { } ''
-    mkdir -p $out
-    ${pkgs.mdbook}/bin/mdbook build ${combined} -d $out
-  '';
 in
-writeShellScriptBin "copy-docs" ''
-  target=''${1:-./_site}
-  mkdir -p $target
-  cp -rf ${book}/* $target
-  chmod -R u+rwX "$target"
-''
+{
+  imports = [ wlib.wrapperModules.mdbook ];
+  mainBook = "nix-wrapper-modules";
+  books.nix-wrapper-modules = {
+    book.book = {
+      src = "src";
+      authors = [ "BirdeeHub" ];
+      language = "en";
+      title = "nix-wrapper-modules";
+      description = "Make wrapper derivations with the module system! Use the existing modules, or write your own!";
+    };
+    book.output.html.git-repository-url = "https://github.com/BirdeeHub/nix-wrapper-modules";
+    book.output.html.redirect =
+      lib.pipe
+        [
+          "alacritty"
+          "atool"
+          "btop"
+          "claude-code"
+          "foot"
+          "fuzzel"
+          "git"
+          "helix"
+          "jujutsu"
+          "mako"
+          "mpv"
+          "neovim"
+          "niri"
+          "notmuch"
+          "nushell"
+          "opencode"
+          "ov"
+          "rofi"
+          "tealdeer"
+          "tmux"
+          "vim"
+          "waybar"
+          "wezterm"
+          "xplr"
+          "yazi"
+        ]
+        [
+          (map (n: {
+            name = "/${n}.html";
+            value = "wrapperModules/${n}.html";
+          }))
+          builtins.listToAttrs
+          (
+            v:
+            v
+            // {
+              "/home.html" = "/md/intro.html";
+              "/getting-started.html" = "/md/getting-started.html";
+              "/lib-intro.html" = "/md/lib-intro.html";
+              "/wlib.html" = "/lib/wlib.html";
+              "/types.html" = "/lib/types.html";
+              "/dag.html" = "/lib/dag.html";
+              "/core.html" = "/lib/core.html";
+              "/helper-modules.html" = "/md/helper-modules.html";
+              "/wrapper-modules.html" = "/md/wrapper-modules.html";
+              "/default.html" = "/modules/default.html";
+              "/makeWrapper.html" = "/modules/makeWrapper.html";
+              "/symlinkScript.html" = "/modules/symlinkScript.html";
+            }
+          )
+        ];
+    summary = [
+      {
+        data = "title";
+        name = "nix-wrapper-modules";
+      }
+      {
+        name = "Intro";
+        data = "numbered";
+        path = "md/intro.md";
+        src = pkgs.runCommand "intro.md" { README = ../README.md; } ''
+          sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' < "$README" > "$out"
+        '';
+      }
+      {
+        name = "Getting Started";
+        data = "numbered";
+        path = "md/getting-started.md";
+        src = ./md/getting-started.md;
+      }
+      {
+        name = "Lib Functions";
+        data = "numbered";
+        path = "md/lib-intro.md";
+        src = ./md/lib-intro.md;
+        subchapters = [
+          {
+            name = "wlib";
+            data = "numbered";
+            path = "lib/wlib.md";
+            src = pkgs.runCommand "wrapper-lib-docs" { } ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "" --description '`wlib` main set documentation' --file "${../lib/lib.nix}" --prefix "wlib" >> $out
+            '';
+          }
+          {
+            name = "types";
+            data = "numbered";
+            path = "lib/types.md";
+            src = pkgs.runCommand "wrapper-types-docs" { } ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "types" --description '`wlib.types` set documentation' --file "${../lib/types.nix}" --prefix "wlib" >> $out
+            '';
+          }
+          {
+            name = "dag";
+            data = "numbered";
+            path = "lib/dag.md";
+            src = pkgs.runCommand "wrapper-dag-docs" { } ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file "${../lib/dag.nix}" --prefix "wlib" >> $out
+            '';
+          }
+        ];
+      }
+      {
+        name = "Core Options Set";
+        data = "numbered";
+        path = "lib/core.md";
+        src = buildModuleDocs {
+          prefix = "";
+          package = pkgs.hello;
+          title = "Core (builtin) Options set";
+        } "core" wlib.core;
+      }
+      {
+        name = "`wlib.modules.default`";
+        data = "numbered";
+        path = "modules/default.md";
+        src = module_docs.default;
+      }
+      {
+        name = "Helper Modules";
+        data = "numbered";
+        path = "md/helper-modules.md";
+        src = ./md/helper-modules.md;
+        subchapters = lib.mapAttrsToList (n: v: {
+          name = n;
+          data = "numbered";
+          path = "modules/${n}.md";
+          src = v;
+        }) (removeAttrs module_docs [ "default" ]);
+      }
+      {
+        name = "Wrapper Modules";
+        data = "numbered";
+        path = "md/wrapper-modules.md";
+        src = ./md/wrapper-modules.md;
+        subchapters = lib.mapAttrsToList (n: v: {
+          name = n;
+          data = "numbered";
+          path = "wrapperModules/${n}.md";
+          src = v;
+        }) wrapper_docs;
+      }
+    ];
+  };
+}

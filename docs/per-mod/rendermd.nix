@@ -73,15 +73,15 @@ let
   );
   mkOptField =
     opt: n: desc:
-    lib.optionalString (opt ? "${n}") (lib.optionalString (desc != "") "${desc}\n" + "${opt.${n}}\n\n");
+    lib.optionalString (opt ? "${n}" && lib.isStringLike opt.${n}) (
+      lib.optionalString (desc != "") "${desc}\n" + "${opt.${n}}\n\n"
+    );
   renderOption = opt: ''
     ## `${lib.options.showOption (opt.loc or [ ])}`
 
-    ${mkOptField opt "description" ""}${
-      mkOptField opt "relatedPackages" "Related packages:\n"
-    }${mkOptField opt "type" "Type:"}${mkOptField opt "default" "Default:"}${
-      mkOptField opt "example" "Example:"
-    }${
+    ${mkOptField opt "description" ""}${mkOptField opt "relatedPackages" "Related packages:\n"}${
+      mkOptField opt "type" "Type:${lib.optionalString (opt.readOnly or false == true) " (read-only)"}"
+    }${mkOptField opt "default" "Default:"}${mkOptField opt "example" "Example:"}${
       lib.optionalString (opt.declarations or [ ] != [ ]) ''
         Declared by:
 
