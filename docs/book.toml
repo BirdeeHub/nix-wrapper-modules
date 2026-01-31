@@ -1,8 +1,0 @@
-[book]
-authors = ["BirdeeHub"]
-language = "en"
-src = "src"
-title = "nix-wrapper-modules"
-
-[output.html]
-git-repository-url = "https://github.com/BirdeeHub/nix-wrapper-modules"
