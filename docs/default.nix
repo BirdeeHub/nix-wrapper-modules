@@ -17,31 +17,25 @@ let
       moduleStartsOpen ? null,
     }:
     name: module:
-    pkgs.runCommand "${name}-${prefix}-docs"
-      {
-        passAsFile = [ "modDoc" ];
-        modDoc = wrapperModuleMD (
-          wlib.evalModule [
-            module
-            {
-              _module.check = false;
-              inherit pkgs;
-              ${if package != null then "package" else null} = package;
-            }
-          ]
-          // {
-            inherit includeCore;
-            ${if descriptionStartsOpen != null then "descriptionStartsOpen" else null} = descriptionStartsOpen;
-            ${if descriptionIncluded != null then "descriptionIncluded" else null} = descriptionIncluded;
-            ${if moduleStartsOpen != null then "moduleStartsOpen" else null} = moduleStartsOpen;
+    pkgs.writeText "${name}-${prefix}-docs" (
+      (if title != null then "# ${title}\n\n" else "# `${prefix}${name}`\n\n")
+      + wrapperModuleMD (
+        wlib.evalModule [
+          module
+          {
+            _module.check = false;
+            inherit pkgs;
+            ${if package != null then "package" else null} = package;
           }
-        );
-      }
-      ''
-        echo ${lib.escapeShellArg (if title != null then "# ${title}" else "# `${prefix}${name}`")} > $out
-        echo >> $out
-        cat "$modDocPath" >> $out
-      '';
+        ]
+        // {
+          inherit includeCore;
+          ${if descriptionStartsOpen != null then "descriptionStartsOpen" else null} = descriptionStartsOpen;
+          ${if descriptionIncluded != null then "descriptionIncluded" else null} = descriptionIncluded;
+          ${if moduleStartsOpen != null then "moduleStartsOpen" else null} = moduleStartsOpen;
+        }
+      )
+    );
 
   module_docs = builtins.mapAttrs (buildModuleDocs {
     prefix = "wlib.modules.";
