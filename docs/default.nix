@@ -17,7 +17,7 @@ let
       moduleStartsOpen ? null,
     }:
     name: module:
-    pkgs.writeText "${name}-${prefix}-docs" (
+    builtins.toFile "${name}-${prefix}-docs" (
       (if title != null then "# ${title}\n\n" else "# `${prefix}${name}`\n\n")
       + wrapperModuleMD (
         wlib.evalModule [
