@@ -128,8 +128,8 @@ in
         name = "Intro";
         data = "numbered";
         path = "md/intro.md";
-        src = pkgs.runCommand "intro.md" { README = ../README.md; } ''
-          sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' < "$README" > "$out"
+        src = pkgs.runCommand "intro.md" { src = ../README.md; } ''
+          sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' < "$src" > "$out"
         '';
       }
       {
@@ -148,24 +148,24 @@ in
             name = "wlib";
             data = "numbered";
             path = "lib/wlib.md";
-            src = pkgs.runCommand "wrapper-lib-docs" { } ''
-              ${pkgs.nixdoc}/bin/nixdoc --category "" --description '`wlib` main set documentation' --file "${../lib/lib.nix}" --prefix "wlib" >> $out
+            src = pkgs.runCommand "wrapper-lib-docs" { src = ../lib/lib.nix; } ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "" --description '`wlib` main set documentation' --file "$src" --prefix "wlib" >> $out
             '';
           }
           {
             name = "types";
             data = "numbered";
             path = "lib/types.md";
-            src = pkgs.runCommand "wrapper-types-docs" { } ''
-              ${pkgs.nixdoc}/bin/nixdoc --category "types" --description '`wlib.types` set documentation' --file "${../lib/types.nix}" --prefix "wlib" >> $out
+            src = pkgs.runCommand "wrapper-types-docs" { src = ../lib/types.nix; } ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "types" --description '`wlib.types` set documentation' --file "$src" --prefix "wlib" >> $out
             '';
           }
           {
             name = "dag";
             data = "numbered";
             path = "lib/dag.md";
-            src = pkgs.runCommand "wrapper-dag-docs" { } ''
-              ${pkgs.nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file "${../lib/dag.nix}" --prefix "wlib" >> $out
+            src = pkgs.runCommand "wrapper-dag-docs" { src = ../lib/dag.nix; } ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file "$src" --prefix "wlib" >> $out
             '';
           }
         ];
@@ -175,7 +175,6 @@ in
         data = "numbered";
         path = "lib/core.md";
         src = buildModuleDocs {
-          prefix = "";
           package = pkgs.hello;
           title = "Core (builtin) Options set";
         } "core" wlib.core;
