@@ -1,8 +1,8 @@
 # Neovim module
 
-This is a demonstration of the [neovim module](https://birdeehub.github.io/nix-wrapper-modules/neovim.html)
+This is a demonstration of the [neovim module](https://birdeehub.github.io/nix-wrapper-modules/wrapperModules/neovim.html)
 
-It makes use of the tips in the [tips and tricks](https://birdeehub.github.io/nix-wrapper-modules/neovim.html#tips-and-tricks) section of the documentation.
+It makes use of the tips in the [tips and tricks](https://birdeehub.github.io/nix-wrapper-modules/wrapperModules/neovim.html#tips-and-tricks) section of the documentation.
 
 It uses [lze](https://github.com/BirdeeHub/lze) for lazy loading of the configuration.
 
