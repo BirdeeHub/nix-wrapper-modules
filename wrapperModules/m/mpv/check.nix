@@ -2,19 +2,17 @@
   pkgs,
   self,
 }:
-
 let
-  mpvWrapped =
-    (self.wrappers.mpv.apply {
-      inherit pkgs;
-      scripts = [
-        pkgs.mpvScripts.visualizer
-      ];
-      "mpv.conf".content = ''
-        ao=null
-        vo=null
-      '';
-    }).wrapper;
+  mpvWrapped = self.wrappers.mpv.wrap {
+    inherit pkgs;
+    scripts = [
+      pkgs.mpvScripts.visualizer
+    ];
+    "mpv.conf".content = ''
+      ao=null
+      vo=null
+    '';
+  };
 in
 pkgs.runCommand "mpv-test" { } ''
   res="$(${mpvWrapped}/bin/mpv --version)"

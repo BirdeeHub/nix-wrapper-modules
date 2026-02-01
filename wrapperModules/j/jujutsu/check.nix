@@ -2,7 +2,6 @@
   pkgs,
   self,
 }:
-
 let
   jujutsuWrapped = self.wrappers.jujutsu.wrap {
     inherit pkgs;

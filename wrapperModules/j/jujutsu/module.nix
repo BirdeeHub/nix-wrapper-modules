@@ -24,7 +24,7 @@ in
   config = {
     package = lib.mkDefault pkgs.jujutsu;
     env = {
-      JJ_CONFIG = builtins.toString (tomlFmt.generate "jujutsu.toml" config.settings);
+      JJ_CONFIG = toString (tomlFmt.generate "jujutsu.toml" config.settings);
     };
 
     meta.maintainers = [ wlib.maintainers.birdee ];

@@ -2,7 +2,6 @@
   pkgs,
   self,
 }:
-
 let
   nushellWrapped = self.wrappers.nushell.wrap {
     inherit pkgs;

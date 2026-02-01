@@ -1,6 +1,6 @@
 {
   description = "Generates the website documentation for the nix-wrapper-modules repository";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/master";
   outputs =
     { nixpkgs, ... }:
     let
