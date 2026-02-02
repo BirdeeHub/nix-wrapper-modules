@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   wlib,
   pkgs,
@@ -17,27 +18,50 @@ let
       moduleStartsOpen ? null,
     }:
     name: module:
-    pkgs.writeText "${name}-${prefix}-docs" (
-      (if title != null then "# ${title}\n\n" else "# `${prefix}${name}`\n\n")
-      + wrapperModuleMD (
-        wlib.evalModule [
-          module
-          {
-            _module.check = false;
-            inherit pkgs;
-            ${if package != null then "package" else null} = package;
-          }
-        ]
-        // {
-          inherit includeCore;
-          ${if descriptionStartsOpen != null then "descriptionStartsOpen" else null} = descriptionStartsOpen;
-          ${if descriptionIncluded != null then "descriptionIncluded" else null} = descriptionIncluded;
-          ${if moduleStartsOpen != null then "moduleStartsOpen" else null} = moduleStartsOpen;
+    (if title != null then "# ${title}\n\n" else "# `${prefix}${name}`\n\n")
+    + wrapperModuleMD (
+      wlib.evalModule [
+        module
+        {
+          _module.check = false;
+          inherit pkgs;
+          ${if package != null then "package" else null} = package;
         }
-      )
+      ]
+      // {
+        inherit includeCore;
+        ${if descriptionStartsOpen != null then "descriptionStartsOpen" else null} = descriptionStartsOpen;
+        ${if descriptionIncluded != null then "descriptionIncluded" else null} = descriptionIncluded;
+        ${if moduleStartsOpen != null then "moduleStartsOpen" else null} = moduleStartsOpen;
+      }
     );
 
-  module_docs = builtins.mapAttrs (buildModuleDocs {
+in
+{
+  imports = [
+    wlib.wrapperModules.mdbook
+    ./redirects.nix
+  ];
+  mainBook = "nix-wrapper-modules";
+  outputs = [
+    "out"
+    "generated"
+  ];
+  drv.unsafeDiscardReferences.generated = true;
+  drv.preBuild = ''
+    mkdir -p "$generated/wrapper_docs"
+    jq -r '.wrapper_docs | to_entries[] | @base64' "$NIX_ATTRS_JSON_FILE" | while read -r entry; do
+      # decode base64 to get JSON safely
+      decoded=$(echo "$entry" | base64 --decode)
+      echo "$(echo "$decoded" | jq -r '.value')" > "$generated/wrapper_docs/$(echo "$decoded" | jq -r '.key').md"
+    done
+    mkdir -p "$generated/module_docs"
+    jq -r '.module_docs | to_entries[] | @base64' "$NIX_ATTRS_JSON_FILE" | while read -r entry; do
+      decoded="$(echo "$entry" | base64 --decode)"
+      echo "$(echo "$decoded" | jq -r '.value')" > "$generated/module_docs/$(echo "$decoded" | jq -r '.key').md"
+    done
+  '';
+  drv.module_docs = builtins.mapAttrs (buildModuleDocs {
     prefix = "wlib.modules.";
     package = pkgs.hello;
     includeCore = false;
@@ -49,16 +73,13 @@ let
       _: _: _:
       true;
   }) wlib.modules;
-  wrapper_docs = builtins.mapAttrs (buildModuleDocs {
+  drv.wrapper_docs = builtins.mapAttrs (buildModuleDocs {
     prefix = "wlib.wrapperModules.";
   }) wlib.wrapperModules;
-in
-{
-  imports = [
-    wlib.wrapperModules.mdbook
-    ./redirects.nix
-  ];
-  mainBook = "nix-wrapper-modules";
+  drv.core_docs = buildModuleDocs {
+    package = pkgs.hello;
+    title = "Core (builtin) Options set";
+  } "core" wlib.core;
   books.nix-wrapper-modules = {
     book = {
       book = {
@@ -130,40 +151,40 @@ in
         name = "Core Options Set";
         data = "numbered";
         path = "lib/core.md";
-        src = buildModuleDocs {
-          package = pkgs.hello;
-          title = "Core (builtin) Options set";
-        } "core" wlib.core;
+        build = ''
+          jq -r '.core_docs' "$NIX_ATTRS_JSON_FILE" > "$generated/core.md"
+        '';
+        src = "${placeholder "generated"}/core.md";
       }
       {
         name = "`wlib.modules.default`";
         data = "numbered";
         path = "modules/default.md";
-        src = module_docs.default;
+        src = "${placeholder "generated"}/module_docs/default.md";
       }
       {
         name = "Helper Modules";
         data = "numbered";
         path = "md/helper-modules.md";
         src = ./md/helper-modules.md;
-        subchapters = lib.mapAttrsToList (n: v: {
+        subchapters = lib.mapAttrsToList (n: _: {
           name = n;
           data = "numbered";
           path = "modules/${n}.md";
-          src = v;
-        }) (removeAttrs module_docs [ "default" ]);
+          src = "${placeholder "generated"}/module_docs/${n}.md";
+        }) (removeAttrs config.drv.module_docs [ "default" ]);
       }
       {
         name = "Wrapper Modules";
         data = "numbered";
         path = "md/wrapper-modules.md";
         src = ./md/wrapper-modules.md;
-        subchapters = lib.mapAttrsToList (n: v: {
+        subchapters = lib.mapAttrsToList (n: _: {
           name = n;
           data = "numbered";
           path = "wrapperModules/${n}.md";
-          src = v;
-        }) wrapper_docs;
+          src = "${placeholder "generated"}/wrapper_docs/${n}.md";
+        }) config.drv.wrapper_docs;
       }
     ];
   };
