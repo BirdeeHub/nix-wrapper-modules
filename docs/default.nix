@@ -79,7 +79,7 @@ in
   drv.core_docs = buildModuleDocs {
     package = pkgs.hello;
     title = "Core (builtin) Options set";
-  } "core" wlib.core;
+  } "core" { };
   books.nix-wrapper-modules = {
     book = {
       book = {
@@ -110,13 +110,13 @@ in
         name = "Getting Started";
         data = "numbered";
         path = "md/getting-started.md";
-        src = ./md/getting-started.md;
+        src = builtins.path { path = ./md/getting-started.md; };
       }
       {
         name = "Lib Functions";
         data = "numbered";
         path = "md/lib-intro.md";
-        src = ./md/lib-intro.md;
+        src = builtins.path { path = ./md/lib-intro.md; };
         subchapters = [
           {
             name = "wlib";
@@ -166,7 +166,7 @@ in
         name = "Helper Modules";
         data = "numbered";
         path = "md/helper-modules.md";
-        src = ./md/helper-modules.md;
+        src = builtins.path { path = ./md/helper-modules.md; };
         subchapters = lib.mapAttrsToList (n: _: {
           name = n;
           data = "numbered";
@@ -178,7 +178,7 @@ in
         name = "Wrapper Modules";
         data = "numbered";
         path = "md/wrapper-modules.md";
-        src = ./md/wrapper-modules.md;
+        src = builtins.path { path = ./md/wrapper-modules.md; };
         subchapters = lib.mapAttrsToList (n: _: {
           name = n;
           data = "numbered";

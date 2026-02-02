@@ -24,8 +24,13 @@ pkgs.runCommand "meta-maintainers-test" { } ''
   echo "Testing meta.maintainers field with nixpkgs maintainer..."
 
   # Check that meta.maintainers is set correctly
-  maintainers='${builtins.toJSON moduleConfig.meta.maintainers}'
+  maintainers='${builtins.toJSON (map (v: removeAttrs v [ "file" ]) moduleConfig.meta.maintainers)}'
   echo "Maintainers: $maintainers"
+
+  if ${if builtins.all (v: v ? file) moduleConfig.meta.maintainers then "false" else "true"}; then
+    echo "FAIL: a meta.maintainers entry is missing a file field"
+    exit 1
+  fi
 
   # Verify the maintainer has all required fields
   if ! echo "$maintainers" | grep -q ${esc nixpkgsMaintainer.name}; then
