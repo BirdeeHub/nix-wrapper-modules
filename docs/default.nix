@@ -128,8 +128,10 @@ in
         name = "Intro";
         data = "numbered";
         path = "md/intro.md";
-        src = pkgs.runCommand "intro.md" { src = ../README.md; } ''
-          sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' < "$src" > "$out"
+        src = "${placeholder "out"}/wrappers-lib/intro.md";
+        build = ''
+          mkdir -p $out/wrappers-lib
+          sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' < '${../README.md}' > "$out/wrappers-lib/intro.md"
         '';
       }
       {
@@ -148,24 +150,27 @@ in
             name = "wlib";
             data = "numbered";
             path = "lib/wlib.md";
-            src = pkgs.runCommand "wrapper-lib-docs" { src = ../lib/lib.nix; } ''
-              ${pkgs.nixdoc}/bin/nixdoc --category "" --description '`wlib` main set documentation' --file "$src" --prefix "wlib" >> $out
+            src = "${placeholder "out"}/wrappers-lib/wlib.md";
+            build = ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "" --description '`wlib` main set documentation' --file '${../lib/lib.nix}' --prefix "wlib" >> $out/wrappers-lib/wlib.md
             '';
           }
           {
             name = "types";
             data = "numbered";
             path = "lib/types.md";
-            src = pkgs.runCommand "wrapper-types-docs" { src = ../lib/types.nix; } ''
-              ${pkgs.nixdoc}/bin/nixdoc --category "types" --description '`wlib.types` set documentation' --file "$src" --prefix "wlib" >> $out
+            src = "${placeholder "out"}/wrappers-lib/types.md";
+            build = ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "types" --description '`wlib.types` set documentation' --file '${../lib/types.nix}' --prefix "wlib" >> $out/wrappers-lib/types.md
             '';
           }
           {
             name = "dag";
             data = "numbered";
             path = "lib/dag.md";
-            src = pkgs.runCommand "wrapper-dag-docs" { src = ../lib/dag.nix; } ''
-              ${pkgs.nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file "$src" --prefix "wlib" >> $out
+            src = "${placeholder "out"}/wrappers-lib/dag.md";
+            build = ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file '${../lib/dag.nix}' --prefix "wlib" >> $out/wrappers-lib/dag.md
             '';
           }
         ];

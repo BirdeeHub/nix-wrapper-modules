@@ -86,11 +86,19 @@ let
           this file will be linked to the location indicated by the `path` option.
         '';
       };
+      options.build = lib.mkOption {
+        type = lib.types.lines;
+        default = "";
+        description = ''
+          If extra processing is required to generate a source file for this item,
+          you may specify extra commands to run before the wrapper links it into place here.
+        '';
+      };
     }
   );
 
   renderBook =
-    subdir: book_src: summary: summaryVarname: bookVarname:
+    bookSrc: summary: bookName:
     let
       renderItemSummary =
         node:
@@ -154,15 +162,6 @@ let
         in
         recsort 0;
 
-      sortedBook = sortBook summary;
-      bookSrc =
-        "${placeholder "out"}/" + subdir + "/" + lib.removePrefix "/" (lib.removeSuffix "/" book_src);
-      summaryMD = builtins.concatStringsSep "\n" (
-        map (
-          v:
-          builtins.addErrorContext "while rendering summary item ${builtins.toJSON v}" (renderItemSummary v)
-        ) sortedBook
-      );
       mkLink =
         node:
         if node.src != null && node.path != null then
@@ -171,61 +170,26 @@ let
           in
           ''
             mkdir -p "$(dirname ${p})"
+            ${node.build}
             ln -s ${lib.escapeShellArg node.src} ${lib.escapeShellArg "${bookSrc}/${lib.removePrefix "/" node.path}"}
           ''
         else
           "";
-      linkCmds = lib.pipe sortedBook [
-        (map mkLink)
-        (
-          v:
-          [
-            "mkdir -p ${lib.escapeShellArg "${bookSrc}"}"
-            (
-              ''{ [ -e "$''
-              + ''${summaryVarname}Path" ] && cat "$''
-              + ''${summaryVarname}Path" || echo "$''
-              + ''${summaryVarname}"; } > ${lib.escapeShellArg "${bookSrc}/SUMMARY.md"}''
-            )
-            (
-              ''json2toml "$''
-              + ''${bookVarname}Path" ${lib.escapeShellArg "${placeholder "out"}/${subdir}/book.toml"}''
-            )
-          ]
-          ++ v
-        )
-        (builtins.concatStringsSep "\n")
-      ];
+      sortedBook = sortBook summary;
     in
     {
-      summaryMD = summaryMD;
-      linkCmds = linkCmds;
+      summaryMD = builtins.concatStringsSep "\n" (
+        map (
+          v:
+          builtins.addErrorContext "while rendering summary item from book `${bookName}`: `${builtins.toJSON v}`" (
+            renderItemSummary v
+          )
+        ) sortedBook
+      );
+      linkCmds = builtins.concatStringsSep "\n" (map mkLink sortedBook);
     };
 
   tomltype = (pkgs.formats.json { }).type;
-
-  sanitizeShellVar =
-    s:
-    let
-      splitter = builtins.split "([^A-Za-z0-9_]+)";
-      genStr = str: num: builtins.concatStringsSep "" (builtins.genList (_: str) num);
-      body = lib.pipe s [
-        splitter
-        (map (
-          v:
-          if builtins.isList v then
-            let
-              bad = builtins.concatStringsSep "" v;
-            in
-            genStr "_" (builtins.stringLength bad)
-          else
-            v
-        ))
-        (builtins.concatStringsSep "")
-      ];
-    in
-    # ensure valid first character
-    if builtins.match "[A-Za-z_].*" body != null then body else "_" + body;
 
   book-out-dir = "${top.config.binName}-book-dir";
 in
@@ -239,25 +203,18 @@ in
       description = ''
         The books are generated to:
 
-        `''${passthru "out"}/''${config.book-out-dir}/''${name}`
+        `''${placeholder "out"}/''${config.book-out-dir}/''${name}`
       '';
     };
     books = lib.mkOption {
       default = { };
       type = lib.types.attrsOf (
         lib.types.submodule (
-          { name, config, ... }:
-          let
-            pages =
-              renderBook config.generated-book-subdir config.book.book.src config.summary
-                config.generated-summary-varname
-                config.generated-book-json-varname;
-          in
+          { name, ... }:
           {
             options = {
               book = lib.mkOption {
                 default = { };
-                apply = x: lib.filterAttrsRecursive (_: v: !builtins.isFunction v && v != null) x;
                 description = ''
                   Values for the `book.toml` file for this book.
 
@@ -378,36 +335,8 @@ in
                 description = ''
                   The directory within the wrapped derivation that contains the generated markdown for the book.
 
-                  `''${passthru "out"}/''${config.books.<name>.generated-book-subdir}` is the root of this book.
+                  `''${placeholder "out"}/''${config.books.<name>.generated-book-subdir}` is the root of this book.
                 '';
-              };
-              generatedSummary = lib.mkOption {
-                type = lib.types.str;
-                readOnly = true;
-                internal = true;
-                visible = false;
-                default = pages.summaryMD;
-              };
-              buildCommands = lib.mkOption {
-                type = lib.types.str;
-                readOnly = true;
-                internal = true;
-                visible = false;
-                default = pages.linkCmds;
-              };
-              generated-book-json-varname = lib.mkOption {
-                type = lib.types.str;
-                readOnly = true;
-                internal = true;
-                visible = false;
-                default = "nix_generated_book_json_${sanitizeShellVar name}";
-              };
-              generated-summary-varname = lib.mkOption {
-                type = lib.types.str;
-                readOnly = true;
-                internal = true;
-                visible = false;
-                default = "nix_generated_summary_${sanitizeShellVar name}";
               };
             };
           }
@@ -473,40 +402,64 @@ in
       };
       config.exePath = config.exePath;
     }) config.books;
-    drv =
-      builtins.foldl' (acc: v: acc // v) { } (
-        lib.mapAttrsToList (_: v: {
-          ${v.generated-summary-varname} = v.generatedSummary;
-          ${v.generated-book-json-varname} = builtins.toJSON v.book;
-        }) config.books
-      )
-      // {
-        passAsFile = builtins.concatLists (
-          lib.mapAttrsToList (_: v: [
-            v.generated-summary-varname
-            v.generated-book-json-varname
-          ]) config.books
-        );
-        nativeBuildInputs = [ pkgs.remarshal ];
-        buildPhase =
-          "runHook preBuild\n"
-          + builtins.concatStringsSep "\n" (lib.mapAttrsToList (_: v: v.buildCommands) config.books)
-          + "\n"
-          + (
-            if
-              config.mainBook != null
-              && config.wrapperVariants."${config.mainBook}".enable or false == true
-              && config.books."${config.mainBook}".enable or false == true
-            then
-              ''
-                rm -f $out/bin/${config.binName}
-                ln -s ${config.mainBook} $out/bin/${config.binName}
-              ''
-            else
-              ""
+    drv = {
+      __structuredAttrs = true;
+      nativeBuildInputs = [
+        pkgs.remarshal
+        pkgs.jq
+      ];
+      bookData = lib.pipe config.books [
+        (lib.filterAttrs (n: v: v.enable or false == true))
+        (builtins.mapAttrs (
+          n: v:
+          let
+            src = "${placeholder "out"}/${v.generated-book-subdir}/${
+              lib.removePrefix "/" (lib.removeSuffix "/" (v.book.book.src or "src"))
+            }";
+            pages = renderBook src v.summary n;
+          in
+          {
+            summary = pages.summaryMD;
+            book = builtins.toJSON (
+              lib.filterAttrsRecursive (_: v: !builtins.isFunction v && v != null) v.book
+            );
+            root = "${placeholder "out"}/${v.generated-book-subdir}";
+            inherit src;
+            build = pages.linkCmds;
+          }
+        ))
+      ];
+      buildPhase = # bash
+      ''
+        runHook preBuild
+        for book in $(jq -r '.bookData | keys[]' "$NIX_ATTRS_JSON_FILE"); do
+          book_src="$(jq -r ".bookData[\"$book\"].src" "$NIX_ATTRS_JSON_FILE")"
+          # this is the innermost dir this section handles we dont need more mkdir -p here
+          mkdir -p "$book_src"
+          # generate summary
+          jq -r ".bookData[\"$book\"].summary" "$NIX_ATTRS_JSON_FILE" > "$book_src/SUMMARY.md"
+
+          # generate book.toml
+          book_root="$(jq -r ".bookData[\"$book\"].root" "$NIX_ATTRS_JSON_FILE")"
+          jq -r ".bookData[\"$book\"].book" "$NIX_ATTRS_JSON_FILE" | json2toml > "$book_root/book.toml"
+
+          # generate book contents
+          eval "$(jq -r ".bookData[\"$book\"].build" "$NIX_ATTRS_JSON_FILE")"
+        done
+      ''
+      +
+        lib.optionalString
+          (
+            config.mainBook != null
+            && config.wrapperVariants."${config.mainBook}".enable or false == true
+            && config.books."${config.mainBook}".enable or false == true
           )
-          + "\nrunHook postBuild";
-      };
+          ''
+            rm -f $out/bin/${config.binName}
+            ln -s ${config.mainBook} $out/bin/${config.binName}
+          ''
+      + "\nrunHook postBuild";
+    };
     passthru.book-out-dir = book-out-dir;
     package = lib.mkDefault pkgs.mdbook;
     meta.maintainers = [ wlib.maintainers.birdee ];
@@ -520,7 +473,7 @@ in
       you only have access to the other flags on these items at runtime.
 
       To achieve greater runtime control, run the main executable with one of the generated books within the derivation
-      as input yourself, either at runtime, or within the module via `''${passthru "out"}/''${config.book-out-dir}/''${name}`
+      as input yourself, either at runtime, or within the module via `''${placeholder "out"}/''${config.book-out-dir}/''${name}`
 
       Within the module, there is an option called `mainBook` to REPLACE the main executable with a symlink to the desired book generation script.
 
