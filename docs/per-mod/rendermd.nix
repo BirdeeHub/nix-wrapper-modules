@@ -46,17 +46,15 @@ let
   sanitize =
     v:
     if v ? _type && v ? text then
-      builtins.unsafeDiscardStringContext (
-        if v._type == "literalExpression" then "```nix\n${toString v.text}\n```" else toString v.text
-      )
+      if v._type == "literalExpression" then "```nix\n${toString v.text}\n```" else toString v.text
     else if lib.isStringLike v && !builtins.isString v then
-      builtins.unsafeDiscardStringContext "`<${if v ? name then "derivation ${v.name}" else v}>`"
+      "`<${if v ? name then "derivation ${v.name}" else v}>`"
     else if builtins.isString v then
-      builtins.unsafeDiscardStringContext v
+      v
     else if builtins.isList v then
       map sanitize v
     else if lib.isFunction v then
-      builtins.unsafeDiscardStringContext "`<function with arguments ${
+      "`<function with arguments ${
         lib.pipe v [
           lib.functionArgs
           (lib.mapAttrsToList (n: v: "${n}${lib.optionalString v "?"}"))
