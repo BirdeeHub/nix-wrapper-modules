@@ -432,19 +432,25 @@ in
       buildPhase = # bash
       ''
         runHook preBuild
-        for book in $(jq -r '.bookData | keys[]' "$NIX_ATTRS_JSON_FILE"); do
-          book_src="$(jq -r ".bookData[\"$book\"].src" "$NIX_ATTRS_JSON_FILE")"
-          # this is the innermost dir this section handles we dont need more mkdir -p here
+        jq -r '.bookData | to_entries[] | @base64' "$NIX_ATTRS_JSON_FILE" |
+        while read -r entry; do
+          decoded="$(printf '%s' "$entry" | base64 --decode)"
+          book="$(printf '%s' "$decoded" | jq -r '.key')"
+          value="$(printf '%s' "$decoded" | jq -c '.value')"
+          book_src="$(printf '%s' "$value" | jq -r '.src')"
+          book_root="$(printf '%s' "$value" | jq -r '.root')"
+
+          # this is the innermost dir this section handles
           mkdir -p "$book_src"
+
           # generate summary
-          jq -r ".bookData[\"$book\"].summary" "$NIX_ATTRS_JSON_FILE" > "$book_src/SUMMARY.md"
+          printf '%s' "$value" | jq -r '.summary' > "$book_src/SUMMARY.md"
 
           # generate book.toml
-          book_root="$(jq -r ".bookData[\"$book\"].root" "$NIX_ATTRS_JSON_FILE")"
-          jq -r ".bookData[\"$book\"].book" "$NIX_ATTRS_JSON_FILE" | json2toml > "$book_root/book.toml"
+          printf '%s' "$value" | jq -r '.book' | json2toml > "$book_root/book.toml"
 
           # generate book contents
-          eval "$(jq -r ".bookData[\"$book\"].build" "$NIX_ATTRS_JSON_FILE")"
+          eval "$(printf '%s' "$value" | jq -r '.build')"
         done
       ''
       +
