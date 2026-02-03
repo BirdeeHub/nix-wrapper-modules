@@ -1,8 +1,6 @@
 { lib, wlib }:
 # TODO: Add doc comments for each function (and generate docs from it once it is in wlib.docs)
 rec {
-  collectOptions = import ./collectOptions.nix lib;
-
   # TODO: This might not be robust enough?
   # Maybe check for pairings with all the regular suboptions of _module
   # Also, should it automatically add relatedPackages to some options somehow?
@@ -14,7 +12,6 @@ rec {
     inherit
       wlib
       lib
-      collectOptions
       defaultOptionTransform
       ;
   };
@@ -53,7 +50,6 @@ rec {
   wrapperModuleJSON =
     {
       options,
-      graph,
       transform ? null,
       includeCore ? true,
       ...
@@ -62,7 +58,6 @@ rec {
       {
         inherit
           options
-          graph
           includeCore
           transform
           ;
