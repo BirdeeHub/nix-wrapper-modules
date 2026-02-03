@@ -1,11 +1,14 @@
 {
   lib,
+  wlib,
   collectOptions,
+  defaultOptionTransform,
 }:
 {
   graph,
   options,
-  transform ? x: if builtins.elem "_module" x.loc then [ ] else [ x ],
+  transform ? null,
+  includeCore ? true,
   ...
 }:
 let
@@ -79,7 +82,8 @@ let
   partitioned =
     lib.partition (v: v.internal or false == true || v.visible or true == false)
       (collectOptions {
-        inherit options transform;
+        inherit options;
+        transform = if lib.isFunction transform then transform else defaultOptionTransform;
       });
   invisible = lib.partition (v: v.internal or false == true) partitioned.right;
 
@@ -117,6 +121,13 @@ lib.pipe modules-by-meta [
       }
     )
   ))
+  (
+    normed:
+    if builtins.isBool includeCore && includeCore == true then
+      normed
+    else
+      builtins.filter (v: v.file != wlib.core) normed
+  )
   (
     v:
     lib.reverseList v

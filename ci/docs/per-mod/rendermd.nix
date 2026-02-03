@@ -2,12 +2,15 @@
   wlib,
   lib,
   normWrapperDocs,
+  fixupDocValues,
 }:
+# TODO: figure out how to simplify these options quite a bit.
+# Or maybe just a little bit but then have a helper module which wraps it?
 {
   options,
   graph,
   includeCore ? true,
-  transform ? x: if builtins.elem "_module" x.loc then [ ] else [ x ],
+  transform ? null,
   nameFromModule ?
     { file, ... }:
     lib.removeSuffix "/module.nix" (lib.removePrefix "${wlib.modulesPath}/" (toString file)),
@@ -43,32 +46,14 @@
   ...
 }:
 let
-  sanitize =
-    v:
-    if v ? _type && v ? text then
-      if v._type == "literalExpression" then "```nix\n${toString v.text}\n```" else toString v.text
-    else if lib.isStringLike v && !builtins.isString v then
-      "`<${if v ? name then "derivation ${v.name}" else v}>`"
-    else if builtins.isString v then
-      v
-    else if builtins.isList v then
-      map sanitize v
-    else if lib.isFunction v then
-      "`<function with arguments ${
-        lib.pipe v [
-          lib.functionArgs
-          (lib.mapAttrsToList (n: v: "${n}${lib.optionalString v "?"}"))
-          (builtins.concatStringsSep ", ")
-        ]
-      }>`"
-    else if builtins.isAttrs v then
-      builtins.mapAttrs (n: sanitize) v
-    else
-      v;
-  normed = normWrapperDocs { inherit options graph transform; };
-  cleaned = sanitize (
-    if includeCore == true then normed else builtins.filter (v: v.file != wlib.core) normed
-  );
+  normed = fixupDocValues null (normWrapperDocs {
+    inherit
+      options
+      graph
+      transform
+      includeCore
+      ;
+  });
   mkOptField =
     opt: n: desc:
     lib.optionalString (opt ? "${n}" && lib.isStringLike opt.${n}) (
@@ -128,5 +113,5 @@ let
     '';
 in
 builtins.unsafeDiscardStringContext (
-  builtins.concatStringsSep "\n\n" (lib.imap1 renderModule cleaned)
+  builtins.concatStringsSep "\n\n" (lib.imap1 renderModule normed)
 )
