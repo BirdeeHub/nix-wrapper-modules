@@ -17,8 +17,7 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
       - name: Update Site
         run: |
-          mkdir -p ./_site
-          nix run --show-trace ./docs -- ./_site
+          nix run --show-trace ./ci#docs
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:

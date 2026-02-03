@@ -103,7 +103,7 @@ in
         src = "${placeholder "out"}/wrappers-lib/intro.md";
         build = ''
           mkdir -p $out/wrappers-lib
-          sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' < '${../README.md}' > "$out/wrappers-lib/intro.md"
+          sed 's|# \[nix-wrapper-modules\](https://birdeehub.github.io/nix-wrapper-modules/)|# [nix-wrapper-modules](https://github.com/BirdeeHub/nix-wrapper-modules)|' < '${../../README.md}' > "$out/wrappers-lib/intro.md"
         '';
       }
       {
@@ -124,7 +124,7 @@ in
             path = "lib/wlib.md";
             src = "${placeholder "out"}/wrappers-lib/wlib.md";
             build = ''
-              ${pkgs.nixdoc}/bin/nixdoc --category "" --description '`wlib` main set documentation' --file '${../lib/lib.nix}' --prefix "wlib" >> $out/wrappers-lib/wlib.md
+              ${pkgs.nixdoc}/bin/nixdoc --category "" --description '`wlib` main set documentation' --file '${../../lib/lib.nix}' --prefix "wlib" >> $out/wrappers-lib/wlib.md
             '';
           }
           {
@@ -133,7 +133,7 @@ in
             path = "lib/types.md";
             src = "${placeholder "out"}/wrappers-lib/types.md";
             build = ''
-              ${pkgs.nixdoc}/bin/nixdoc --category "types" --description '`wlib.types` set documentation' --file '${../lib/types.nix}' --prefix "wlib" >> $out/wrappers-lib/types.md
+              ${pkgs.nixdoc}/bin/nixdoc --category "types" --description '`wlib.types` set documentation' --file '${../../lib/types.nix}' --prefix "wlib" >> $out/wrappers-lib/types.md
             '';
           }
           {
@@ -142,7 +142,7 @@ in
             path = "lib/dag.md";
             src = "${placeholder "out"}/wrappers-lib/dag.md";
             build = ''
-              ${pkgs.nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file '${../lib/dag.nix}' --prefix "wlib" >> $out/wrappers-lib/dag.md
+              ${pkgs.nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file '${../../lib/dag.nix}' --prefix "wlib" >> $out/wrappers-lib/dag.md
             '';
           }
         ];

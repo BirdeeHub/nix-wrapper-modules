@@ -109,7 +109,15 @@ So, if this might be important for your program, you can consider providing a di
 
 # Tests
 
-`nix flake check -Lv`
+`nix flake check -Lv ./ci`
+
+# Run Site Generator Locally
+
+`nix run ./ci`
+
+or
+
+`nix run ./ci#docs`
 
 # Writing tests
 

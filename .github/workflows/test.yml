@@ -31,8 +31,13 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
+      # Everything we use is already cached anyway by nixpkgs
+      # Until we actually have that many wrappers, this is not worth it.
+      # Even with only 1 module changed,
+      # uploading the delta afterwards is longer than the checks themselves currently.
+
       # - name: Setup Nix cache
       #   uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Run checks
-        run: nix flake check -Lvv --log-format bar-with-logs
+        run: nix flake check -Lvv --log-format bar-with-logs ./ci

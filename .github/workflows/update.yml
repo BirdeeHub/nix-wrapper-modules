@@ -17,9 +17,9 @@ jobs:
       - name: Update main lockfile
         run: |
           nix flake update
-      - name: Update docs lockfile
+      - name: Update ci lockfile
         run: |
-          nix flake update --flake ./docs
+          nix flake update --flake ./ci
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v8
         with:
