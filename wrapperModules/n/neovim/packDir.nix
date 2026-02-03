@@ -9,27 +9,25 @@ let
   inherit
     (
       let
-        initial = lib.pipe config.hosts [
-          (lib.mapAttrsToList (
-            n: v:
-            if v.nvim-host.enable then
-              {
-                attrname = n;
-                inherit (v.nvim-host) disabled_variable enabled_variable;
-                setvarcmd = "vim.g[ ${builtins.toJSON v.nvim-host.enabled_variable} ] = ${builtins.toJSON v.nvim-host.var_path}";
-                bin_path = config.nvim-host.package;
-              }
-              // lib.optionalAttrs (!v.nvim-host.dontWrap) {
-                config = v.nvim-host;
-              }
-            else
-              {
-                attrname = n;
-                inherit (v.nvim-host) disabled_variable enabled_variable;
-                setvarcmd = "vim.g[ ${builtins.toJSON v.nvim-host.disabled_variable} ] = 0";
-              }
-          ))
-        ];
+        initial = lib.mapAttrsToList (
+          n: v:
+          if v.nvim-host.enable then
+            {
+              attrname = n;
+              inherit (v.nvim-host) disabled_variable enabled_variable;
+              setvarcmd = "vim.g[ ${builtins.toJSON v.nvim-host.enabled_variable} ] = ${builtins.toJSON v.nvim-host.var_path}";
+              bin_path = config.nvim-host.package;
+            }
+            // lib.optionalAttrs (!v.nvim-host.dontWrap) {
+              config = v.nvim-host;
+            }
+          else
+            {
+              attrname = n;
+              inherit (v.nvim-host) disabled_variable enabled_variable;
+              setvarcmd = "vim.g[ ${builtins.toJSON v.nvim-host.disabled_variable} ] = 0";
+            }
+        ) config.hosts;
       in
       {
         hosts = lib.pipe initial [
