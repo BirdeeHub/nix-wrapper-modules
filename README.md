@@ -101,7 +101,7 @@ There are included modules for several programs already, but there are rich and 
 
 If you make one, you are encouraged to submit it here for others to use if you wish!
 
-For more information on how to do this, check out the [getting started](https://birdeehub.github.io/nix-wrapper-modules/getting-started.html) documentation, and the descriptions of the module options you have at your disposal!
+For more information on how to do this, check out the [getting started](https://birdeehub.github.io/nix-wrapper-modules/md/getting-started.html) documentation, and the descriptions of the module options you have at your disposal!
 
 ## Long-term Goals
 
@@ -147,7 +147,7 @@ This allows you to easily modify your module with extra files and scripts or wha
 
 Maybe you want your `tmux` wrapper to also output a launcher script that rejoins a session, or creates one? You can do that using this project with, for example, a `drv.postBuild` hook! Just like in a derivation, and you can even use `"${placeholder "out"}"` in it!
 
-But you can supply it [from within the module system](https://birdeehub.github.io/nix-wrapper-modules/core.html#drv)! You could then define an option to customize its behavior later!
+But you can supply it [from within the module system](https://birdeehub.github.io/nix-wrapper-modules/lib/core.html#drv)! You could then define an option to customize its behavior later!
 
 In addition, the way it is implemented allows for the creation of helper modules that wrap derivations in all sorts of ways, which you could import instead of `wlib.modules.default` if you wanted. We could have similar modules for wrapping projects via bubblewrap or into docker containers with the same ease with which this library orchestrates regular wrapper scripts.
 
