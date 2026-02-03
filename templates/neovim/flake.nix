@@ -27,16 +27,16 @@
     in
     {
       overlays = {
-        default = final: prev: { neovim = wrapper.config.wrap { pkgs = final; }; };
-        neovim = self.overlays.default;
+        neovim = final: prev: { neovim = wrapper.config.wrap { pkgs = final; }; };
+        default = self.overlays.neovim;
       };
       wrapperModules = {
-        default = module;
-        neovim = self.wrapperModules.default;
+        neovim = module;
+        default = self.wrapperModules.neovim;
       };
       wrappers = {
-        default = wrapper.config;
-        neovim = self.wrappers.default;
+        neovim = wrapper.config;
+        default = self.wrappers.neovim;
       };
       packages = forAllSystems (
         system:
@@ -44,9 +44,31 @@
           pkgs = import nixpkgs { inherit system; };
         in
         {
-          default = wrapper.config.wrap { inherit pkgs; };
-          neovim = self.packages.${system}.default;
+          neovim = wrapper.config.wrap { inherit pkgs; };
+          default = self.packages.${system}.neovim;
         }
       );
+      # `wrappers.neovim.enable = true`
+      nixosModules = {
+        default = self.nixosModules.neovim;
+        neovim = wrappers.lib.mkInstallModule {
+          name = "neovim";
+          value = module;
+        };
+      };
+      # `wrappers.neovim.enable = true`
+      # You can set any of the options.
+      # But that is how you enable it.
+      homeModules = {
+        default = self.homeModules.neovim;
+        neovim = wrappers.lib.mkInstallModule {
+          name = "neovim";
+          value = module;
+          loc = [
+            "home"
+            "packages"
+          ];
+        };
+      };
     };
 }
