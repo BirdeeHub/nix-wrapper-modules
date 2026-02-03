@@ -19,6 +19,9 @@ rec {
       ;
   };
 
+  # TODO: Can people even pass in other types through lib.optionAttrSetToDocList?
+  # If not this should take a set with 2 render functions instead of processTypedText,
+  # 1 for literalExpression and 1 for literalMD (and if there are other ones I am forgetting?)
   fixupDocValues =
     processTypedText: v:
     if v ? _type && v ? text then
@@ -71,6 +74,8 @@ rec {
         builtins.unsafeDiscardStringContext
       ];
 
+  # TODO: should have a warning for missing descriptions
+  # and also a warnings as errors setting
   wrapperModuleMD = import ./rendermd.nix {
     inherit
       wlib
