@@ -25,3 +25,11 @@ nix flake init -t github:BirdeeHub/nix-wrapper-modules#neovim
 ```
 
 If you are using `zsh` you may need to escape the `#`
+
+To build it,
+
+```bash
+nix build .
+```
+
+It exports a package! (and other things)
