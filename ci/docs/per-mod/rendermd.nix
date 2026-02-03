@@ -8,7 +8,6 @@
 # Or maybe just a little bit but then have a helper module which wraps it?
 {
   options,
-  graph,
   includeCore ? true,
   transform ? null,
   nameFromModule ?
@@ -49,7 +48,6 @@ let
   normed = fixupDocValues null (normWrapperDocs {
     inherit
       options
-      graph
       transform
       includeCore
       ;
