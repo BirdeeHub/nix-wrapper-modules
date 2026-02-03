@@ -189,7 +189,9 @@ let
       linkCmds = builtins.concatStringsSep "\n" (map mkLink sortedBook);
     };
 
-  tomltype = (pkgs.formats.json { }).type;
+  tomltype = lib.types.json // {
+    description = "nullable TOML value";
+  };
 
   book-out-dir = "${top.config.binName}-book-dir";
 in
