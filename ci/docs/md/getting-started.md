@@ -253,7 +253,7 @@ With a single, simple function, you can use any wrapper module directly as a mod
 }
 ```
 
-See the [`wlib.mkInstallModule`](./wlib.html#function-library-wlib.mkInstallModule) documentation for more info!
+See the [`wlib.mkInstallModule`](../lib/wlib.html#function-library-wlib.mkInstallModule) documentation for more info!
 
 ### `flake-parts`
 

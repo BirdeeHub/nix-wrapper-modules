@@ -85,7 +85,7 @@ inputs.nix-wrapper-modules.wrappers.alacritty.wrap {
 
 The above snippet does everything the prior 2 examples did, and then some!
 
-That's a full module (defined like [this](https://github.com/BirdeeHub/nix-wrapper-modules/blob/main/wrapperModules/a/alacritty/module.nix) and with docs [here](https://birdeehub.github.io/nix-wrapper-modules/alacritty.html)) but just for that package, and the result is a fully portable derivation, just like the wrapper scripts above!
+That's a full module (defined like [this](https://github.com/BirdeeHub/nix-wrapper-modules/blob/main/wrapperModules/a/alacritty/module.nix) and with docs [here](https://birdeehub.github.io/nix-wrapper-modules/wrapperModules/alacritty.html)) but just for that package, and the result is a fully portable derivation, just like the wrapper scripts above!
 
 And you can call `.wrap` on it as many times as you want! You can define your own options
 to easily toggle things for your different use cases and re-export it in a flake and change them on import, etc.
