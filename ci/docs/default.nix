@@ -167,24 +167,28 @@ in
         data = "numbered";
         path = "md/helper-modules.md";
         src = builtins.path { path = ./md/helper-modules.md; };
-        subchapters = lib.mapAttrsToList (n: _: {
-          name = n;
-          data = "numbered";
-          path = "modules/${n}.md";
-          src = "${placeholder "generated"}/module_docs/${n}.md";
-        }) (removeAttrs config.drv.module_docs [ "default" ]);
+        subchapters = lib.pipe config.drv.module_docs [
+          (v: removeAttrs v [ "default" ])
+          builtins.attrNames
+          (map (n: {
+            name = n;
+            data = "numbered";
+            path = "modules/${n}.md";
+            src = "${placeholder "generated"}/module_docs/${n}.md";
+          }))
+        ];
       }
       {
         name = "Wrapper Modules";
         data = "numbered";
         path = "md/wrapper-modules.md";
         src = builtins.path { path = ./md/wrapper-modules.md; };
-        subchapters = lib.mapAttrsToList (n: _: {
+        subchapters = map (n: {
           name = n;
           data = "numbered";
           path = "wrapperModules/${n}.md";
           src = "${placeholder "generated"}/wrapper_docs/${n}.md";
-        }) config.drv.wrapper_docs;
+        }) (builtins.attrNames config.drv.wrapper_docs);
       }
     ];
   };
