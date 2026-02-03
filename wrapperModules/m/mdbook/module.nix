@@ -432,11 +432,9 @@ in
       buildPhase = # bash
       ''
         runHook preBuild
-        jq -r '.bookData | to_entries[] | @base64' "$NIX_ATTRS_JSON_FILE" |
+        jq -r '.bookData | values[] | @base64' "$NIX_ATTRS_JSON_FILE" |
         while read -r entry; do
-          decoded="$(printf '%s' "$entry" | base64 --decode)"
-          book="$(printf '%s' "$decoded" | jq -r '.key')"
-          value="$(printf '%s' "$decoded" | jq -c '.value')"
+          value="$(printf '%s' "$entry" | base64 --decode)"
           book_src="$(printf '%s' "$value" | jq -r '.src')"
           book_root="$(printf '%s' "$value" | jq -r '.root')"
 
