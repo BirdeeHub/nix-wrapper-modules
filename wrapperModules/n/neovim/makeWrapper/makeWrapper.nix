@@ -192,8 +192,10 @@ if config.binName == "" then
 else
   /* bash */ ''
     (
+      OLD_OPTS="$(set +o)"
       ${srcsetup dieHook}
       ${srcsetup (if config.wrapperImplementation == "binary" then makeBinaryWrapper else makeWrapper)}
+      eval "$OLD_OPTS"
       mkdir -p $out/bin
       { [ -e "$manifestLuaPath" ] && cat "$manifestLuaPath" || echo "$manifestLua"; } > ${lib.escapeShellArg luarc-path}
       export NVIM_RPLUGIN_MANIFEST=${manifest-path}
