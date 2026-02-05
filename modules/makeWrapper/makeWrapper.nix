@@ -138,10 +138,12 @@ then
 else
   ''
     (
+      OLD_OPTS="$(set +o)"
       ${srcsetup dieHook}
       ${srcsetup (
         if config.wrapperImplementation or null == "shell" then makeWrapper else makeBinaryWrapper
       )}
+      eval "$OLD_OPTS"
       makeWrapper ${baseArgs} ${builtins.concatStringsSep " " resArgs}
     )
   ''
