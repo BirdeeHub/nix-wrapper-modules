@@ -305,7 +305,12 @@
     descriptionClass = "noun";
     description = "str|path|drv";
     check = lib.isStringLike;
-    merge = lib.mergeEqualOption;
+    merge =
+      loc: defs:
+      let
+        res = lib.mergeEqualOption loc defs;
+      in
+      if builtins.isPath res then builtins.path { path = res; } else res;
   };
 
   /**
