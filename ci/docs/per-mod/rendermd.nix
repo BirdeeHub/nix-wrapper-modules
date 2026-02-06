@@ -11,6 +11,7 @@
   includeCore ? true,
   transform ? null,
   prefix ? false,
+  warningsAreErrors ? true,
   nameFromModule ?
     { file, ... }:
     lib.removeSuffix "/module.nix" (lib.removePrefix "${wlib.modulesPath}/" (toString file)),
@@ -65,20 +66,33 @@ let
     lib.optionalString (opt ? "${n}" && lib.isStringLike opt.${n}) (
       lib.optionalString (desc != "") "${desc}\n" + "${opt.${n}}\n\n"
     );
-  renderOption = opt: ''
-    ## `${lib.options.showOption (opt.loc or [ ])}`
-
-    ${mkOptField opt "description" ""}${mkOptField opt "relatedPackages" "Related packages:\n"}${
-      mkOptField opt "type" "Type:${lib.optionalString (opt.readOnly or false == true) " (read-only)"}"
-    }${mkOptField opt "default" "Default:"}${mkOptField opt "example" "Example:"}${
-      lib.optionalString (opt.declarations or [ ] != [ ]) ''
-        Declared by:
-
-        ${declaredBy opt}
-
+  mkWarn = opt: "nix-wrapper-modules docgen warning: Option ${opt.name} has no description";
+  renderOption =
+    opt:
+    # TODO: This should probably collect all the warnings until the end
+    # so it says everything which is missing a description
+    # rather than just the first one even if warningsAreErrors is true.
+    # For now, one can run it with warningsAreErrors = false to see them all.
+    (
+      if opt.description or "" == "" || opt.description or null == null then
+        if warningsAreErrors == true then throw (mkWarn opt) else lib.warn (mkWarn opt)
+      else
+        (v: v)
+    )
       ''
-    }
-  '';
+        ## `${lib.options.showOption (opt.loc or [ ])}`
+
+        ${mkOptField opt "description" ""}${mkOptField opt "relatedPackages" "Related packages:\n"}${
+          mkOptField opt "type" "Type:${lib.optionalString (opt.readOnly or false == true) " (read-only)"}"
+        }${mkOptField opt "default" "Default:"}${mkOptField opt "example" "Example:"}${
+          lib.optionalString (opt.declarations or [ ] != [ ]) ''
+            Declared by:
+
+            ${declaredBy opt}
+
+          ''
+        }
+      '';
   renderModule =
     i: mod:
     let

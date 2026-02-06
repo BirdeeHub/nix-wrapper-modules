@@ -58,10 +58,11 @@
         system: (wlib-flake (import nixpkgs { inherit system; })).formatter.${system}
       );
       packages = forAllSystems (system: {
-        default = self.packages.${system}.docs;
+        default = self.packages.${system}.docs.wrap { warningsAreErrors = true; };
         docs = wlib.evalPackage [
           ./docs
           {
+            warningsAreErrors = false;
             pkgs = import nixpkgs {
               inherit system;
               config = {

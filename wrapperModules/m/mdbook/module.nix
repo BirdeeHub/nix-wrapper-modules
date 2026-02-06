@@ -209,6 +209,22 @@ in
       '';
     };
     books = lib.mkOption {
+      description = ''
+        A set of books to generate along with the mdbook derivation.
+
+        It will also create a build script for each one.
+
+        That build script will be a wrapped mdbook executable.
+
+        It will run something like the following:
+
+        `mdbook build -d $firstArg "''${otherArgs[@]}" <generated-book-subdir>`
+
+        You could modify it further with the `wrapperVariants` attribute of the same name,
+        for example to add a `-o` flag.
+
+        Or use it as the main command for running via `nix run` in a build pipeline using `mainBook = "this_book";`
+      '';
       default = { };
       type = lib.types.attrsOf (
         lib.types.submodule (

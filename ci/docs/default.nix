@@ -16,6 +16,7 @@ let
       descriptionStartsOpen ? null,
       descriptionIncluded ? null,
       moduleStartsOpen ? null,
+      warningsAreErrors ? true,
     }:
     name: module:
     (if title != null then "# ${title}\n\n" else "# `${prefix}${name}`\n\n")
@@ -29,7 +30,7 @@ let
         }
       ]
       // {
-        inherit includeCore;
+        inherit includeCore warningsAreErrors;
         ${if descriptionStartsOpen != null then "descriptionStartsOpen" else null} = descriptionStartsOpen;
         ${if descriptionIncluded != null then "descriptionIncluded" else null} = descriptionIncluded;
         ${if moduleStartsOpen != null then "moduleStartsOpen" else null} = moduleStartsOpen;
@@ -42,13 +43,18 @@ in
     wlib.wrapperModules.mdbook
     ./redirects.nix
   ];
-  mainBook = "nix-wrapper-modules";
-  outputs = [
+  config.mainBook = "nix-wrapper-modules";
+  config.outputs = [
     "out"
     "generated"
   ];
-  drv.unsafeDiscardReferences.generated = true;
-  drv.preBuild = ''
+  options.warningsAreErrors = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = "Whether warnings in the docgen should be treated as errors (i.e. missing descriptions)";
+  };
+  config.drv.unsafeDiscardReferences.generated = true;
+  config.drv.preBuild = ''
     mkdir -p "$generated/wrapper_docs"
     jq -r '.wrapper_docs | to_entries[] | @base64' "$NIX_ATTRS_JSON_FILE" | while read -r entry; do
       # decode base64 to get JSON safely
@@ -61,10 +67,11 @@ in
       echo "$(echo "$decoded" | jq -r '.value')" > "$generated/module_docs/$(echo "$decoded" | jq -r '.key').md"
     done
   '';
-  drv.module_docs = builtins.mapAttrs (buildModuleDocs {
+  config.drv.module_docs = builtins.mapAttrs (buildModuleDocs {
     prefix = "wlib.modules.";
     package = pkgs.hello;
     includeCore = false;
+    inherit (config) warningsAreErrors;
     moduleStartsOpen = _: _: true;
     descriptionStartsOpen =
       _: _: _:
@@ -73,14 +80,16 @@ in
       _: _: _:
       true;
   }) wlib.modules;
-  drv.wrapper_docs = builtins.mapAttrs (buildModuleDocs {
+  config.drv.wrapper_docs = builtins.mapAttrs (buildModuleDocs {
     prefix = "wlib.wrapperModules.";
+    inherit (config) warningsAreErrors;
   }) wlib.wrapperModules;
-  drv.core_docs = buildModuleDocs {
+  config.drv.core_docs = buildModuleDocs {
     package = pkgs.hello;
+    inherit (config) warningsAreErrors;
     title = "Core (builtin) Options set";
   } "core" { };
-  books.nix-wrapper-modules = {
+  config.books.nix-wrapper-modules = {
     book = {
       book = {
         src = "src";

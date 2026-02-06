@@ -69,8 +69,6 @@ rec {
         builtins.unsafeDiscardStringContext
       ];
 
-  # TODO: should have a warning for missing descriptions
-  # and also a warnings as errors setting
   wrapperModuleMD = import ./rendermd.nix {
     inherit
       wlib
