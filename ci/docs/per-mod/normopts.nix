@@ -5,7 +5,7 @@
 }:
 {
   options,
-  prefix ? null,
+  prefix ? false,
   transform ? null,
   includeCore ? true,
   ...
@@ -15,7 +15,7 @@ let
     options.extendModules.value or (
       _: throw "nix-wrapper-modules docgen error: the options set passed was not from a wrapper module!"
     )
-    { ${if prefix != null then "prefix" else null} = prefix; };
+    { ${if prefix == null || builtins.isList prefix then "prefix" else null} = prefix; };
 in
 let
   inherit (evaluated) options graph;

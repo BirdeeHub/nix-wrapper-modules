@@ -10,6 +10,7 @@
   options,
   includeCore ? true,
   transform ? null,
+  prefix ? false,
   nameFromModule ?
     { file, ... }:
     lib.removeSuffix "/module.nix" (lib.removePrefix "${wlib.modulesPath}/" (toString file)),
@@ -49,6 +50,7 @@ let
     inherit
       options
       transform
+      prefix
       includeCore
       ;
   });

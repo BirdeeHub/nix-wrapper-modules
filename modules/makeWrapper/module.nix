@@ -1,6 +1,6 @@
 let
   options_module =
-    excluded: is_top:
+    _file: excluded: is_top:
     {
       config,
       options,
@@ -11,7 +11,7 @@ let
       ...
     }:
     {
-      _file = ./module.nix;
+      inherit _file;
       options.${if !(excluded.argv0type or false) then "argv0type" else null} = lib.mkOption {
         type =
           with lib.types;
@@ -470,10 +470,11 @@ let
                   inherit wlib;
                 };
                 modules = [
-                  (options_module excluded false)
+                  (options_module _file excluded false)
                   (
                     { name, ... }:
                     {
+                      inherit _file;
                       options.enable = lib.mkOption {
                         type = lib.types.bool;
                         default = true;
@@ -573,6 +574,8 @@ in
   excluded_options = { };
   exclude_wrapper = false;
   exclude_meta = false;
+  _file = ./module.nix;
+  key = ./module.nix;
   __functor =
     self:
     {
@@ -581,9 +584,9 @@ in
       ...
     }:
     {
-      _file = ./module.nix;
-      key = ./module.nix;
-      imports = [ (options_module (self.excluded_options or { }) true) ];
+      _file = self._file or ./module.nix;
+      ${if (self.key or ./module.nix) != null then "key" else null} = self.key or ./module.nix;
+      imports = [ (options_module (self._file or ./module.nix) (self.excluded_options or { }) true) ];
       config.${if self.exclude_wrapper or false then null else "wrapperFunction"} = lib.mkDefault (
         self.wrapperFunction or (import ./. null)
       );
@@ -647,6 +650,8 @@ in
 
             `excluded_options = { ... };` where you may include `optionname = true`
             in order to not define that option.
+
+            `_file` and `key`: `_file` changes the value set for the modules imported when you import this module. `key` is set on the main one if not `null`.
 
             In order to change these values, you change them in the set before importing the module like so:
 
