@@ -119,13 +119,13 @@ in
         name = "Getting Started";
         data = "numbered";
         path = "md/getting-started.md";
-        src = builtins.path { path = ./md/getting-started.md; };
+        src = ./md/getting-started.md;
       }
       {
         name = "Lib Functions";
         data = "numbered";
         path = "md/lib-intro.md";
-        src = builtins.path { path = ./md/lib-intro.md; };
+        src = ./md/lib-intro.md;
         subchapters = [
           {
             name = "wlib";
@@ -175,7 +175,7 @@ in
         name = "Helper Modules";
         data = "numbered";
         path = "md/helper-modules.md";
-        src = builtins.path { path = ./md/helper-modules.md; };
+        src = ./md/helper-modules.md;
         subchapters = lib.pipe config.drv.module_docs [
           (v: removeAttrs v [ "default" ])
           builtins.attrNames
@@ -191,7 +191,7 @@ in
         name = "Wrapper Modules";
         data = "numbered";
         path = "md/wrapper-modules.md";
-        src = builtins.path { path = ./md/wrapper-modules.md; };
+        src = ./md/wrapper-modules.md;
         subchapters = map (n: {
           name = n;
           data = "numbered";
