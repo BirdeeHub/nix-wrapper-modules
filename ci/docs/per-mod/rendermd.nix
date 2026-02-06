@@ -46,14 +46,20 @@
   ...
 }:
 let
-  normed = fixupDocValues null (normWrapperDocs {
-    inherit
-      options
-      transform
-      prefix
-      includeCore
-      ;
-  });
+  normed =
+    fixupDocValues
+      {
+        processTypedText =
+          v: if v._type == "literalExpression" then "```nix\n${toString v.text}\n```" else toString v.text;
+      }
+      (normWrapperDocs {
+        inherit
+          options
+          transform
+          prefix
+          includeCore
+          ;
+      });
   mkOptField =
     opt: n: desc:
     lib.optionalString (opt ? "${n}" && lib.isStringLike opt.${n}) (

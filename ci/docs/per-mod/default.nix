@@ -16,24 +16,22 @@ rec {
       ;
   };
 
-  # TODO: Can people even pass in other types through lib.optionAttrSetToDocList?
-  # If not this should take a set with 2 render functions instead of processTypedText,
-  # 1 for literalExpression and 1 for literalMD (and if there are other ones I am forgetting?)
   fixupDocValues =
-    processTypedText: v:
+    {
+      processTypedText ? v: v,
+    }@opts:
+    v:
     if v ? _type && v ? text then
       if lib.isFunction processTypedText then
         processTypedText v
-      else if v._type == "literalExpression" then
-        "```nix\n${toString v.text}\n```"
       else
-        toString v.text
+        throw "wlib.docs.fixupDocValues: processTypedText passed to first argument must be a function"
     else if lib.isStringLike v && !builtins.isString v then
       "`<${if v ? name then "derivation ${v.name}" else v}>`"
     else if builtins.isString v then
       v
     else if builtins.isList v then
-      map (fixupDocValues processTypedText) v
+      map (fixupDocValues opts) v
     else if lib.isFunction v then
       "`<function with arguments ${
         lib.pipe v [
@@ -43,7 +41,7 @@ rec {
         ]
       }>`"
     else if builtins.isAttrs v then
-      builtins.mapAttrs (n: fixupDocValues processTypedText) v
+      builtins.mapAttrs (_: fixupDocValues opts) v
     else
       v;
 
@@ -66,7 +64,7 @@ rec {
       }
       [
         normWrapperDocs
-        (fixupDocValues null)
+        (fixupDocValues { })
         builtins.toJSON
         builtins.unsafeDiscardStringContext
       ];
