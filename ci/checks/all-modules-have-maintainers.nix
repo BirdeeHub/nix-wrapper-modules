@@ -10,7 +10,7 @@ let
       name:
       let
         module = module_set.${name};
-        list = (self.lib.evalModule module).config.meta.maintainers;
+        list = (self.lib.evalModule module).options.meta.maintainers.definitionsWithLocations;
         check = modpath: pkgs.lib.findFirst (v: toString v.file == toString modpath) null list == null;
       in
       if !pkgs.lib.isStringLike module then false else check module

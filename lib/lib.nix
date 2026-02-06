@@ -197,6 +197,9 @@ in
       options = lib.setAttrByPath (optloc ++ [ name ]) (
         lib.mkOption {
           default = { };
+          description = ''
+            wrapper module for `${name}` as a submodule option
+          '';
           type = wlib.types.subWrapperModule (
             (lib.toList value)
             ++ [

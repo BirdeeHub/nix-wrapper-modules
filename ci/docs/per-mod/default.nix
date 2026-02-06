@@ -52,6 +52,7 @@ rec {
       options,
       transform ? null,
       includeCore ? true,
+      prefix ? false,
       ...
     }:
     lib.pipe
@@ -60,6 +61,7 @@ rec {
           options
           includeCore
           transform
+          prefix
           ;
       }
       [
