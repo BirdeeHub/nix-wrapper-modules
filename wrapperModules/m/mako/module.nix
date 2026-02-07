@@ -44,9 +44,7 @@ in
   };
 
   config.flagSeparator = "=";
-  config.flags = {
-    "--config" = config."--config".path;
-  };
+  config.flags."--config" = config."--config".path;
 
   config.filesToPatch = [
     "share/dbus-1/services/*.service"
