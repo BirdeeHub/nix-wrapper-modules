@@ -20,9 +20,7 @@ in
       '';
     };
   };
-  config.flags = {
-    "--config-file" = tomlFmt.generate "alacritty.toml" config.settings;
-  };
+  config.flags."--config-file" = tomlFmt.generate "alacritty.toml" config.settings;
   config.package = lib.mkDefault pkgs.alacritty;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
 }

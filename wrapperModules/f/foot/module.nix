@@ -20,9 +20,8 @@ in
       '';
     };
   };
-  config.flags = {
-    "--config" = iniFmt.generate "foot.ini" config.settings;
-  };
+  config.flags."--config" = iniFmt.generate "foot.ini" config.settings;
+  config.filesToPatch = [ "share/systemd/user/*.service" ];
   config.package = lib.mkDefault pkgs.foot;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
   config.meta.platforms = lib.platforms.linux;
