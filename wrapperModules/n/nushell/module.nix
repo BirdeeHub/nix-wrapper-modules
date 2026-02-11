@@ -38,6 +38,8 @@
     "--env-config" = config."env.nu".path;
   };
 
+  config.wrapperImplementation = "binary";
+
   config.package = lib.mkDefault pkgs.nushell;
 
   config.meta.maintainers = [ wlib.maintainers.birdee ];
