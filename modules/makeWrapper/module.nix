@@ -542,6 +542,7 @@ in
       wlib,
       callPackage ? pkgs.callPackage or (usage_err "wrapAll"),
       config,
+      ...
     }:
     callPackage (import ./. null) { inherit config wlib; };
   wrapMain =
@@ -550,6 +551,7 @@ in
       wlib,
       callPackage ? pkgs.callPackage or (usage_err "wrapMain"),
       config,
+      ...
     }:
     callPackage (import ./. false) { inherit config wlib; };
   wrapVariants =
@@ -558,6 +560,7 @@ in
       wlib,
       callPackage ? pkgs.callPackage or (usage_err "wrapVariants"),
       config,
+      ...
     }:
     callPackage (import ./. true) { inherit config wlib; };
   wrapVariant =
