@@ -12,7 +12,6 @@ let
     oneOf [
       bool
       int
-      str
       wlib.types.stringable
     ];
 
