@@ -29,4 +29,10 @@
     email = "github.drapery867@simplelogin.com";
     githubId = 31852070;
   };
+  rachitvrma = {
+    name = "Rachit Kumar Verma";
+    github = "rachitvrma";
+    githubId = 155641117;
+    email = "rachitve6h2g@users.noreply.github.com";
+  };
 }
