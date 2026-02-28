@@ -37,7 +37,7 @@ let
       (lib.mapAttrsToList (
         name: value:
         if lib.isList value then
-          lib.concatStringsSep "\n" (map (renderSingleOption name) value)
+          (map (renderSingleOption name) value)
         else
           [ (renderSingleOption name value) ]
       ))
