@@ -49,8 +49,7 @@ let
             if v ? config then
               acc
               ++ [
-                ((import wlib.modules.makeWrapper).wrapMain {
-                  inherit wlib;
+                (wlib.makeWrapper.wrapMain {
                   inherit (v) config;
                   inherit (pkgs) callPackage;
                 })

@@ -46,6 +46,7 @@ let
     mkDagEntry
     dagNameModule
     unwrapSort
+    pushDownDagNames
     ;
   mkDagEntryModule =
     settings: elemType:
@@ -334,28 +335,31 @@ in
   /**
     converts a DAG to a DAL
 
-    Accepts the same types as `wlib.dag.topoSort`.
+    Accepts almost the same types as `wlib.dag.topoSort`.
+
+    Except it requires the DAG form.
 
     It is the normalization function used by `topoSort`
     when the argument is not a list prior to sorting the list.
   */
-  dagToDal =
-    dag:
-    attrValues (
-      mapAttrs (
-        n: v:
-        v
-        // {
-          name =
-            if isString (v.name or null) then
-              v.name
-            else if isString n then
-              n
-            else
-              null;
-        }
-      ) dag
-    );
+  dagToDal = dag: attrValues (pushDownDagNames dag);
+
+  /**
+    Takes a DAG (set of sets) and adds the name field to the internal set if not already present and a string
+  */
+  pushDownDagNames = builtins.mapAttrs (
+    n: v:
+    v
+    // {
+      name =
+        if isString (v.name or null) then
+          v.name
+        else if isString n then
+          n
+        else
+          null;
+    }
+  );
 
   /**
     Determines whether a value is a valid DAG entry (allows extra values)
