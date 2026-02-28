@@ -27,6 +27,6 @@ in
       "-p" = configFile;
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
-    meta.platforms = [ "x86_64-linux" ];
+    meta.platforms = lib.platforms.linux;
   };
 }
