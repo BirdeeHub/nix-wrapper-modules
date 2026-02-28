@@ -13,6 +13,7 @@ let
       bool
       int
       str
+      wlib.types.stringable
     ];
 
   renderSingleOption =
