@@ -17,18 +17,34 @@ let
 
   renderSingleOption =
     name: value:
+    let
+      isShort = builtins.stringLength name == 1;
+      prefix = if isShort then "-" else "--";
+    in
     if lib.isBool value then
-      if value then "--${name}" else "--no-${name}"
+      if value then
+        "${prefix}${name}"
+      else if isShort then
+        ""
+      else
+        "--no-${name}"
     else
-      "--${name} ${toString value}";
+      "${prefix}${name} ${toString value}";
 
-  renderSettings = lib.mapAttrsToList (
-    name: value:
-    if lib.isList value then
-      lib.concatStringsSep "\n" (map (renderSingleOption name) value)
-    else
-      renderSingleOption name value
-  );
+  renderSettings =
+    settings:
+    lib.pipe settings [
+      (lib.mapAttrsToList (
+        name: value:
+        if lib.isList value then
+          lib.concatStringsSep "\n" (map (renderSingleOption name) value)
+        else
+          [ (renderSingleOption name value) ]
+      ))
+      builtins.concatLists
+      (lib.remove "")
+      (lib.concatStringsSep "\n")
+    ];
 in
 {
   imports = [ wlib.modules.default ];
@@ -46,7 +62,7 @@ in
       "--config-location" = "${placeholder "out"}/${config.binName}-settings.conf";
     };
     drv = {
-      renderedSettings = lib.concatStringsSep "\n" (lib.remove "" (renderSettings config.settings));
+      renderedSettings = renderSettings config.settings;
       passAsFile = [ "renderedSettings" ];
       buildPhase = ''
         runHook preBuild
