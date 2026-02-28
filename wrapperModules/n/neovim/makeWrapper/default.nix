@@ -19,6 +19,4 @@ let
       (import ./makeWrapper.nix maybe_compile)
   ) args;
 in
-wrapNvim
-+ "\n"
-+ (import wlib.modules.makeWrapper).wrapVariants { inherit config wlib callPackage; }
+wrapNvim + "\n" + wlib.makeWrapper.wrapVariants { inherit config callPackage; }

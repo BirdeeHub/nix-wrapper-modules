@@ -128,7 +128,7 @@ in
         src = ./md/lib-intro.md;
         subchapters = [
           {
-            name = "wlib";
+            name = "`wlib`";
             data = "numbered";
             path = "lib/wlib.md";
             src = "${placeholder "out"}/wrappers-lib/wlib.md";
@@ -137,7 +137,7 @@ in
             '';
           }
           {
-            name = "types";
+            name = "`wlib.types`";
             data = "numbered";
             path = "lib/types.md";
             src = "${placeholder "out"}/wrappers-lib/types.md";
@@ -146,12 +146,21 @@ in
             '';
           }
           {
-            name = "dag";
+            name = "`wlib.dag`";
             data = "numbered";
             path = "lib/dag.md";
             src = "${placeholder "out"}/wrappers-lib/dag.md";
             build = ''
               ${pkgs.nixdoc}/bin/nixdoc --category "dag" --description '`wlib.dag` set documentation' --file '${../../lib/dag.nix}' --prefix "wlib" >> $out/wrappers-lib/dag.md
+            '';
+          }
+          {
+            name = "`wlib.makeWrapper`";
+            data = "numbered";
+            path = "lib/makeWrapper.md";
+            src = "${placeholder "out"}/wrappers-lib/makeWrapper.md";
+            build = ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "makeWrapper" --description '`wlib.makeWrapper` set documentation' --file '${../../lib/makeWrapper/default.nix}' --prefix "wlib" >> $out/wrappers-lib/makeWrapper.md
             '';
           }
         ];

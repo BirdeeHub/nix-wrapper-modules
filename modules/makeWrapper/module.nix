@@ -67,6 +67,13 @@ let
           overrides the setting from `argv0type` if set.
         '';
       };
+      options.${if !(excluded.binDir or false) then "binDir" else null} = lib.mkOption {
+        type = wlib.types.nonEmptyLine;
+        default = if mainConfig != null then mainConfig.binDir else "bin";
+        description = ''
+          Wrapped binary will be output to `"''${placeholder "out"}/<THIS_VALUE>/''${binName}"`
+        '';
+      };
       options.${if !(excluded.unsetVar or false) then "unsetVar" else null} = lib.mkOption {
         type = wlib.types.dalWithEsc lib.types.str;
         default = if mainConfig != null && config.mirror or false then mainConfig.unsetVar else [ ];
@@ -270,7 +277,54 @@ let
         '';
       };
       options.${if !(excluded.flags or false) then "flags" else null} = lib.mkOption {
-        type = (import ./genArgsFromFlags.nix { inherit lib wlib; }).flagDag;
+        type =
+          with lib.types;
+          (
+            wlib.types.dagOf
+            // {
+              modules = wlib.types.dagWithEsc.modules ++ [
+                {
+                  options.sep = lib.mkOption {
+                    type = nullOr str;
+                    default = null;
+                    description = ''
+                      A per-item override of the default separator used for flags and their values
+                    '';
+                  };
+                  options.ifs = lib.mkOption {
+                    type = nullOr str;
+                    default = null;
+                    description = ''
+                      If `null`, and a list is provided, the key-value pairs will be repeated.
+
+                      If a string is provided, it will instead be the key, followed by the main separator,
+                      followed by the list joined with this value as the separator.
+
+
+                      `flags."--myflag" = { ifs = null; sep = "="; data = [ "a" "b" "c" ]; }`
+
+                      will result in
+
+                      `--myflag=a --myflag=b --myflag=c`
+
+                      `flags."--myflag" = { ifs = ","; sep = "="; data = [ "a" "b" "c" ]; }`
+
+                      will result in
+
+                      `--myflag=a,b,c`
+                    '';
+                  };
+                }
+              ];
+            }
+          )
+            (
+              nullOr (oneOf [
+                bool
+                wlib.types.stringable
+                (listOf wlib.types.stringable)
+              ])
+            );
         default = if mainConfig != null && config.mirror or false then mainConfig.flags else { };
         example = lib.literalMD ''
           ```nix
@@ -288,20 +342,34 @@ let
 
           This option takes a set.
 
-          Any entry can instead be of type `{ data, before ? [], after ? [], esc-fn ? null, sep ? null }`
+          Any entry can instead be of type `{ data, before ? [], after ? [], esc-fn ? null, sep ? null, ifs ? null }`
 
           The `sep` field may be used to override the value of `config.flagSeparator`
 
-          This will cause it to be added to the DAG,
-          which will cause the resulting wrapper argument to be sorted accordingly
+          The `ifs` field is relevant when your value is a list.
+
+          `flags."--myflag" = { ifs = null; sep = "="; data = [ "a" "b" "c" ]; }`
+
+          will result in
+
+          `--myflag=a --myflag=b --myflag=c`
+
+          `flags."--myflag" = { ifs = ","; sep = "="; data = [ "a" "b" "c" ]; }`
+
+          will result in
+
+          `--myflag=a,b,c`
         '';
       };
       options.${if !(excluded.flagSeparator or false) then "flagSeparator" else null} = lib.mkOption {
-        type = lib.types.str;
-        default = if mainConfig != null && config.mirror or false then mainConfig.flagSeparator else " ";
+        type = lib.types.nullOr lib.types.str;
+        default = if mainConfig != null && config.mirror or false then mainConfig.flagSeparator else null;
         description = ''
           Separator between flag names and values when generating args from flags.
           `" "` for `--flag value` or `"="` for `--flag=value`
+
+          If null (the default), they will always be separate, sequential arguments,
+          even if not interpolated by a shell (such as with the `"binary"` implementation)
         '';
       };
       options.${if !(excluded.extraPackages or false) then "extraPackages" else null} = lib.mkOption {
@@ -517,63 +585,58 @@ let
             );
           };
     };
-  usage_err = name: ''
-    ERROR: usage of ${name} is as follows:
+  deprecationMessage =
+    name:
+    (builtins.warn or builtins.trace) ''
+      WARNING: `(import wlib.modules.makeWrapper).${name}` is deprecated
 
-    (import wlib.modules.makeWrapper).${name} {
-      inherit config wlib;
-      inherit (pkgs) callPackage; # or `inherit pkgs`;${
-        if name != "wrapVariant" then "" else "\n  name = \"attribute\";\n"
-      }
-    };${
-      if name != "wrapVariant" then
-        ""
-      else
-        "\n\nWhere `attribute` is a valid attribute of the `config.wrapperVariants` set"
-    }
-  '';
+      It has been moved to `wlib.makeWrapper.${name}`
+    '';
+  error_message = "this function has been moved to `wlib.makeWrapper` and also requires `pkgs` or `callPackage` to be provided to it";
 in
 {
-  wrapperFunction = import ./. null;
-
   wrapAll =
     {
-      pkgs ? null,
       wlib,
-      callPackage ? pkgs.callPackage or (usage_err "wrapAll"),
       config,
+      pkgs ? null,
+      callPackage ? pkgs.callPackage or (throw error_message),
       ...
-    }:
-    callPackage (import ./. null) { inherit config wlib; };
+    }@args:
+    (deprecationMessage "wrapAll") wlib.makeWrapper.wrapAll (args // { inherit config callPackage; });
   wrapMain =
     {
-      pkgs ? null,
       wlib,
-      callPackage ? pkgs.callPackage or (usage_err "wrapMain"),
       config,
+      pkgs ? null,
+      callPackage ? pkgs.callPackage or (throw error_message),
       ...
-    }:
-    callPackage (import ./. false) { inherit config wlib; };
+    }@args:
+    (deprecationMessage "wrapMain") wlib.makeWrapper.wrapMain (args // { inherit config callPackage; });
   wrapVariants =
     {
-      pkgs ? null,
       wlib,
-      callPackage ? pkgs.callPackage or (usage_err "wrapVariants"),
       config,
+      pkgs ? null,
+      callPackage ? pkgs.callPackage or (throw error_message),
       ...
-    }:
-    callPackage (import ./. true) { inherit config wlib; };
+    }@args:
+    (deprecationMessage "wrapperVariants") wlib.makeWrapper.wrapVariants (
+      args // { inherit config callPackage; }
+    );
   wrapVariant =
     {
-      pkgs ? null,
       wlib,
-      callPackage ? pkgs.callPackage or (usage_err "wrapVariant"),
       config,
-      name,
-    }:
-    assert builtins.isString name || usage_err "wrapVariant";
-    callPackage (import ./. name) { inherit config wlib; };
+      pkgs ? null,
+      callPackage ? pkgs.callPackage or (throw error_message),
+      ...
+    }@args:
+    (deprecationMessage "wrapVariant") wlib.makeWrapper.wrapVariant (
+      args // { inherit config callPackage; }
+    );
 
+  wrapperFunction = null;
   excluded_options = { };
   exclude_wrapper = false;
   exclude_meta = false;
@@ -591,7 +654,10 @@ in
       ${if (self.key or ./module.nix) != null then "key" else null} = self.key or ./module.nix;
       imports = [ (options_module (self._file or ./module.nix) (self.excluded_options or { }) true) ];
       config.${if self.exclude_wrapper or false then null else "wrapperFunction"} = lib.mkDefault (
-        self.wrapperFunction or (import ./. null)
+        if self.wrapperFunction or null != null then
+          self.wrapperFunction or wlib.makeWrapper.wrapAll
+        else
+          wlib.makeWrapper.wrapAll
       );
       config.${if self.exclude_meta or false then null else "meta"} = {
         maintainers = [ wlib.maintainers.birdee ];
@@ -632,18 +698,15 @@ in
           post = ''
             ---
 
-            ## The `makeWrapper` library:
+            ## Modify this module before import
 
-            Should you ever need to redefine `config.wrapperFunction`, or use these options somewhere else,
-            this module doubles as a library for doing so!
+            Should you ever need to redefine `config.wrapperFunction`, you might have slightly different options!
 
             `makeWrapper = import wlib.modules.makeWrapper;`
 
-            If you import it like shown, you gain access to some values.
+            If you import it like shown, you gain the ability to modify it.
 
-            First, you may modify the module itself.
-
-            For this it offers:
+            You may `//` (update) the following values into the set you gain from importing the file:
 
             `exclude_wrapper = true;` to stop it from setting `config.wrapperFunction`
 
@@ -661,44 +724,6 @@ in
             ```nix
               imports = [ (import wlib.modules.makeWrapper // { excluded_options.wrapperVariants = true; }) ];
             ```
-
-            It also offers 4 functions for using those options to generate build instructions for a wrapper
-
-            - `wrapAll`: generates build instructions for the main target and all variants
-            - `wrapMain`: generates build instructions for the main target
-            - `wrapVariants`: generates build instructions for all variants but not the main target
-            - `wrapVariant`: generates build instructions for a single variant
-
-            All 4 of them return a string that can be added to the derivation definition to build the specified wrappers.
-
-            The first 3, `wrapAll`, `wrapMain`, and `wrapVariants`, are used like this:
-
-            (import wlib.modules.makeWrapper).wrapAll {
-              inherit config wlib;
-              inherit (pkgs) callPackage; # or `inherit pkgs`;
-            };
-
-            The 4th, `wrapVariant`, has an extra `name` argument:
-
-            (import wlib.modules.makeWrapper).wrapVariant {
-              inherit config wlib;
-              inherit (pkgs) callPackage; # or `inherit pkgs`;
-              name = \"attribute\";
-            };
-
-            Where `attribute` is an attribute of the `config.wrapperVariants` set
-
-            Other than whatever options from the `wlib.modules.makeWrapper` module
-            are defined in the `config` variable passed,
-            each one relies on `config` containing `binName`, `package`, and `exePath`.
-
-            If `config.exePath` is not a string or is an empty string,
-            `config.package` will be the full path wrapped.
-            Otherwise, it will wrap `"''${config.package}/''${config.binName}`.
-
-            If `config.binName` or `config.package` are not provided it will return an empty string for that target.
-
-            In addition, if a variant has `enable` set to `false`, it will also not be included in the returned string.
           '';
         };
       };

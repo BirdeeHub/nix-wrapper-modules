@@ -23,6 +23,8 @@ in
 
   dag = import ./dag.nix { inherit lib wlib; };
 
+  makeWrapper = import ./makeWrapper { inherit lib wlib; };
+
   core = toString ./core.nix;
 
   /**
@@ -348,7 +350,7 @@ in
     because the `shell` and `binary` implementations pass their args to `pkgs.makeWrapper` at **build** time,
     so allowing variable expansion may not always do what you expect!
 
-    # Example
+    - Example:
 
     ```nix
 
