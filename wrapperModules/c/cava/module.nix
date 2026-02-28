@@ -27,5 +27,6 @@ in
       "-p" = configFile;
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
+    meta.platforms = lib.platforms.all;
   };
 }
