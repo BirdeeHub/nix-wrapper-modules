@@ -6,6 +6,7 @@
         "alacritty"
         "atool"
         "btop"
+        "cava"
         "claude-code"
         "foot"
         "fuzzel"
