@@ -29,10 +29,6 @@ let
     else
       renderSingleOption name value
   );
-
-  renderedSettings = pkgs.writeText "yt-dlp.conf" (
-    lib.concatStringsSep "\n" (lib.remove "" (renderSettings config.settings)) + "\n"
-  );
 in
 {
   imports = [ wlib.modules.default ];
@@ -47,7 +43,17 @@ in
   config = {
     package = pkgs.yt-dlp;
     flags = {
-      "--config-location" = renderedSettings;
+      "--config-location" = "${placeholder "out"}/${config.binName}-settings.conf";
+    };
+    drv = {
+      renderedSettings =
+        lib.concatStringsSep "\n" (lib.remove "" (renderSettings config.settings)) + "\n";
+      passAsFile = [ "renderedSettings" ];
+      buildPhase = ''
+        runHook preBuild
+        cp $renderedSettingsPath "$out/${config.binName}-settings.conf"
+        runHook postBuild
+      '';
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };
