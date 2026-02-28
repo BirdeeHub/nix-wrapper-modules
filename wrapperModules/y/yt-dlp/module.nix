@@ -46,8 +46,7 @@ in
       "--config-location" = "${placeholder "out"}/${config.binName}-settings.conf";
     };
     drv = {
-      renderedSettings =
-        lib.concatStringsSep "\n" (lib.remove "" (renderSettings config.settings)) + "\n";
+      renderedSettings = lib.concatStringsSep "\n" (lib.remove "" (renderSettings config.settings));
       passAsFile = [ "renderedSettings" ];
       buildPhase = ''
         runHook preBuild
