@@ -1,202 +1,177 @@
-# TODO: redefine your wrapperFunction redefinition using your fancy new helper functions
 maybe_compile:
 {
   config,
   wlib,
   lib,
-  bash,
   luajit,
+  bash,
   ...
 }:
 let
-  inherit (builtins) elemAt;
-  generateArgsFromFlags = genArgs flaggenfunc;
-  genArgs =
-    f: default-sep: dag:
-    wlib.dag.dagToDal (
-      builtins.mapAttrs (
-        n: v:
-        let
-          genArgs =
-            sep: name: value:
-            if lib.isList value then lib.concatMap (v: f true sep name v) value else f false sep name value;
-        in
-        v // { data = genArgs (if v.sep or null != null then v.sep else default-sep) n v.data; }
-      ) dag
-    );
-  flaggenfunc =
-    is_list: flagSeparator: name: value:
-    if !is_list && (value == false || value == null) then
-      [ ]
-    else if !is_list && value == true then
-      [
-        name
-      ]
-    else if lib.trim flagSeparator == "" && flagSeparator != "" then
-      [
-        name
-        (toString value)
-      ]
-    else
-      [
-        "${name}${flagSeparator}${toString value}"
-      ];
+  prefuncs =
+    let
+      setvarfunc = /* bash */ ''wrapperSetEnv() { export "$1=$2"; }'';
+      setvardefaultfunc = /* bash */ ''wrapperSetEnvDefault() { [ -z "''${!1+x}" ] && export "$1=$2"; }'';
+      prefixvarfunc = /* bash */ ''wrapperPrefixEnv() { export "$1=''${!1:+$3$2}''${!1:-$3}"; }'';
+      suffixvarfunc = /* bash */ ''wrapperSuffixEnv() { export "$1=''${!1:+''${!1}$2}$3"; }'';
+    in
+    [
+      setvardefaultfunc
+      suffixvarfunc
+    ]
+    ++ lib.optional (config.prefixVar or [ ] != [ ] || config.prefixContent or [ ] != [ ]) prefixvarfunc
+    ++ lib.optional (config.env or { } != { }) setvarfunc;
 
-  preFlagStr = builtins.concatStringsSep " " (
-    wlib.dag.sortAndUnwrap {
-      dag =
-        lib.optionals (config.addFlag != [ ]) config.addFlag
-        ++ lib.optionals (config.flags != { }) (
-          generateArgsFromFlags (config.flagSeparator or " ") config.flags
-        );
-      mapIfOk =
-        v:
-        let
-          esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
-        in
-        if builtins.isList v.data then builtins.concatStringsSep " " (map esc-fn v.data) else esc-fn v.data;
+  outdir = "${placeholder "out"}/${config.binDir or "bin"}";
+  outpath = lib.escapeShellArg "${outdir}/${config.binName}";
+  wrapcmd = partial: "echo ${lib.escapeShellArg partial} >> ${outpath}";
+
+  arg0 = if builtins.isString (config.argv0 or null) then config.argv0 else "\"$0\"";
+
+  split = wlib.makeWrapper.splitDal (
+    wlib.makeWrapper.aggregateSingleOptionSet {
+      inherit config;
+      sortResult = false;
     }
   );
-  postFlagStr = builtins.concatStringsSep " " (
-    wlib.dag.sortAndUnwrap {
-      dag = config.appendFlag;
-      mapIfOk =
-        v:
-        let
-          esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
-        in
-        if builtins.isList v.data then builtins.concatStringsSep " " (map esc-fn v.data) else esc-fn v.data;
-    }
-  );
-
-  bin-path = lib.escapeShellArg "${placeholder "out"}/bin/${config.binName}";
-
-  wrapcmd = partial: ''
-    echo ${lib.escapeShellArg partial} >> ${bin-path}
-  '';
-  shellcmdsdal =
-    wlib.dag.lmap (var: esc-fn: wrapcmd "unset ${esc-fn var}") config.unsetVar
-    ++ wlib.dag.mapDagToDal (
-      n: v: esc-fn:
-      wrapcmd "wrapperSetEnv ${esc-fn n} ${esc-fn v}"
-    ) config.env
-    ++ wlib.dag.mapDagToDal (
-      n: v: esc-fn:
-      wrapcmd "wrapperSetEnvDefault ${esc-fn n} ${esc-fn v}"
-    ) config.envDefault
-    ++ wlib.dag.lmap (
-      tuple: esc-fn:
+  args = lib.pipe split.args [
+    (wlib.makeWrapper.fixArgs { sep = config.flagSeparator or null; })
+    (
+      { addFlag, appendFlag }:
       let
-        env = elemAt tuple 0;
-        sep = elemAt tuple 1;
-        val = elemAt tuple 2;
+        mapArgs = lib.flip lib.pipe [
+          (map (
+            v:
+            let
+              esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
+            in
+            if builtins.isList (v.data or null) then
+              map esc-fn v.data
+            else if v ? data && v.data or null != null then
+              esc-fn v.data
+            else
+              [ ]
+          ))
+          lib.flatten
+          (builtins.concatStringsSep " ")
+        ];
       in
-      wrapcmd "wrapperPrefixEnv ${esc-fn env} ${esc-fn sep} ${esc-fn val}"
-    ) config.prefixVar
-    ++ wlib.dag.lmap (
-      tuple: esc-fn:
-      let
-        env = elemAt tuple 0;
-        sep = elemAt tuple 1;
-        val = elemAt tuple 2;
-      in
-      wrapcmd "wrapperSuffixEnv ${esc-fn env} ${esc-fn sep} ${esc-fn val}"
-    ) config.suffixVar
-    ++ wlib.dag.lmap (
-      tuple: esc-fn:
-      let
-        env = elemAt tuple 0;
-        sep = elemAt tuple 1;
-        val = elemAt tuple 2;
-        cmd = "wrapperPrefixEnv ${esc-fn env} ${esc-fn sep} ";
-      in
-      ''echo ${lib.escapeShellArg cmd}"$(cat ${esc-fn val})" >> ${bin-path}''
-    ) config.prefixContent
-    ++ wlib.dag.lmap (
-      tuple: esc-fn:
-      let
-        env = elemAt tuple 0;
-        sep = elemAt tuple 1;
-        val = elemAt tuple 2;
-        cmd = "wrapperSuffixEnv ${esc-fn env} ${esc-fn sep} ";
-      in
-      ''echo ${lib.escapeShellArg cmd}"$(cat ${esc-fn val})" >> ${bin-path}''
-    ) config.suffixContent
-    ++ wlib.dag.lmap (dir: esc-fn: wrapcmd "cd ${esc-fn dir}") config.chdir
-    ++ wlib.dag.lmap (cmd: _: wrapcmd cmd) config.runShell;
+      ''${mapArgs addFlag} "$@" ${mapArgs (wlib.dag.unwrapSort "appendFlag" appendFlag)}''
+    )
+  ];
 
   luarc-path = "${placeholder "out"}/${config.binName}-rc.lua";
-  arg0 = if config.argv0 == null then "\"$0\"" else config.escapingFunction config.argv0;
-  finalcmd = ''${
+  finalcmd = "${
     if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
-  } --cmd ${lib.escapeShellArg "source${luarc-path}"} ${preFlagStr} "$@" ${postFlagStr}'';
+  } --cmd ${lib.escapeShellArg "source${luarc-path}"} ${args}";
 
   luaEnv = (config.package.lua.withPackages or luajit.withPackages) config.settings.nvim_lua_env;
   NVIM_LUA_PATH = ((config.package.lua or luajit).pkgs.luaLib.genLuaPathAbsStr luaEnv);
   NVIM_LUA_CPATH = ((config.package.lua or luajit).pkgs.luaLib.genLuaCPathAbsStr luaEnv);
 
   manifest-path = lib.escapeShellArg "${placeholder "out"}/${config.binName}-rplugin.vim";
-  shellcmds =
+
+  buildCommands =
     isFinal:
-    wlib.dag.sortAndUnwrap {
-      dag =
+    lib.pipe split.other [
+      (
+        dal:
         lib.optional isFinal {
           name = "NVIM_SYSTEM_RPLUGIN_MANIFEST";
-          data = _: "${wrapcmd "wrapperSetEnvDefault NVIM_SYSTEM_RPLUGIN_MANIFEST ${manifest-path}"}";
+          type = "envDefault";
+          esc-fn = lib.escapeShellArg;
+          attr-name = "NVIM_SYSTEM_RPLUGIN_MANIFEST";
+          data = manifest-path;
         }
-        ++ shellcmdsdal
+        ++ dal
         ++ [
           {
             name = "NIX_PROPAGATED_LUA_PATH";
+            type = "UNPROCESSED";
             data =
-              _:
               (wrapcmd "wrapperSuffixEnv LUA_PATH ';' ${lib.escapeShellArg NVIM_LUA_PATH}\n")
-              + "echo \"wrapperSuffixEnv LUA_PATH ';' \${LUA_PATH@Q}\" >> ${bin-path}";
+              + "echo \"wrapperSuffixEnv LUA_PATH ';' \${LUA_PATH@Q}\" >> ${outpath}";
           }
           {
             name = "NIX_PROPAGATED_LUA_CPATH";
+            type = "UNPROCESSED";
             data =
-              _:
               (wrapcmd "wrapperSuffixEnv LUA_CPATH ';' ${lib.escapeShellArg NVIM_LUA_CPATH}\n")
-              + "echo \"wrapperSuffixEnv LUA_CPATH ';' \${LUA_CPATH@Q}\" >> ${bin-path}";
+              + "echo \"wrapperSuffixEnv LUA_CPATH ';' \${LUA_CPATH@Q}\" >> ${outpath}";
           }
         ]
         ++ lib.optional isFinal {
           name = "NIX_GENERATED_VIMINIT";
-          data =
-            _:
-            "${wrapcmd "wrapperSetEnvDefault VIMINIT 'lua require(${builtins.toJSON "${config.settings.info_plugin_name}.init_main"})'"}";
+          type = "envDefault";
+          esc-fn = lib.escapeShellArg;
+          attr-name = "VIMINIT";
+          data = "lua require(${builtins.toJSON "${config.settings.info_plugin_name}.init_main"})";
         }
-        ++ lib.optional (isFinal && lib.isFunction config.argv0type) {
+        ++ lib.optional (isFinal && lib.isFunction (config.argv0type or null)) {
           name = "NIX_RUN_MAIN_PACKAGE";
-          data = _: wrapcmd (config.argv0type finalcmd);
-        };
-      mapIfOk = v: v.data (if (v.esc-fn or null) != null then v.esc-fn else config.escapingFunction);
-    };
-
-  setvarfunc = /* bash */ ''wrapperSetEnv() { export "$1=$2"; }'';
-  setvardefaultfunc = /* bash */ ''wrapperSetEnvDefault() { [ -z "''${!1+x}" ] && export "$1=$2"; }'';
-  prefixvarfunc = /* bash */ ''wrapperPrefixEnv() { export "$1=''${!1:+$3$2}''${!1:-$3}"; }'';
-  suffixvarfunc = /* bash */ ''wrapperSuffixEnv() { export "$1=''${!1:+''${!1}$2}$3"; }'';
-  prefuncs = [
-    setvardefaultfunc
-    suffixvarfunc
-  ]
-  ++ lib.optional (config.env != { }) setvarfunc
-  ++ lib.optional (config.prefixVar != [ ] || config.prefixContent != [ ]) prefixvarfunc;
-
+          data = config.argv0type finalcmd;
+          type = "runShell";
+        }
+      )
+      (wlib.dag.unwrapSort "makeWrapper")
+      (builtins.concatMap (
+        v:
+        let
+          esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
+        in
+        if v.type or null == "unsetVar" then
+          [ (wrapcmd "unset ${esc-fn v.data}") ]
+        else if v.type or null == "env" then
+          [ (wrapcmd "wrapperSetEnv ${esc-fn v.attr-name} ${esc-fn v.data}") ]
+        else if v.type or null == "envDefault" then
+          [ (wrapcmd "wrapperSetEnvDefault ${esc-fn v.attr-name} ${esc-fn v.data}") ]
+        else if v.type or null == "prefixVar" then
+          [ (wrapcmd "wrapperPrefixEnv ${lib.concatMapStringsSep " " esc-fn v.data}") ]
+        else if v.type or null == "suffixVar" then
+          [ (wrapcmd "wrapperSuffixEnv ${lib.concatMapStringsSep " " esc-fn v.data}") ]
+        else if v.type or null == "prefixContent" then
+          let
+            env = builtins.elemAt v.data 0;
+            sep = builtins.elemAt v.data 1;
+            val = builtins.elemAt v.data 2;
+            cmd = "wrapperPrefixEnv ${esc-fn env} ${esc-fn sep} ";
+          in
+          [ ''echo ${lib.escapeShellArg cmd}"$(cat ${esc-fn val})" >> ${outpath}'' ]
+        else if v.type or null == "suffixContent" then
+          let
+            env = builtins.elemAt v.data 0;
+            sep = builtins.elemAt v.data 1;
+            val = builtins.elemAt v.data 2;
+            cmd = "wrapperSuffixEnv ${esc-fn env} ${esc-fn sep} ";
+          in
+          [ ''echo ${lib.escapeShellArg cmd}"$(cat ${esc-fn val})" >> ${outpath}'' ]
+        else if v.type or null == "chdir" then
+          [ (wrapcmd "cd ${esc-fn v.data}") ]
+        else if v.type or null == "runShell" then
+          [ (wrapcmd v.data) ]
+        else if v.type or null == "UNPROCESSED" then
+          [ v.data ]
+        else
+          [ ]
+      ))
+      (builtins.concatStringsSep "\n")
+    ];
 in
-if config.binName == "" then
+if
+  !builtins.isString (config.binName or null)
+  || config.binName == ""
+  || !(lib.isStringLike (config.package or null))
+then
   ""
 else
   /* bash */ ''
-    mkdir -p $out/bin
+    mkdir -p ${lib.escapeShellArg outdir}
     { [ -e "$manifestLuaPath" ] && cat "$manifestLuaPath" || echo "$manifestLua"; } > ${lib.escapeShellArg luarc-path}
-    echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${bin-path}
+    echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${outpath}
     ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
-    ${builtins.concatStringsSep "\n" (shellcmds false)}
+    ${buildCommands false}
     ${wrapcmd "exec -a ${arg0} ${finalcmd}"}
-    chmod +x ${bin-path}
+    chmod +x ${outpath}
 
     export NVIM_RPLUGIN_MANIFEST=${manifest-path}
     export HOME="$(mktemp -d)"
@@ -207,9 +182,9 @@ else
       exit 1
     fi
     { [ -e "$setupLuaPath" ] && cat "$setupLuaPath" || echo "$setupLua"; } ${maybe_compile}> ${lib.escapeShellArg luarc-path}
-    echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${bin-path}
+    echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${outpath}
     ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
-    ${builtins.concatStringsSep "\n" (shellcmds true)}
+    ${buildCommands true}
     ${lib.optionalString (!lib.isFunction config.argv0type) (wrapcmd "exec -a ${arg0} ${finalcmd}")}
-    chmod +x ${bin-path}
+    chmod +x ${outpath}
   ''
