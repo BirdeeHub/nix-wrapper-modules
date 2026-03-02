@@ -37,6 +37,7 @@
     "--config" = config."config.nu".path;
     "--env-config" = config."env.nu".path;
   };
+  config.passthru.shellPath = "/bin/nu";
 
   config.wrapperImplementation = "binary";
 
