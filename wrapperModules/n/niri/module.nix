@@ -13,9 +13,7 @@ let
   mkAttrs =
     attrs:
     if lib.isAttrs attrs then
-      lib.concatMapAttrsStringSep " " (
-        n: v: if builtins.isNull v then ''"${n}"'' else ''"${n}"=${toVal v}''
-      ) attrs
+      lib.concatMapAttrsStringSep " " (n: v: if isNull v then ''"${n}"'' else ''"${n}"=${toVal v}'') attrs
     else
       "";
   mkBlock =
@@ -46,7 +44,7 @@ let
     lib.concatMapAttrsStringSep "\n" (
       n: v:
       # turn null values into flags
-      if builtins.isNull v then
+      if isNull v then
         n
       else if lib.isAttrs v then
         mkBlock {
@@ -58,14 +56,11 @@ let
       else
         mkKeyVal n v
     ) a;
-  mkTagged =
-    t: k: v:
-    "${t} ${mkAttrs { ${k} = v; }}";
   mkRule =
     block: r:
     let
-      matches = map (lib.concatMapAttrsStringSep "\n" (mkTagged "match")) r.matches or [ ];
-      excludes = map (lib.concatMapAttrsStringSep "\n" (mkTagged "exclude")) r.excludes or [ ];
+      matches = map (m: "match ${mkAttrs m}") (r.matches or [ ]);
+      excludes = map (m: "exclude ${mkAttrs m}") (r.excludes or [ ]);
       misc = attrsToKdl (
         lib.attrsets.removeAttrs r [
           "matches"
@@ -88,7 +83,7 @@ let
       lib.mapAttrsToList (n: v: {
         # use the attr name as attribute for the workspace node
         workspace =
-          if builtins.isNull v then
+          if isNull v then
             n
           else
             {

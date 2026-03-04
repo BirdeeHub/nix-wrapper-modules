@@ -32,7 +32,10 @@ let
         {
           matches = [
             { app-id = "org.keepassxc.KeePassXC"; }
-            { app-id = "thunderbird"; }
+            {
+              app-id = "thunderbird";
+              title = "^Picture-in-Picture$";
+            }
           ];
           block-out-from = "screen-capture";
         }
