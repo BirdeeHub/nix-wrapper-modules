@@ -54,5 +54,6 @@ in
         runHook postBuild
       '';
     };
+    meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };
 }
