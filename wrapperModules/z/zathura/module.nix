@@ -28,10 +28,25 @@ in
           float
         ]);
       default = { };
+      description = ''
+        Add {option}`:set` command options to zathura and make
+        them permanent. See
+        {manpage}`zathurarc(5)`
+        for the full list of options.
+      '';
     };
     mappings = lib.mkOption {
       type = with lib.types; attrsOf str;
       default = { };
+      description = ''
+        Add {option}`:map` mappings to zathura and make
+        them permanent. See
+        {manpage}`zathurarc(5)`
+        for the full list of possible mappings.
+
+        You can create a mode-specific mapping by specifying the mode before the key:
+        `"[normal] <C-b>" = "scroll left";`
+      '';
     };
   };
   config = {
