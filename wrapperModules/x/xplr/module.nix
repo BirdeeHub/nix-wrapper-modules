@@ -67,7 +67,7 @@ let
     else
       builtins.filter (v: v.enable) (wlib.dag.unwrapSort "xplr_init" config.luaInit);
   hasFnl = builtins.any (v: v.type == "fnl") initDal;
-  basePluginDir = "${placeholder "out"}/${config.binName}-plugins";
+  basePluginDir = "${placeholder config.outputName}/${config.binName}-plugins";
 in
 {
   imports = [ wlib.modules.default ];
@@ -261,7 +261,7 @@ in
       mkdir -p ${lib.escapeShellArg "${basePluginDir}"}
       { [ -e "$nixLuaInitPath" ] && cat "$nixLuaInitPath" || echo "$nixLuaInit"; }${
         if hasFnl then " | ${pkgs.luajitPackages.fennel}/bin/fennel --compile - " else " "
-      }> ${lib.escapeShellArg "${placeholder "out"}/${config.binName}-rc.lua"}
+      }> ${lib.escapeShellArg "${placeholder config.outputName}/${config.binName}-rc.lua"}
       { [ -e "$nixLuaInfoPath" ] && cat "$nixLuaInfoPath" || echo "$nixLuaInfo"; } > ${lib.escapeShellArg "${basePluginDir}/${config.infopath}.lua"}
       ${linkCommands}
       runHook postBuild
@@ -301,7 +301,7 @@ in
       name = "GENERATED_WRAPPER_LUA";
       data = [
         "-c"
-        "${placeholder "out"}/${config.binName}-rc.lua"
+        "${placeholder config.outputName}/${config.binName}-rc.lua"
       ];
       esc-fn = lib.escapeShellArg;
     }

@@ -65,7 +65,7 @@
       options.myopts.xplr = lib.mkOption {
         type = wlib.types.subWrapperModule wlib.wrapperModules.xplr;
       };
-      # and access config.myopts.xplr.wrapped and set settings and options within it.
+      # and access config.myopts.xplr.wrapper and set settings and options within it.
     ```
   */
   subWrapperModule = module: wlib.types.subWrapperModuleWith { modules = lib.toList module; };

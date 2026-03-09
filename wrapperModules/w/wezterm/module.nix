@@ -42,7 +42,7 @@
 
       This means, by default, this will act like your wezterm config file, unless you want to add some lua in between there.
 
-      `''${placeholder "out"}` is useable here and will point to the final wrapper derivation
+      `''${placeholder config.outputName}` is useable here and will point to the final wrapper derivation
 
       You may also call `require('nix-info')(defaultval, "path", "to", "item")`
 
@@ -83,13 +83,13 @@
     '';
   config.drv.buildPhase = ''
     runHook preBuild
-    { [ -e "$nixLuaInitPath" ] && cat "$nixLuaInitPath" || echo "$nixLuaInit"; } > ${lib.escapeShellArg "${placeholder "out"}/${config.binName}-rc.lua"}
+    { [ -e "$nixLuaInitPath" ] && cat "$nixLuaInitPath" || echo "$nixLuaInit"; } > ${lib.escapeShellArg "${placeholder config.outputName}/${config.binName}-rc.lua"}
     runHook postBuild
   '';
   config.flagSeparator = "=";
   config.flags = {
     "--config-file" = {
-      data = "${placeholder "out"}/${config.binName}-rc.lua";
+      data = "${placeholder config.outputName}/${config.binName}-rc.lua";
       esc-fn = lib.escapeShellArg;
     };
   };

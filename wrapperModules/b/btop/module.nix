@@ -17,7 +17,7 @@ let
         else if builtins.isString v then
           ''"${v}"''
         else
-          builtins.toString v;
+          toString v;
     } " = ";
   };
 
@@ -25,7 +25,7 @@ let
     name: theme:
     if builtins.isPath theme || lib.isStorePath theme then theme else pkgs.writeText "btop.theme" theme;
 
-  themesDir = "${builtins.placeholder "out"}/themes";
+  themesDir = "${placeholder config.outputName}/themes";
 in
 {
   imports = [ wlib.modules.default ];

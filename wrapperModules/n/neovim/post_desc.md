@@ -242,11 +242,11 @@ config.hosts.neovide =
     config.nvim-host.enable = lib.mkDefault false;
     config.package = pkgs.neovide;
     # also offers nvim-host wrapper arguments which run in the context of the final nvim drv!
-    config.nvim-host.flags."--neovim-bin" = "${placeholder "out"}/bin/${config.binName}";
+    config.nvim-host.flags."--neovim-bin" = config.wrapperPaths.placeholder;
   };
 
   # This one is included!
-  # To add a wrapped $out/bin/${config.binName}-neovide to the resulting neovim derivation
+  # To add a wrapped ${placeholder config.outputName}/bin/${config.binName}-neovide to the resulting neovim derivation
   config.hosts.neovide.nvim-host.enable = true;
 ```
 

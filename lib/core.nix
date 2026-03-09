@@ -398,13 +398,22 @@ in
         and `config.sourceStdenv` options.
       '';
     };
+    binDir = lib.mkOption {
+      type = lib.types.nullOr wlib.types.nonEmptyLine;
+      default = "bin";
+      description = ''
+        the directory the wrapped result will be placed into, with the name indicated by the `binName` option
+
+        i.e. `"''${placeholder outputName}/<THIS_VALUE>/''${binName}"`
+      '';
+    };
     binName = lib.mkOption {
-      type = wlib.types.nonEmptyLine;
+      type = lib.types.str;
       default =
         if config.package.meta.mainProgram or null != null then
           baseNameOf (
             builtins.addErrorContext ''
-              `config.package`: ${config.package} is not a derivation.
+              `config.package`: ${config.package} is not a derivation with a main executable.
               You must specify `config.binName` manually.
             '' (lib.getExe config.package)
           )
@@ -414,7 +423,7 @@ in
           config.package.pname or config.package.name
             or (throw "config.binName was not able to be detected!");
       description = ''
-        The name of the binary output by `wrapperFunction` to `$out/bin`
+        The name of the binary output by `wrapperFunction` to `config.wrapperPaths.placeholder`
 
         If not specified, the default name from the package will be used.
       '';
@@ -426,21 +435,77 @@ in
           lib.removePrefix "/" (
             lib.removePrefix "${config.package}" (
               builtins.addErrorContext ''
-                `config.package`: ${config.package} is not a derivation.
+                `config.package`: ${config.package} is not a derivation with a main executable.
                 You must specify `config.exePath` manually.
               '' (lib.getExe config.package)
             )
           )
         else if builtins.isString config.package || builtins.isPath config.package then
-          "bin/${baseNameOf (toString config.package)}"
+          lib.optionalString (config.binDir != null) "${config.binDir}/"
+          + "${baseNameOf (toString config.package)}"
         else
-          "bin/${
-            config.package.pname or config.package.name or (throw "config.binName was not able to be detected!")
+          lib.optionalString (config.binDir != null) "${config.binDir}/"
+          + "${config.package.pname or config.package.name
+            or (throw "config.binName was not able to be detected! Please specify it manually!")
           }";
       description = ''
         The relative path to the executable to wrap. i.e. `bin/exename`
 
         If not specified, the path gained from calling `lib.getExe` on `config.package` and subtracting the path to the package will be used.
+      '';
+    };
+    wrapperPaths = {
+      input = lib.mkOption {
+        type = lib.types.str;
+        readOnly = true;
+        default = "${config.package}" + lib.optionalString (config.exePath != null) "/${config.exePath}";
+        description = "The path which is to be wrapped by the wrapperFunction implementation";
+      };
+      placeholder = lib.mkOption {
+        type = lib.types.str;
+        readOnly = true;
+        default = "${placeholder config.outputName}${config.wrapperPaths.relPath}";
+        description = "The path which the wrapperFunction implementation is to output its result to.";
+      };
+      relPath = lib.mkOption {
+        type = lib.types.str;
+        readOnly = true;
+        default =
+          config.wrapperPaths.relDir + lib.optionalString (config.binName or "" != "") "/${config.binName}";
+        description = ''
+          The binary will be output to `''${placeholder config.outputName}''${config.wrapperPaths.relPath}`
+        '';
+      };
+      relDir = lib.mkOption {
+        type = lib.types.str;
+        readOnly = true;
+        default = lib.optionalString (config.binDir != null) "/${config.binDir}";
+        description = ''
+          The binary will be output to `''${placeholder config.outputName}''${config.wrapperPaths.relDir}/''${config.binName}`
+        '';
+      };
+    };
+    outputName = lib.mkOption {
+      type = wlib.types.nonEmptyLine;
+      default =
+        config.package.outputName or (
+          if builtins.length (config.package.outputs or [ ]) > 0 then
+            builtins.head config.package.outputs
+          else
+            "out"
+        );
+      description = ''
+        The derivation output the wrapped binary will be placed into.
+
+        This will also set the default output of the derivation.
+
+        This means, it will be first in `config.outputs`, and
+        the final drv will contain an `outputName` attribute with this name.
+
+        Unfortunately, `nix build` will still build `out` by default.
+        If you use this, know why you are doing so.
+
+        This is primarily for wrapping packages which already have a non-standard default output name.
       '';
     };
     outputs = lib.mkOption rec {
@@ -449,11 +514,16 @@ in
           base = lib.types.addCheck (lib.types.listOf lib.types.str) (v: builtins.length v > 0);
         in
         base // { description = "non-empty " + base.description or "listOf str"; };
-      default = if type.check config.package.outputs then config.package.outputs else [ "out" ];
+      default = if type.check (config.package.outputs or [ ]) then config.package.outputs else [ "out" ];
+      apply = v: [ config.outputName ] ++ lib.remove config.outputName v;
       description = ''
         Override the list of nix outputs that get symlinked into the final package.
 
-        Default is config.package.outputs or `[ "out" ]` if invalid.
+        Default is `config.package.outputs` or `[ "out" ]` if invalid.
+
+        `config.outputName` will always be the first item of the resulting list in `config.outputs`
+
+        It is added via the apply field of the option for you.
       '';
     };
     wrapperFunction = lib.mkOption {
@@ -476,9 +546,17 @@ in
 
         The result of this function is passed DIRECTLY to the value of the `builderFunction` function.
 
-        The relative path to the thing to wrap from within `config.package` is `config.exePath`
+        The relative path to the thing to wrap is `config.wrapperPaths.input`
 
-        You should wrap the package and place the wrapper at `"$out/bin/''${config.binName}"`
+        This function is to return a value which creates a result at `config.wrapperPaths.placeholder`
+
+        The type this value is to return is dictated by `config.builderFunction`.
+
+        The default implementation, as well as the implementation from `wlib.modules.symlinkScript`
+        accept either a string which will be prepended to `buildCommand` (preferred),
+        or a derivation which can be symlinked into the resulting derivation output to create the desired path.
+
+        Again, the result is passed DIRECTLY as an argument to the function which is the value of `config.builderFunction`
       '';
     };
     builderFunction = lib.mkOption {
@@ -574,22 +652,28 @@ in
           ...
         }:
         let
-          path = if wrapper != null then wrapper else config.package;
           originalOutputs = wlib.getPackageOutputsSet config.package;
         in
-        "mkdir -p $out \n"
-        + (if builtins.isString wrapper then wrapper else "${lndir}/bin/lndir -silent \"${path}\" $out")
+        "mkdir -p ${placeholder config.outputName} \n"
+        + (
+          if builtins.isString wrapper then
+            wrapper
+          else if wrapper != null then
+            "${lndir}/bin/lndir -silent \"${toString wrapper}\" ${placeholder config.outputName}"
+          else
+            ""
+        )
         + ''
 
           # Handle additional outputs by symlinking from the original package's outputs
           ${lib.concatMapStringsSep "\n" (
             output:
-            if output != "out" && originalOutputs ? ${output} && originalOutputs.${output} != null then
+            if originalOutputs ? ${output} && originalOutputs.${output} != null then
               ''
                 if [[ -n "''${${output}:-}" ]]; then
-                  mkdir -p ${"$" + output}
+                  mkdir -p ${placeholder output}
                   # Only symlink from the original package's corresponding output
-                  ${lndir}/bin/lndir -silent "${originalOutputs.${output}}" ${"$" + output}
+                  ${lndir}/bin/lndir -silent "${originalOutputs.${output}}" ${placeholder output}
                 fi
               ''
             else
@@ -627,7 +711,12 @@ in
             package
             binName
             ;
-          meta = (package.meta or { }) // { mainProgram = binName; } // (config.drv.meta or { });
+          meta =
+            (package.meta or { })
+            // {
+              ${if config.binDir == "bin" && binName != "" then "mainProgram" else null} = binName;
+            }
+            // (config.drv.meta or { });
           version =
             package.version or meta.version or package.revision or meta.revision or package.rev or meta.rev
               or package.release or meta.release or package.releaseDate or meta.releaseDate or "master";
@@ -668,9 +757,16 @@ in
             dontPatch = true;
             dontFixup = true;
             name = package.name or "${package.pname or binName}-${version}";
-            pname = package.pname or binName;
+            ${
+              if builtins.isString (package.pname or binName) && package.pname or binName != "" then
+                "pname"
+              else
+                null
+            } =
+              package.pname or binName;
             inherit version meta;
             inherit (config) outputs;
+            outputName = config.outputName or "out";
             buildPhase = ''
               runHook preBuild
               runHook postBuild
@@ -686,7 +782,7 @@ in
             "outputs"
             "meta"
           ];
-          errormsg = "config.builderFunction function must return (a string) or (a function that recieves attrset and returns an attrset) or (a functor as described in https://birdeehub.github.io/nix-wrapper-modules/core.html#builderfunction)";
+          errormsg = "config.builderFunction function must return (a string) or (a function that receives attrset and returns an attrset) or (a functor as described in https://birdeehub.github.io/nix-wrapper-modules/core.html#builderfunction)";
           defaultPhases = [
             "unpackPhase"
             "patchPhase"

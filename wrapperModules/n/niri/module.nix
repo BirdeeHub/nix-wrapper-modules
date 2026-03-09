@@ -200,7 +200,7 @@ in
           workspaces = lib.mkOption {
             default = { };
             type = lib.types.attrsOf (lib.types.nullOr lib.types.anything);
-            description = "Named workspace definitons";
+            description = "Named workspace definitions";
             example = {
               "foo" = {
                 open-on-output = "DP-3";

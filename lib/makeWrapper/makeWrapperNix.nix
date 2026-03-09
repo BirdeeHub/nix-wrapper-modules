@@ -20,8 +20,7 @@ let
       config.suffixVar or [ ] != [ ] || config.suffixContent or [ ] != [ ]
     ) suffixvarfunc;
 
-  outdir = "${placeholder "out"}/${config.binDir or "bin"}";
-  outpath = lib.escapeShellArg "${outdir}/${config.binName}";
+  outpath = lib.escapeShellArg config.wrapperPaths.placeholder;
   wrapcmd = partial: "echo ${lib.escapeShellArg partial} >> ${outpath}";
 
   arg0 = if builtins.isString (config.argv0 or null) then config.argv0 else "\"$0\"";
@@ -58,12 +57,7 @@ let
     )
   ];
 
-  finalcmd = "${
-    if !builtins.isString (config.exePath or null) || config.exePath == "" then
-      "${config.package}"
-    else
-      "${config.package}/${config.exePath}"
-  } ${args}";
+  finalcmd = "${config.wrapperPaths.input} ${args}";
 
   buildCommands = lib.pipe split.other [
     (
@@ -117,20 +111,13 @@ let
     (builtins.concatStringsSep "\n")
   ];
 in
-if
-  !builtins.isString (config.binName or null)
-  || config.binName == ""
-  || !(lib.isStringLike (config.package or null))
-then
-  ""
-else
-  ''
-    mkdir -p ${lib.escapeShellArg outdir}
-    echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${outpath}
-    ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
-    ${buildCommands}
-    ${lib.optionalString (!lib.isFunction (config.argv0type or null)) (
-      wrapcmd "exec -a ${arg0} ${finalcmd}"
-    )}
-    chmod +x ${outpath}
-  ''
+''
+  mkdir -p ${lib.escapeShellArg "${placeholder config.outputName}${config.wrapperPaths.relDir}"}
+  echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${outpath}
+  ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
+  ${buildCommands}
+  ${lib.optionalString (!lib.isFunction (config.argv0type or null)) (
+    wrapcmd "exec -a ${arg0} ${finalcmd}"
+  )}
+  chmod +x ${outpath}
+''

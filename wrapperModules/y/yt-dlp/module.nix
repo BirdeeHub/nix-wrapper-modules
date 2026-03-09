@@ -59,14 +59,14 @@ in
   config = {
     package = pkgs.yt-dlp;
     flags = {
-      "--config-location" = "${placeholder "out"}/${config.binName}-settings.conf";
+      "--config-location" = "${placeholder config.outputName}/${config.binName}-settings.conf";
     };
     drv = {
       renderedSettings = renderSettings config.settings;
       passAsFile = [ "renderedSettings" ];
       buildPhase = ''
         runHook preBuild
-        cp $renderedSettingsPath "$out/${config.binName}-settings.conf"
+        cp $renderedSettingsPath "${placeholder config.outputName}/${config.binName}-settings.conf"
         runHook postBuild
       '';
     };

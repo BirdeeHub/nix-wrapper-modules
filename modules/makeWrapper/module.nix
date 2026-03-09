@@ -9,7 +9,7 @@ let
       mainConfig ? null,
       mainOpts ? null,
       ...
-    }:
+    }@top:
     {
       inherit _file;
       options.${if !(excluded.argv0type or false) then "argv0type" else null} = lib.mkOption {
@@ -65,13 +65,6 @@ let
           If unset or null, defaults to EXECUTABLE.
 
           overrides the setting from `argv0type` if set.
-        '';
-      };
-      options.${if !(excluded.binDir or false) then "binDir" else null} = lib.mkOption {
-        type = wlib.types.nonEmptyLine;
-        default = if mainConfig != null then mainConfig.binDir else "bin";
-        description = ''
-          Wrapped binary will be output to `"''${placeholder "out"}/<THIS_VALUE>/''${binName}"`
         '';
       };
       options.${if !(excluded.unsetVar or false) then "unsetVar" else null} = lib.mkOption {
@@ -540,7 +533,7 @@ let
                 modules = [
                   (options_module _file excluded false)
                   (
-                    { name, ... }:
+                    { name, config, ... }:
                     {
                       inherit _file;
                       options.enable = lib.mkOption {
@@ -559,7 +552,7 @@ let
                       };
                       options.exePath = lib.mkOption {
                         type = lib.types.nullOr wlib.types.nonEmptyLine;
-                        default = "bin/${name}";
+                        default = "${top.config.binDir}/${name}";
                         description = ''
                           The location within the package of the thing to wrap.
                         '';
@@ -568,12 +561,63 @@ let
                         type = wlib.types.nonEmptyLine;
                         default = name;
                         description = ''
-                          The name of the file to output to `$out/bin/`
+                          The name of the file to output to `''${placeholder config.outputName}''${config.wrapperPaths.relDir}`
                         '';
+                      };
+                      options.binDir = lib.mkOption {
+                        type = lib.types.nullOr wlib.types.nonEmptyLine;
+                        default = top.config.binDir or "bin";
+                        description = ''
+                          the directory the wrapped result will be placed into, with the name indicated by the `binName` option
+
+                          i.e. `"''${placeholder outputName}/<THIS_VALUE>/''${binName}"`
+                        '';
+                      };
+                      options.outputName = lib.mkOption {
+                        type = wlib.types.nonEmptyLine;
+                        default = top.config.outputName or "out";
+                        description = ''
+                          The derivation output the wrapped binary will be placed into.
+                        '';
+                      };
+                      options.wrapperPaths = {
+                        input = lib.mkOption {
+                          type = lib.types.str;
+                          readOnly = true;
+                          default = "${config.package}" + lib.optionalString (config.exePath != null) "/${config.exePath}";
+                          description = "
+                            The path which is to be wrapped by the wrapperFunction implementation
+                          ";
+                        };
+                        placeholder = lib.mkOption {
+                          type = lib.types.str;
+                          readOnly = true;
+                          default = "${placeholder config.outputName or "out"}${config.wrapperPaths.relPath}";
+                          description = "
+                            The path which the wrapperFunction implementation is to output its result to.
+                          ";
+                        };
+                        relPath = lib.mkOption {
+                          type = lib.types.str;
+                          readOnly = true;
+                          default =
+                            config.wrapperPaths.relDir + lib.optionalString (config.binName != "") "/${config.binName}";
+                          description = ''
+                            The binary will be output to `''${placeholder config.outputName}''${config.wrapperPaths.relPath}`
+                          '';
+                        };
+                        relDir = lib.mkOption {
+                          type = lib.types.str;
+                          readOnly = true;
+                          default = lib.optionalString (config.binDir != null) "/${config.binDir}";
+                          description = ''
+                            The binary will be output to `''${placeholder config.outputName}''${config.wrapperPaths.relDir}/''${config.binName}`
+                          '';
+                        };
                       };
                       options.package = lib.mkOption {
                         type = wlib.types.stringable;
-                        default = config.package;
+                        default = top.config.package;
                         description = ''
                           The package to wrap with these options
                         '';

@@ -361,7 +361,7 @@
       # NOTE: nvim runs the thing with `node vim.g.node_host_prog`, we can't wrap it
       # maybe we could replace the shebang with a wrapped node at some point?
       # You can wrap it for when it gets linked into ${placeholder "out"}/bin though
-      config.nvim-host.var_path = "${config.package}/${config.exePath}";
+      config.nvim-host.var_path = config.wrapperPaths.input;
     };
   config.hosts.ruby =
     {
@@ -375,7 +375,7 @@
       imports = [ wlib.modules.default ];
       config.package = lib.makeOverridable pkgs.bundlerEnv {
         name = "neovim-ruby-host";
-        postBuild = "ln -sf ${pkgs.ruby}/bin/* $out/bin";
+        postBuild = "ln -sf ${pkgs.ruby}/bin/* ${placeholder config.outputName}/bin";
         gemdir = config.gemdir;
       };
       options.gemdir = lib.mkOption {
@@ -399,6 +399,6 @@
       imports = [ wlib.modules.default ];
       config.nvim-host.enable = lib.mkDefault false;
       config.package = pkgs.neovide;
-      config.nvim-host.flags."--neovim-bin" = "${placeholder "out"}/bin/${config.binName}";
+      config.nvim-host.flags."--neovim-bin" = config.wrapperPaths.placeholder;
     };
 }

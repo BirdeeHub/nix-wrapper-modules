@@ -22,8 +22,7 @@ let
     ++ lib.optional (config.prefixVar or [ ] != [ ] || config.prefixContent or [ ] != [ ]) prefixvarfunc
     ++ lib.optional (config.env or { } != { }) setvarfunc;
 
-  outdir = "${placeholder "out"}/${config.binDir or "bin"}";
-  outpath = lib.escapeShellArg "${outdir}/${config.binName}";
+  outpath = lib.escapeShellArg config.wrapperPaths.placeholder;
   wrapcmd = partial: "echo ${lib.escapeShellArg partial} >> ${outpath}";
 
   arg0 = if builtins.isString (config.argv0 or null) then config.argv0 else "\"$0\"";
@@ -60,7 +59,7 @@ let
     )
   ];
 
-  luarc-path = "${placeholder "out"}/${config.binName}-rc.lua";
+  luarc-path = "${placeholder config.outputName}/${config.binName or ""}-rc.lua";
   finalcmd = "${
     if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}"
   } --cmd ${lib.escapeShellArg "source${luarc-path}"} ${args}";
@@ -69,7 +68,7 @@ let
   NVIM_LUA_PATH = ((config.package.lua or luajit).pkgs.luaLib.genLuaPathAbsStr luaEnv);
   NVIM_LUA_CPATH = ((config.package.lua or luajit).pkgs.luaLib.genLuaCPathAbsStr luaEnv);
 
-  manifest-path = lib.escapeShellArg "${placeholder "out"}/${config.binName}-rplugin.vim";
+  manifest-path = lib.escapeShellArg "${placeholder config.outputName}/${config.binName or ""}-rplugin.vim";
 
   buildCommands =
     isFinal:
@@ -157,34 +156,27 @@ let
       (builtins.concatStringsSep "\n")
     ];
 in
-if
-  !builtins.isString (config.binName or null)
-  || config.binName == ""
-  || !(lib.isStringLike (config.package or null))
-then
-  ""
-else
-  /* bash */ ''
-    mkdir -p ${lib.escapeShellArg outdir}
-    { [ -e "$manifestLuaPath" ] && cat "$manifestLuaPath" || echo "$manifestLua"; } > ${lib.escapeShellArg luarc-path}
-    echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${outpath}
-    ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
-    ${buildCommands false}
-    ${wrapcmd "exec -a ${arg0} ${finalcmd}"}
-    chmod +x ${outpath}
+/* bash */ ''
+  mkdir -p ${lib.escapeShellArg "${placeholder config.outputName}${config.wrapperPaths.relDir}"}
+  { [ -e "$manifestLuaPath" ] && cat "$manifestLuaPath" || echo "$manifestLua"; } > ${lib.escapeShellArg luarc-path}
+  echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${outpath}
+  ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
+  ${buildCommands false}
+  ${wrapcmd "exec -a ${arg0} ${finalcmd}"}
+  chmod +x ${outpath}
 
-    export NVIM_RPLUGIN_MANIFEST=${manifest-path}
-    export HOME="$(mktemp -d)"
-    if ! $out/bin/${config.binName} -i NONE -n -V1rplugins.log \
-      +UpdateRemotePlugins +quit! > outfile 2>&1; then
-      cat outfile
-      echo -e "\nGenerating rplugin.vim failed!"
-      exit 1
-    fi
-    { [ -e "$setupLuaPath" ] && cat "$setupLuaPath" || echo "$setupLua"; } ${maybe_compile}> ${lib.escapeShellArg luarc-path}
-    echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${outpath}
-    ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
-    ${buildCommands true}
-    ${lib.optionalString (!lib.isFunction config.argv0type) (wrapcmd "exec -a ${arg0} ${finalcmd}")}
-    chmod +x ${outpath}
-  ''
+  export NVIM_RPLUGIN_MANIFEST=${manifest-path}
+  export HOME="$(mktemp -d)"
+  if ! ${config.wrapperPaths.placeholder} -i NONE -n -V1rplugins.log \
+    +UpdateRemotePlugins +quit! > outfile 2>&1; then
+    cat outfile
+    echo -e "\nGenerating rplugin.vim failed!"
+    exit 1
+  fi
+  { [ -e "$setupLuaPath" ] && cat "$setupLuaPath" || echo "$setupLua"; } ${maybe_compile}> ${lib.escapeShellArg luarc-path}
+  echo ${lib.escapeShellArg "#!${bash}/bin/bash"} > ${outpath}
+  ${wrapcmd (builtins.concatStringsSep "\n" prefuncs)}
+  ${buildCommands true}
+  ${lib.optionalString (!lib.isFunction config.argv0type) (wrapcmd "exec -a ${arg0} ${finalcmd}")}
+  chmod +x ${outpath}
+''

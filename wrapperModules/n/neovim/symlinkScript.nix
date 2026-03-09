@@ -12,7 +12,7 @@
 }:
 finalDrv:
 let
-  final-packdir = "${placeholder "out"}/${config.binName}-packdir";
+  final-packdir = "${placeholder outputName}/${binName}-packdir";
   start-dir = "${final-packdir}/pack/myNeovimPackages/start";
   opt-dir = "${final-packdir}/pack/myNeovimPackages/opt";
   info-plugin-path = "${start-dir}/${config.settings.info_plugin_name}";
@@ -21,6 +21,8 @@ let
     package
     binName
     outputs
+    outputName
+    wrapperPaths
     ;
   inherit (config.settings) info_plugin_name dont_link aliases;
   originalOutputs = wlib.getPackageOutputsSet package;
@@ -47,7 +49,7 @@ let
 in
 finalDrv
 // {
-  outputs = if dont_link then [ "out" ] else outputs;
+  outputs = if dont_link then [ outputName ] else outputs;
   passAsFile = [
     "manifestLua"
     "setupLua"
@@ -74,24 +76,24 @@ finalDrv
     vim.opt.runtimepath:append(configdir .. "/after")
   '';
   buildCommand = ''
-    mkdir -p $out/bin
+    mkdir -p ${placeholder outputName}/bin
     [ -d ${package}/nix-support ] && \
-    mkdir -p $out/nix-support && \
-    cp -r ${package}/nix-support/* $out/nix-support
+    mkdir -p ${placeholder outputName}/nix-support && \
+    cp -r ${package}/nix-support/* ${placeholder outputName}/nix-support
 
   ''
   + lib.optionalString stdenv.isLinux ''
-    mkdir -p $out/share/applications
+    mkdir -p '${placeholder outputName}/share/applications'
     substitute ${
       lib.escapeShellArgs [
         "${package}/share/applications/nvim.desktop"
-        "${placeholder "out"}/share/applications/${binName}.desktop"
+        "${placeholder outputName}/share/applications/${binName}.desktop"
         "--replace-fail"
         "Name=Neovim"
         "Name=${binName}"
         "--replace-fail"
         "TryExec=nvim"
-        "TryExec=${placeholder "out"}/bin/${binName}"
+        "TryExec=${wrapperPaths.placeholder}"
         "--replace-fail"
         "Icon=nvim"
         "Icon=${package}/share/icons/hicolor/128x128/apps/nvim.png"
@@ -101,18 +103,18 @@ finalDrv
       lib.escapeShellArgs [
         ''
           /^Exec=nvim/c\
-          Exec=${placeholder "out"}/bin/${binName} %F''
-        "${placeholder "out"}/share/applications/${binName}.desktop"
+          Exec=${wrapperPaths.placeholder} %F''
+        "${placeholder outputName}/share/applications/${binName}.desktop"
       ]
-    } > ./tmp_desk && mv -f ./tmp_desk "${placeholder "out"}/share/applications/${binName}.desktop"
+    } > ./tmp_desk && mv -f ./tmp_desk "${placeholder outputName}/share/applications/${binName}.desktop"
   ''
   + ''
 
     # Create symlinks for aliases
     ${lib.optionalString (aliases != [ ] && binName != "") ''
-      mkdir -p $out/bin
+      mkdir -p '${placeholder outputName}/bin'
       for alias in ${lib.concatStringsSep " " (map lib.escapeShellArg aliases)}; do
-        ln -sf ${lib.escapeShellArg binName} $out/bin/$alias
+        ln -sf ${wrapperPaths.placeholder} ${placeholder outputName}/bin/$alias
       done
     ''}
 
@@ -147,17 +149,15 @@ finalDrv
   + "\n"
   + lib.optionalString (!dont_link) ''
 
-    ${lndir}/bin/lndir -silent "${toString package}" $out
-
     # Handle additional outputs by symlinking from the original package's outputs
     ${lib.concatMapStringsSep "\n" (
       output:
-      if output != "out" && originalOutputs ? ${output} && originalOutputs.${output} != null then
+      if originalOutputs ? ${output} && originalOutputs.${output} != null then
         ''
           if [[ -n "''${${output}:-}" ]]; then
-            mkdir -p ${"$" + output}
+            mkdir -p ${placeholder output}
             # Only symlink from the original package's corresponding output
-            ${lndir}/bin/lndir -silent "${originalOutputs.${output}}" ${"$" + output}
+            ${lndir}/bin/lndir -silent "${originalOutputs.${output}}" ${placeholder output}
           fi
         ''
       else

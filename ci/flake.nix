@@ -62,7 +62,7 @@
         docs = wlib.evalPackage [
           ./docs
           {
-            warningsAreErrors = false;
+            warningsAreErrors = lib.mkDefault false;
             pkgs = import nixpkgs {
               inherit system;
               config = {

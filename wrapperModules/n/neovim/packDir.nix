@@ -16,7 +16,8 @@ let
               attrname = n;
               inherit (v.nvim-host) disabled_variable enabled_variable;
               setvarcmd = "vim.g[ ${builtins.toJSON v.nvim-host.enabled_variable} ] = ${builtins.toJSON v.nvim-host.var_path}";
-              bin_path = config.nvim-host.package;
+              bin_path = v.nvim-host.package;
+              out_path = v.nvim-host.wrapperPaths.placeholder;
             }
             // lib.optionalAttrs (!v.nvim-host.dontWrap) {
               config = v.nvim-host;
@@ -34,8 +35,7 @@ let
           (map (v: {
             name = v.attrname;
             value = {
-              bin_path =
-                if v ? bin_path then "${placeholder "out"}/bin/${config.binName}-${v.attrname}" else null;
+              bin_path = if v ? out_path then "${v.out_path}" else null;
               var_path = lib.generators.mkLuaInline "vim.g[ ${builtins.toJSON v.enabled_variable} ]";
               inherit (v) disabled_variable enabled_variable;
             };
@@ -54,10 +54,10 @@ let
                   inherit (pkgs) callPackage;
                 })
               ]
-            else if v ? bin_path then
+            else if v ? bin_path && v ? out_path then
               acc
               ++ [
-                "ln -s ${lib.escapeShellArg v.bin_path} ${lib.escapeShellArg "${placeholder "out"}/bin/${config.binName}-${v.attrname}"}"
+                "ln -s ${lib.escapeShellArg v.bin_path} ${lib.escapeShellArg v.out_path}"
               ]
             else
               acc
@@ -82,7 +82,7 @@ let
     buildPackDir
     mappedSpecs
     ;
-  vim_pack_dir = "${placeholder "out"}/${config.binName}-packdir";
+  vim_pack_dir = "${placeholder config.outputName}/${config.binName}-packdir";
   start_dir = "${vim_pack_dir}/pack/myNeovimPackages/start";
   opt_dir = "${vim_pack_dir}/pack/myNeovimPackages/opt";
   info_plugin_path = "${start_dir}/${config.settings.info_plugin_name}";
@@ -102,8 +102,8 @@ in
             (config.package.lua.withPackages or pkgs.luajit.withPackages)
               config.settings.nvim_lua_env;
         };
-        wrapper_drv = placeholder "out";
-        progpath = "${placeholder "out"}/bin/${config.binName}";
+        wrapper_drv = placeholder config.outputName;
+        progpath = config.wrapperPaths.placeholder;
         inherit (config) info binName;
         inherit
           plugins

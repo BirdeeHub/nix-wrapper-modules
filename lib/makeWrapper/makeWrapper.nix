@@ -19,13 +19,8 @@ let
     else
       [ "--inherit-argv0" ];
   baseArgs = map lib.escapeShellArg [
-    (
-      if !builtins.isString (config.exePath or null) || config.exePath == "" then
-        "${config.package}"
-      else
-        "${config.package}/${config.exePath}"
-    )
-    "${placeholder "out"}/${config.binDir or "bin"}/${config.binName}"
+    config.wrapperPaths.input
+    config.wrapperPaths.placeholder
   ];
   split = wlib.makeWrapper.splitDal (wlib.makeWrapper.aggregateSingleOptionSet { inherit config; });
   cliArgs = lib.pipe split.args [
@@ -104,21 +99,14 @@ let
 
   srcsetup = p: "source ${lib.escapeShellArg "${p}/nix-support/setup-hook"}";
 in
-if
-  !builtins.isString (config.binName or null)
-  || config.binName == ""
-  || !(lib.isStringLike (config.package or null))
-then
-  ""
-else
-  ''
-    (
-      OLD_OPTS="$(set +o)"
-      ${srcsetup dieHook}
-      ${srcsetup (
-        if config.wrapperImplementation or null != "binary" then makeWrapper else makeBinaryWrapper
-      )}
-      eval "$OLD_OPTS"
-      makeWrapper ${makeWrapperArgs}
-    )
-  ''
+''
+  (
+    OLD_OPTS="$(set +o)"
+    ${srcsetup dieHook}
+    ${srcsetup (
+      if config.wrapperImplementation or null != "binary" then makeWrapper else makeBinaryWrapper
+    )}
+    eval "$OLD_OPTS"
+    makeWrapper ${makeWrapperArgs}
+  )
+''

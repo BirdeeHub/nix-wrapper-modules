@@ -57,10 +57,10 @@ let
     )
   ];
 
-  luarc-path = "${placeholder "out"}/${config.binName}-rc.lua";
+  luarc-path = "${placeholder config.outputName}/${config.binName or ""}-rc.lua";
   baseArgs = map lib.escapeShellArg [
-    (if config.exePath == "" then "${config.package}" else "${config.package}/${config.exePath}")
-    "${placeholder "out"}/${config.binDir or "bin"}/${config.binName}"
+    config.wrapperPaths.input
+    config.wrapperPaths.placeholder
     "--add-flag"
     "--cmd"
     "--add-flag"
@@ -69,7 +69,7 @@ let
   luaEnv = (config.package.lua.withPackages or luajit.withPackages) config.settings.nvim_lua_env;
   NVIM_LUA_PATH = ((config.package.lua or luajit).pkgs.luaLib.genLuaPathAbsStr luaEnv);
   NVIM_LUA_CPATH = ((config.package.lua or luajit).pkgs.luaLib.genLuaCPathAbsStr luaEnv);
-  manifest-path = lib.escapeShellArg "${placeholder "out"}/${config.binName}-rplugin.vim";
+  manifest-path = lib.escapeShellArg "${placeholder config.outputName}/${config.binName or ""}-rplugin.vim";
   makeWrapperCmd =
     isFinal:
     lib.pipe split.other [
@@ -170,33 +170,26 @@ let
 
   srcsetup = p: "source ${lib.escapeShellArg "${p}/nix-support/setup-hook"}";
 in
-if
-  !builtins.isString (config.binName or null)
-  || config.binName == ""
-  || !(lib.isStringLike (config.package or null))
-then
-  ""
-else
-  /* bash */ ''
-    (
-      OLD_OPTS="$(set +o)"
-      ${srcsetup dieHook}
-      ${srcsetup (if config.wrapperImplementation == "binary" then makeBinaryWrapper else makeWrapper)}
-      eval "$OLD_OPTS"
-      mkdir -p $out/bin
-      { [ -e "$manifestLuaPath" ] && cat "$manifestLuaPath" || echo "$manifestLua"; } > ${lib.escapeShellArg luarc-path}
-      export NVIM_RPLUGIN_MANIFEST=${manifest-path}
-      export HOME="$(mktemp -d)"
-      ${makeWrapperCmd false}
+/* bash */ ''
+  (
+    OLD_OPTS="$(set +o)"
+    ${srcsetup dieHook}
+    ${srcsetup (if config.wrapperImplementation == "binary" then makeBinaryWrapper else makeWrapper)}
+    eval "$OLD_OPTS"
+    mkdir -p ${lib.escapeShellArg "${placeholder config.outputName}${config.wrapperPaths.relDir}"}
+    { [ -e "$manifestLuaPath" ] && cat "$manifestLuaPath" || echo "$manifestLua"; } > ${lib.escapeShellArg luarc-path}
+    export NVIM_RPLUGIN_MANIFEST=${manifest-path}
+    export HOME="$(mktemp -d)"
+    ${makeWrapperCmd false}
 
-      if ! $out/bin/${config.binName} -i NONE -n -V1rplugins.log \
-        +UpdateRemotePlugins +quit! > outfile 2>&1; then
-        cat outfile
-        echo -e "\nGenerating rplugin.vim failed!"
-        exit 1
-      fi
-      rm -f "$out/bin/${config.binName}"
-      { [ -e "$setupLuaPath" ] && cat "$setupLuaPath" || echo "$setupLua"; } ${maybe_compile}> ${lib.escapeShellArg luarc-path}
-      ${makeWrapperCmd true}
-    )
-  ''
+    if ! ${config.wrapperPaths.placeholder} -i NONE -n -V1rplugins.log \
+      +UpdateRemotePlugins +quit! > outfile 2>&1; then
+      cat outfile
+      echo -e "\nGenerating rplugin.vim failed!"
+      exit 1
+    fi
+    rm -f "${config.wrapperPaths.placeholder}"
+    { [ -e "$setupLuaPath" ] && cat "$setupLuaPath" || echo "$setupLua"; } ${maybe_compile}> ${lib.escapeShellArg luarc-path}
+    ${makeWrapperCmd true}
+  )
+''

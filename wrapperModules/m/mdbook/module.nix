@@ -205,7 +205,7 @@ in
       description = ''
         The books are generated to:
 
-        `''${placeholder "out"}/''${config.book-out-dir}/''${name}`
+        `''${placeholder config.outputName}/''${config.book-out-dir}/''${name}`
       '';
     };
     books = lib.mkOption {
@@ -353,7 +353,7 @@ in
                 description = ''
                   The directory within the wrapped derivation that contains the generated markdown for the book.
 
-                  `''${placeholder "out"}/''${config.books.<name>.generated-book-subdir}` is the root of this book.
+                  `''${placeholder config.outputName}/''${config.books.<name>.generated-book-subdir}` is the root of this book.
                 '';
               };
             };
@@ -374,7 +374,7 @@ in
     wrapperVariants = builtins.mapAttrs (_: v: {
       config.appendFlag = [
         {
-          data = "${placeholder "out"}/${v.generated-book-subdir}";
+          data = "${placeholder config.outputName}/${v.generated-book-subdir}";
           name = "GENERATED_MD_BOOK";
         }
       ];
@@ -431,7 +431,7 @@ in
         (builtins.mapAttrs (
           n: v:
           let
-            src = "${placeholder "out"}/${v.generated-book-subdir}/${
+            src = "${placeholder config.outputName}/${v.generated-book-subdir}/${
               lib.removePrefix "/" (lib.removeSuffix "/" (v.book.book.src or "src"))
             }";
             pages = renderBook src v.summary n;
@@ -441,7 +441,7 @@ in
             book = builtins.toJSON (
               lib.filterAttrsRecursive (_: v: !builtins.isFunction v && v != null) v.book
             );
-            root = "${placeholder "out"}/${v.generated-book-subdir}";
+            root = "${placeholder config.outputName}/${v.generated-book-subdir}";
             inherit src;
             build = pages.linkCmds;
           }
@@ -477,8 +477,7 @@ in
             && config.books."${config.mainBook}".enable or false == true
           )
           ''
-            rm -f $out/bin/${config.binName}
-            ln -s ${config.mainBook} $out/bin/${config.binName}
+            ln -sf ${config.mainBook} ${config.wrapperPaths.placeholder}
           ''
       + "\nrunHook postBuild";
     };
@@ -495,7 +494,7 @@ in
       you only have access to the other flags on these items at runtime.
 
       To achieve greater runtime control, run the main executable with one of the generated books within the derivation
-      as input yourself, either at runtime, or within the module via `''${placeholder "out"}/''${config.book-out-dir}/''${name}`
+      as input yourself, either at runtime, or within the module via `''${placeholder config.outputName}/''${config.book-out-dir}/''${name}`
 
       Within the module, there is an option called `mainBook` to REPLACE the main executable with a symlink to the desired book generation script.
 

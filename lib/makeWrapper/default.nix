@@ -84,25 +84,22 @@ in
       - `wrapperImplementation` (optional): Path or function for the wrapper implementation.
 
     Requirements on `config`:
-      - Must define `binName`, `package`, and `exePath`.
+      - Must define `wrapperPaths.input`, `wrapperPaths.placeholder`, `wrapperPaths.relDir`, `outputName`.
       - May include options from `wlib.modules.makeWrapper`.
 
     Behavior:
       - Wraps the main target and all enabled variants.
-      - If `config.binName` or `config.package` are missing, returns an empty string.
-      - If `config.exePath` is not a non-empty string, wraps the full `config.package` path.
-        Otherwise wraps:
-          `"${config.package}/${config.binName}"`
-      - Variants with `enable = false` are excluded.
-      - It will output the main wrapper to `${placeholder "out"}/${config.binDir or "bin"}/${config.binName}`
-      - It will do the same for each enabled variant, but with values from that variant's option set.
+      - Wraps the path at `config.wrapperPaths.input`
+      - Outputs it to `config.wrapperPaths.placeholder`
+      - Wraps the paths at `config.wrapperVariants.*.wrapperPaths.input`
+      - Outputs to `config.wrapperVariants.*.wrapperPaths.placeholder`
 
     Returns:
       A string containing build instructions to append to a derivation.
 
     It also takes as an argument `wrapperImplementation`
 
-    You may define a function that recieves `config`, `wlib`, and arguments from `callPackage`
+    You may define a function that receives `config`, `wlib`, and arguments from `callPackage`
     and returns a string of build instructions, that follows similar behavior.
 
     You may use the other functions in `wlib.makeWrapper` to help with this.
@@ -139,23 +136,20 @@ in
       - `wrapperImplementation` (optional): Path or function for the wrapper implementation.
 
     Requirements on `config`:
-      - Must define `binName`, `package`, and `exePath`.
+      - Must define `wrapperPaths.input`, `wrapperPaths.placeholder`, `wrapperPaths.relDir`, `outputName`.
       - May include options from `wlib.modules.makeWrapper`.
 
     Behavior:
       - Wraps only the main target (no variants).
-      - If `config.binName` or `config.package` are missing, returns an empty string.
-      - If `config.exePath` is not a non-empty string, wraps the full `config.package` path.
-        Otherwise wraps:
-          `"${config.package}/${config.binName}"`
-      - It will output the wrapper to `${placeholder "out"}/${config.binDir or "bin"}/${config.binName}`
+      - Wraps the path at `config.wrapperPaths.input`
+      - Outputs to `config.wrapperPaths.placeholder`
 
     Returns:
       A string containing build instructions to append to a derivation.
 
     It also takes as an argument `wrapperImplementation`
 
-    You may define a function that recieves `config`, `wlib`, and arguments from `callPackage`
+    You may define a function that receives `config`, `wlib`, and arguments from `callPackage`
     and returns a string of build instructions, that follows similar behavior.
 
     You may use the other functions in `wlib.makeWrapper` to help with this.
@@ -193,26 +187,22 @@ in
       - `wrapperImplementation` (optional): Path or function for the wrapper implementation.
 
     Requirements on `config`:
-      - Must define `binName`, `package`, and `exePath`.
+      - Must define `wrapperPaths.input`, `wrapperPaths.placeholder`, `wrapperPaths.relDir`, `outputName`.
       - Must define `wrapperVariants` as an attribute set.
       - May include options from `wlib.modules.makeWrapper`.
 
     Behavior:
       - Wraps all variants in `config.wrapperVariants`.
       - Variants with `enable = false` are excluded.
-      - If `config.binName` or `config.package` are missing, returns an empty string.
-      - If `config.exePath` is not a non-empty string, wraps the full `config.package` path.
-        Otherwise wraps:
-          `"${config.package}/${config.binName}"`
-      - It will output each variant to the `${placeholder "out"}/${config.binDir or "bin"}/${config.binName}`
-        corresponding to that variants options
+      - Wraps the paths at `config.wrapperVariants.*.wrapperPaths.input`
+      - Outputs to `config.wrapperVariants.*.wrapperPaths.placeholder`
 
     Returns:
       A string containing build instructions to append to a derivation.
 
     It also takes as an argument `wrapperImplementation`
 
-    You may define a function that recieves `config`, `wlib`, and arguments from `callPackage`
+    You may define a function that receives `config`, `wlib`, and arguments from `callPackage`
     and returns a string of build instructions, that follows similar behavior.
 
     You may use the other functions in `wlib.makeWrapper` to help with this.
@@ -252,27 +242,22 @@ in
         in `config.wrapperVariants`.
 
     Requirements on `config`:
-      - Must define `binName`, `package`, and `exePath`.
-      - Must define `wrapperVariants` containing `name`.
+      - Must define `wrapperPaths.input`, `wrapperPaths.placeholder`, `wrapperPaths.relDir`, `outputName`.
       - May include options from `wlib.modules.makeWrapper`.
 
     Behavior:
       - Wraps only the specified variant.
       - Asserts that `name` is a string.
       - If the selected variant has `enable = false`, it is excluded.
-      - If `config.binName` or `config.package` are missing, returns an empty string.
-      - If `config.exePath` is not a non-empty string, wraps the full `config.package` path.
-        Otherwise wraps:
-          `"${config.package}/${config.binName}"`
-      - It will output the wrapper to:
-        `"${placeholder "out"}/${config.wrapperVariants.${name}.binDir or "bin"}/${config.wrapperVariants.${name}.binName}"`
+      - Wraps the path at `config.wrapperVariants.${name}.wrapperPaths.input`
+      - Outputs to `config.wrapperVariants.${name}.wrapperPaths.placeholder`
 
     Returns:
       A string containing build instructions to append to a derivation.
 
     It also takes as an argument `wrapperImplementation`
 
-    You may define a function that recieves `config`, `wlib`, and arguments from `callPackage`
+    You may define a function that receives `config`, `wlib`, and arguments from `callPackage`
     and returns a string of build instructions, that follows similar behavior.
 
     You may use the other functions in `wlib.makeWrapper` to help with this.

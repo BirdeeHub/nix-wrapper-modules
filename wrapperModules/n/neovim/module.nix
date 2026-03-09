@@ -4,7 +4,7 @@
   wlib,
   lib,
   ...
-}:
+}@top:
 let
   makeWrapper = import wlib.modules.makeWrapper;
   inherit (lib) types;
@@ -30,99 +30,145 @@ let
     lib.types.submoduleWith {
       specialArgs = { inherit wlib; };
       modules = [
-        {
-          imports = [
-            (
-              makeWrapper
-              // {
-                excluded_options.wrapperVariants = true;
-                exclude_wrapper = true;
-                exclude_meta = true;
-              }
-            )
-          ];
-          options = {
-            # These internal options will allow us to call
-            # the regular function from the makeWrapper module for each host,
-            # but in the context of the outer wrapped nvim derivation.
-            binName = lib.mkOption {
-              type = lib.types.str;
-              default = "${config.binName}-${name}";
-              readOnly = true;
-              internal = true;
-              description = "placeholder option";
-            };
-            exePath = lib.mkOption {
-              type = lib.types.raw;
-              default = null;
-              readOnly = true;
-              internal = true;
-              description = "placeholder option";
-            };
-            enabled_variable = lib.mkOption {
-              type = wlib.types.nonEmptyLine;
-              default = "${name}_host_prog";
-              description = ''
-                `vim.g.<value>` will be set to the path to this wrapped host when the nvim host is enabled
-              '';
-            };
-            disabled_variable = lib.mkOption {
-              type = wlib.types.nonEmptyLine;
-              default = "loaded_${name}_provider";
-              description = ''
-                `vim.g.<value>` will be set to 0 when the nvim host is disabled
-              '';
-            };
-            var_path = lib.mkOption {
-              type = wlib.types.nonEmptyLine;
-              default = "${placeholder "out"}/bin/${config.binName}-${name}";
-              description = ''
-                The path to be added to `vim.g.<enabled_variable>`
+        (
+          { config, ... }:
+          {
+            imports = [
+              (
+                makeWrapper
+                // {
+                  excluded_options.wrapperVariants = true;
+                  exclude_wrapper = true;
+                  exclude_meta = true;
+                }
+              )
+            ];
+            options = {
+              # These internal options will allow us to call
+              # the regular function from the makeWrapper module for each host,
+              # but in the context of the outer wrapped nvim derivation.
+              binName = lib.mkOption {
+                type = lib.types.str;
+                default = "${top.config.binName}-${name}";
+                readOnly = true;
+                internal = true;
+                description = "placeholder option";
+              };
+              outputName = lib.mkOption {
+                type = wlib.types.nonEmptyLine;
+                default = top.config.outputName or "out";
+                description = ''
+                  The derivation output to place the wrapped result into in the final neovim derivation.
+                '';
+              };
+              binDir = lib.mkOption {
+                type = wlib.types.nonEmptyLine;
+                default = "bin";
+                description = ''
+                  The directory within the derivation output to place the wrapped result into in the final neovim derivation.
+                '';
+              };
+              wrapperPaths = {
+                input = lib.mkOption {
+                  default = config.package;
+                  type = lib.types.str;
+                  readOnly = true;
+                  description = ''
+                    The path which is to be wrapped by the wrapperFunction implementation
+                  '';
+                };
+                relPath = lib.mkOption {
+                  default = "/${config.binDir}/${config.binName}";
+                  type = lib.types.str;
+                  readOnly = true;
+                  description = ''
+                    The binary will be output to `$''${placeholder config.outputName}''${config.wrapperPaths.relPath}`
+                  '';
+                };
+                relDir = lib.mkOption {
+                  default = "/${config.binDir}";
+                  type = lib.types.str;
+                  readOnly = true;
+                  description = ''
+                    The binary will be output to `$''${placeholder config.outputName}''${config.wrapperPaths.relDir}/''${config.binName}`
+                  '';
+                };
+                placeholder = lib.mkOption {
+                  default = "${placeholder config.outputName}${config.wrapperPaths.relPath}";
+                  type = lib.types.str;
+                  readOnly = true;
+                  description = ''
+                    The path which the wrapperFunction implementation is to output its result to.
+                  '';
+                };
+              };
+              enabled_variable = lib.mkOption {
+                type = wlib.types.nonEmptyLine;
+                default = "${name}_host_prog";
+                description = ''
+                  `vim.g.<value>` will be set to the path to this wrapped host when the nvim host is enabled
+                '';
+              };
+              disabled_variable = lib.mkOption {
+                type = wlib.types.nonEmptyLine;
+                default = "loaded_${name}_provider";
+                description = ''
+                  `vim.g.<value>` will be set to 0 when the nvim host is disabled
+                '';
+              };
+              var_path = lib.mkOption {
+                type = wlib.types.nonEmptyLine;
+                default = config.wrapperPaths.placeholder;
+                description = ''
+                  The path to be added to `vim.g.<enabled_variable>`
 
-                By default, the result of wrapping `nvim-host.package` with the
-                other `nvim-host.*` options in the context of the outer neovim wrapper will be used.
-              '';
+                  By default, the result of wrapping `nvim-host.package` with the
+                  other `nvim-host.*` options in the context of the outer neovim wrapper will be used.
+                '';
+              };
+              dontWrap = lib.mkOption {
+                type = lib.types.bool;
+                default = false;
+                description = ''
+                  If true, do not process any `hosts.*.nvim-host` options for this host other than:
+
+                  `nvim-host.enable`,
+                  `nvim-host.package`,
+                  `nvim-host.var_path`,
+                  `nvim-host.outputName`,
+                  `nvim-host.binDir`,
+                  `nvim-host.enabled_variable`,
+                  `nvim-host.disabled_variable`
+                '';
+              };
+              package = lib.mkOption {
+                type = wlib.types.nonEmptyLine;
+                default = "${hostConfig.wrapper}${hostConfig.wrapperPaths.relPath}";
+                description = ''
+                  The full path to be added to the `PATH` alongside the main nvim wrapper.
+
+                  By default, the binary from this host wrapper module will be used.
+
+                  This is the path which gets wrapped in the context of the nvim wrapper by the nvim-host options
+
+                  This allows you to wrap this path in the context of the overall nvim derivation,
+                  and thus have access to that path via `placeholder "out"`
+                '';
+              };
+              enable = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = ''
+                  Enable this nvim host program.
+
+                  If enabled it will be added to the path alongside the nvim wrapper.
+
+                  It will also propagate options provided in this set to the nvim wrapper.
+                '';
+              };
             };
-            dontWrap = lib.mkOption {
-              type = lib.types.bool;
-              default = false;
-              description = ''
-                If true, do not process any `hosts.*.nvim-host` options for this host other than:
-
-                `nvim-host.enable`,
-                `nvim-host.package`,
-                `nvim-host.var_path`,
-                `nvim-host.enabled_variable`,
-                `nvim-host.disabled_variable`
-              '';
-            };
-            package = lib.mkOption {
-              type = wlib.types.nonEmptyLine;
-              default = "${hostConfig.wrapper}/bin/${hostConfig.binName}";
-              description = ''
-                The full path to be added to the `PATH` alongside the main nvim wrapper.
-
-                By default, the binary from this host wrapper module will be used.
-
-                This is the path which gets wrapped in the context of the nvim wrapper by the nvim-host options
-
-                This allows you to wrap this path in the context of the overall nvim derivation,
-                and thus have access to that path via `placeholder "out"`
-              '';
-            };
-            enable = lib.mkOption {
-              type = lib.types.bool;
-              default = true;
-              description = ''
-                Enable this nvim host program.
-
-                If enabled it will be added to the path alongside the nvim wrapper.
-
-                It will also propagate options provided in this set to the nvim wrapper.
-              '';
-            };
-          };
-        }
+          }
+        )
       ];
     };
 in
@@ -200,7 +246,7 @@ in
         This allows you to do things like
 
         ```nix
-        hosts.neovide.nvim-host.flags."--neovim-bin" = "''${placeholder "out"}/bin/''${config.binName}";
+        hosts.neovide.nvim-host.flags."--neovim-bin" = "''${config.wrapperPaths.placeholder}";
         ```
 
         If you do `hosts.neovide.nvim-host.enable = true;` it will do that for you.
@@ -442,7 +488,7 @@ in
       description = ''
         extra module for the plugin spec submodules (provided to `wlib.types.specWith`)
 
-        These modules recieve some `specialArgs`!
+        These modules receive some `specialArgs`!
 
         `parentSpec`, `parentOpts`, and `parentName`
 
@@ -586,9 +632,9 @@ in
       description = ''
         supply a DAL list of functions
 
-        Each function recieves the WHOLE final list of specs, in a particular format.
+        Each function receives the WHOLE final list of specs, in a particular format.
 
-        Each one recieves `[ { name = "attrName"; type = "spec" | "parent"; value = spec; } /* ... */ ]`
+        Each one receives `[ { name = "attrName"; type = "spec" | "parent"; value = spec; } /* ... */ ]`
 
         Each one returns the same structure, but with your alterations.
 
@@ -619,7 +665,7 @@ in
 
         `mappedSpecs` in the above snippet is the result after all `config.specMaps` have been applied.
 
-        You will recieve JUST the specs, unlike `config.specMaps`, which recieves specs wrapped in an outer set with more info
+        You will receive JUST the specs, unlike `config.specMaps`, which receives specs wrapped in an outer set with more info
 
         This function offered by this option allows you to use items collected from the final specs, to provide them to other options.
       '';

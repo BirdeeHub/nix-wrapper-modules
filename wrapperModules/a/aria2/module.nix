@@ -46,11 +46,10 @@ in
         runHook preBuild
         mkdir -p $conf
         cp $renderedSettingsPath "$conf/${config.binName}-settings.conf"
-        rm $bin/bin/aria2c
-        cp $out/bin/aria2c $bin/bin
         runHook postBuild
       '';
     };
+    wrapperVariants.aria2c.outputName = "out";
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };
 }
