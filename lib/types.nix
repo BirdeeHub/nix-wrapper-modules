@@ -245,6 +245,7 @@
     used by `wlib.modules.makeWrapper`
   */
   dalWithEsc = wlib.types.dalOf // {
+    dontConvertFunctions = true;
     modules = [
       {
         options.esc-fn = lib.mkOption {
@@ -266,6 +267,7 @@
     used by `wlib.modules.makeWrapper`
   */
   dagWithEsc = wlib.types.dagOf // {
+    dontConvertFunctions = true;
     inherit (wlib.types.dalWithEsc) modules;
   };
 

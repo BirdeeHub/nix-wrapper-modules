@@ -275,6 +275,7 @@ let
           (
             wlib.types.dagOf
             // {
+              dontConvertFunctions = true;
               modules = wlib.types.dagWithEsc.modules ++ [
                 {
                   options.sep = lib.mkOption {
