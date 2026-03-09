@@ -519,4 +519,47 @@ in
         result
     );
 
+  /**
+    Placeholder value used when overriding a non-main field of a spec type.
+
+    When overriding the main field of a spec type, things work as you might expect.
+
+    ```nix
+    # assuming these were already set in another module:
+
+    config.env.SOME_ALIAS.data = lib.mkForce "SOME OTHER VALUE";
+
+    config.env.ANOTHER_ALIAS = {
+      data = lib.mkForce "SOME OTHER VALUE";
+      after = [ "SOME_ALIAS" ];
+    };
+    ```
+
+    However, overriding ONLY an auxiliary field is slightly more challenging.
+
+    Each value provided to a spec type MUST be valid, or it is converted.
+
+    But without the main field defined, it is not a valid spec.
+
+    To prevent this, we must explicitly ignore the main field.
+
+    Example (overriding a non-main field):
+    ```nix
+    config.env.SOME_ALIAS = {
+      after = [ "OTHER_ALIAS" ];
+      data = wlib.ignoreSpecField;
+    };
+    ```
+
+    However, for the case of the `env` option, it accepts function submodules.
+
+    If the spec type has `dontConvertFunctions = true`, like `env` does,
+    then you can do this instead.
+
+    ```nix
+    config.env.SOME_ALIAS = { ... }: { after = [ "OTHER_ALIAS" ]; };
+    ```
+  */
+  ignoreSpecField = lib.mkIf false null;
+
 }

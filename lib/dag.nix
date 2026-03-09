@@ -74,7 +74,7 @@ let
       class = settings.class or null;
       description = settings.description or null;
       mainField = settings.mainField or null;
-      dontConvertFunctions = settings.dontConvertFunctions or false;
+      dontConvertFunctions = settings.dontConvertFunctions or null;
       modules =
         optionals (!isStrict) [ { freeformType = wlib.types.attrsRecursive; } ]
         ++ [
@@ -113,7 +113,7 @@ in
     - If `elemType` is a `submodule` or `spec`, a `parentName` argument will automatically be injected to access the actual attribute name.
   */
   dagWith =
-    settings: elemType: types.attrsOf (mkDagEntryModule (settings // { isDal = true; }) elemType);
+    settings: elemType: types.attrsOf (mkDagEntryModule (settings // { isDal = false; }) elemType);
 
   /**
     Arguments:
@@ -137,7 +137,7 @@ in
     - If `elemType` is a `submodule` or `spec`, a `parentName` argument will automatically be injected to access the actual attribute name.
   */
   dalWith =
-    settings: elemType: types.listOf (mkDagEntryModule (settings // { isDal = false; }) elemType);
+    settings: elemType: types.listOf (mkDagEntryModule (settings // { isDal = true; }) elemType);
 
   /**
     Arguments:

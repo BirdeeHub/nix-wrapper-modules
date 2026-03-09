@@ -295,6 +295,7 @@ in
             parentOpts = null;
             parentName = null;
           };
+          dontConvertFunctions = true;
           modules =
             let
               inherit (config) specMods;
@@ -324,6 +325,7 @@ in
                               parentOpts = options;
                               parentName = name;
                             };
+                            dontConvertFunctions = true;
                             modules = [
                               {
                                 options.data = lib.mkOption {

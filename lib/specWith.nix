@@ -13,7 +13,7 @@ let
       class ? null,
       description ? null,
       mainField ? null,
-      dontConvertFunctions ? false,
+      dontConvertFunctions ? null,
     }@attrs:
     let
       inherit (builtins)
@@ -82,7 +82,7 @@ let
       # returns true if already the submodule type and false if not
       checkMergeDef =
         def:
-        if dontConvertFunctions && isFunction def.value then
+        if builtins.isBool dontConvertFunctions && dontConvertFunctions && isFunction def.value then
           true
         else if baseNoCheck._module.freeformType or null != null then
           isAttrs def.value && def.value ? "${toString main_field}"
