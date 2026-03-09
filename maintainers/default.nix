@@ -35,4 +35,9 @@
     githubId = 155641117;
     email = "rachitve6h2g@users.noreply.github.com";
   };
+  alexlov = {
+    name = "Alex Lov";
+    github = "alexlov";
+    githubId = 100994;
+  };
 }
