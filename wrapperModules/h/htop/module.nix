@@ -6,27 +6,29 @@
   ...
 }:
 let
-    mkValueString =
-      value:
-      if builtins.isList value then
-        builtins.concatStringsSep " " (map mkValueString value)
-      else if builtins.isString value then
-        value
-      else if builtins.isBool value then
-        if value then "1" else "0"
-      else if builtins.isInt value then
-        toString value
-      else
-        throw "Unrecognized type ${builtins.typeOf value} in htop settings";
+  mkValueString =
+    value:
+    if builtins.isList value then
+      builtins.concatStringsSep " " (map mkValueString value)
+    else if builtins.isString value then
+      value
+    else if builtins.isBool value then
+      if value then "1" else "0"
+    else if builtins.isInt value then
+      toString value
+    else
+      throw "Unrecognized type ${builtins.typeOf value} in htop settings";
 
-    mkKeyValue = lib.generators.mkKeyValueDefault { inherit mkValueString; } "=";
-    toHtopConf = lib.generators.toKeyValue { inherit mkKeyValue; };
+  mkKeyValue = lib.generators.mkKeyValueDefault { inherit mkValueString; } "=";
+  toHtopConf = lib.generators.toKeyValue { inherit mkKeyValue; };
 
-    htopConfig = pkgs.writeText "htoprc" (lib.concatLines [
-       # header_layout must be the first in file (or at least just above) so column_meter* parameters can work
+  htopConfig = pkgs.writeText "htoprc" (
+    lib.concatLines [
+      # header_layout must be the first in file (or at least just above) so column_meter* parameters can work
       (toHtopConf (lib.filterAttrs (n: _: n == "header_layout") config.settings))
       (toHtopConf (lib.filterAttrs (n: _: n != "header_layout") config.settings))
-    ]);
+    ]
+  );
 in
 {
   imports = [ wlib.modules.default ];
