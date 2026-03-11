@@ -38,6 +38,7 @@ let
                 makeWrapper
                 // {
                   excluded_options.wrapperVariants = true;
+                  excluded_options.wrapperFunction = true;
                   exclude_wrapper = true;
                   exclude_meta = true;
                 }

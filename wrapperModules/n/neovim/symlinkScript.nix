@@ -1,7 +1,7 @@
 {
   config,
   wlib,
-  wrapper,
+  buildCommand,
   # other args from callPackage
   lib,
   lndir,
@@ -145,7 +145,7 @@ finalDrv
     echo "propagated dependency cpath for plugins: $LUA_CPATH"
   ''
   + "\n"
-  + wrapper
+  + buildCommand
   + "\n"
   + lib.optionalString (!dont_link) ''
 
