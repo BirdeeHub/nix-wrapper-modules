@@ -690,20 +690,84 @@ in
   __functor =
     self:
     {
-      wlib,
+      config,
       lib,
+      wlib,
+      pkgs,
+      # NOTE: makes sure builderFunction and wrapperFunction get name from _module.args
+      options,
+      extendModules,
+      name ? null,
       ...
-    }:
+    }@args:
     {
       _file = self._file or ./module.nix;
       ${if (self.key or ./module.nix) != null then "key" else null} = self.key or ./module.nix;
       imports = [ (options_module (self._file or ./module.nix) (self.excluded_options or { }) true) ];
-      config.${if self.exclude_wrapper or false then null else "wrapperFunction"} = lib.mkDefault (
-        if self.wrapperFunction or null != null then
-          self.wrapperFunction or wlib.makeWrapper.wrapAll
+      options.${
+        if
+          builtins.isBool (self.excluded_options.wrapperFunction or null)
+          && self.excluded_options.wrapperFunction
+        then
+          null
         else
-          wlib.makeWrapper.wrapAll
-      );
+          "wrapperFunction"
+      } =
+        lib.mkOption {
+          type = lib.types.functionTo lib.types.str;
+          default =
+            if self.wrapperFunction or null != null then self.wrapperFunction else wlib.makeWrapper.wrapAll;
+          description = ''
+            Arguments:
+
+            This option takes a function receiving the following arguments:
+
+            module arguments + `pkgs.callPackage`
+
+            ```
+            {
+              config,
+              wlib,
+              ... # <- anything you can get from pkgs.callPackage
+            }
+            ```
+            This is the function used to process the wrapper arguments.
+
+            By default, it is `wlib.makeWrapper.wrapAll`
+
+            It will be called with the normal module arguments + `pkgs.callPackage` arguments
+
+            The module calls it, and places the result in `config.buildCommand.makeWrapper` with `lib.mkOptionDefault` priority.
+
+            The relative path to the thing to wrap is `config.wrapperPaths.input`
+
+            This function is to return a string of build commands which create a result at `config.wrapperPaths.placeholder`
+          '';
+        };
+      config.${if self.exclude_wrapper or false then null else "buildCommand"}.makeWrapper = {
+        before = [ "symlinkScript" ];
+        data = lib.mkOptionDefault (
+          let
+            res = pkgs.callPackage (
+              if
+                builtins.isBool (self.excluded_options.wrapperFunction or null)
+                && self.excluded_options.wrapperFunction
+              then
+                wlib.makeWrapper.wrapAll
+              else
+                config.wrapperFunction
+            ) args;
+          in
+          if builtins.isString res then
+            res
+          else
+            throw ''
+              Returning something other than a build command string from wrapperFunction is no longer supported.
+
+              To pass other values to `builderFunction`, place them in an option.
+            ''
+        );
+      };
       config.${if self.exclude_meta or false then null else "meta"} = {
         maintainers = [ wlib.maintainers.birdee ];
         description = {
@@ -753,7 +817,7 @@ in
 
             You may `//` (update) the following values into the set you gain from importing the file:
 
-            `exclude_wrapper = true;` to stop it from setting `config.wrapperFunction`
+            `exclude_wrapper = true;` to stop it from setting `config.buildCommand.makeWrapper`
 
             `wrapperFunction = ...;` to override the default `config.wrapperFunction` that it sets instead of excluding it.
 

@@ -526,37 +526,25 @@ in
         It is added via the apply field of the option for you.
       '';
     };
-    wrapperFunction = lib.mkOption {
-      type = lib.types.nullOr (lib.types.functionTo lib.types.raw);
-      default = null;
+    buildCommand = lib.mkOption {
+      type = wlib.types.dagOf lib.types.lines;
+      default = { };
       description = ''
-        Arguments:
+        This option is to be used to fulfill the contract formed by `config.wrapperPaths`
 
-        This option takes a function receiving the following arguments:
-
-        module arguments + `pkgs.callPackage`
-
-        ```
-        {
-          config,
-          wlib,
-          ... # <- anything you can get from pkgs.callPackage
-        }
-        ```
-
-        The result of this function is passed DIRECTLY to the value of the `builderFunction` function.
+        This option is used by builderFunction to create a build script which will be ran in the resulting derivation.
 
         The relative path to the thing to wrap is `config.wrapperPaths.input`
 
-        This function is to return a value which creates a result at `config.wrapperPaths.placeholder`
+        The result should be created at `config.wrapperPaths.placeholder`
 
-        The type this value is to return is dictated by `config.builderFunction`.
+        In most wrapper modules, this contract has been fulfilled for you by `wlib.modules.makeWrapper`
+        and `wlib.modules.symlinkScript`, which are imported by `wlib.modules.default`
 
-        The default implementation, as well as the implementation from `wlib.modules.symlinkScript`
-        accept either a string which will be prepended to `buildCommand` (preferred),
-        or a derivation which can be symlinked into the resulting derivation output to create the desired path.
+        However, you may add extra entries, and place them before or after the commands provided by those modules.
 
-        Again, the result is passed DIRECTLY as an argument to the function which is the value of `config.builderFunction`
+        This is a more flexible form of providing derivation build commands than the normal `drv.buildPhase` style options.
+        However, those are also usable, as are the other `drv` attributes such as things like `drv.__structuredAttrs`.
       '';
     };
     builderFunction = lib.mkOption {
@@ -564,40 +552,38 @@ in
         lib.types.either lib.types.str (lib.types.functionTo (lib.types.attrsOf lib.types.raw))
       );
       description = ''
-        Outside of importing `wlib.modules.symlinkScript` module,
-        which is included in `wlib.modules.default`,
         This is usually an option you will never have to redefine.
 
         This option takes a function receiving the following arguments:
 
-        module arguments + `wrapper` + `pkgs.callPackage`
+        module arguments + `buildCommand` + `pkgs.callPackage`
+
+        `buildCommand` is the already sorted and concatenated result of the `config.buildCommand` DAG option,
+        for convenience.
+
+        This function is in charge of running the generated `buildCommand` build script,
+        generated from the `config.buildCommand` option.
+
+        The function provided may be in 1 of 3 forms.
+
+        - The function is to return a string which will be added to the buildCommand of the wrapper.
 
         ```
         {
           wlib,
           config,
-          wrapper,
+          buildCommand,
           ... # <- anything you can get from pkgs.callPackage
         }@initialArgs:
-        "<buildCommand>"
+        buildCommand # <- gets provided to buildCommand attribute of the final drv
         ```
-
-        It is in charge of linking `wrapper` and `config.outputs` to the final package.
-
-        `wrapper` is the unchecked result of calling `wrapperFunction`, or null if one was not provided.
-
-        - The function is to return a string which will be added to the buildCommand of the wrapper.
-
-        The builtin implementation, and also the `wlib.modules.symlinkScript` module,
-        accept either a string to prepend to the returned `buildCommand` string,
-        or a derivation to link with lndir
 
         - Alternatively, it may return a function which returns a set like:
 
         ```nix
-        { wlib, config, wrapper, ... }@initialArgs:
+        { wlib, config, buildCommand, ... }@initialArgs:
         drvArgs:
-        drvArgs // {}
+        drvArgs // { inherit buildCommand; }
         ```
 
         If it does this, that function will be given the final computed derivation attributes,
@@ -612,7 +598,7 @@ in
         - You can also return a _functor_ with a (required) `mkDerivation` field.
 
         ```nix
-          { config, stdenv, wrapper, wlib, ... }@initialArgs:
+          { config, stdenv, buildCommand, wlib, ... }@initialArgs:
           {
             inherit (stdenv) mkDerivation;
             __functor = {
@@ -624,7 +610,12 @@ in
               ...
             }@self:
             defaultArgs:
-            defaultArgs // (if config.sourceStdenv then { } else { buildCommand = ""; }
+            defaultArgs // {
+              buildCommand =
+                lib.optionalString config.sourceStdenv (setupPhases defaultPhases)
+                + buildCommand
+                + lib.optionalString config.sourceStdenv runPhases;
+            };
           }
         ```
 
@@ -642,44 +633,7 @@ in
         Tip: A _functor_ is a set with a `{ __functor = self: args: ...; }` field.
         You can call it like a function and it gets passed itself as its first argument!
       '';
-      default =
-        {
-          wlib,
-          config,
-          wrapper,
-          lib,
-          lndir,
-          ...
-        }:
-        let
-          originalOutputs = wlib.getPackageOutputsSet config.package;
-        in
-        "mkdir -p ${placeholder config.outputName} \n"
-        + (
-          if builtins.isString wrapper then
-            wrapper
-          else if wrapper != null then
-            "${lndir}/bin/lndir -silent \"${toString wrapper}\" ${placeholder config.outputName}"
-          else
-            ""
-        )
-        + ''
-
-          # Handle additional outputs by symlinking from the original package's outputs
-          ${lib.concatMapStringsSep "\n" (
-            output:
-            if originalOutputs ? ${output} && originalOutputs.${output} != null then
-              ''
-                if [[ -n "''${${output}:-}" ]]; then
-                  mkdir -p ${placeholder output}
-                  # Only symlink from the original package's corresponding output
-                  ${lndir}/bin/lndir -silent "${originalOutputs.${output}}" ${placeholder output}
-                fi
-              ''
-            else
-              ""
-          ) config.outputs}
-        '';
+      default = { buildCommand, ... }: buildCommand;
     };
     sourceStdenv = lib.mkOption {
       type = lib.types.bool;
@@ -835,9 +789,22 @@ in
           '';
           initial = pkgs.callPackage config.builderFunction (
             args
-            // {
-              wrapper =
-                if config.wrapperFunction == null then null else pkgs.callPackage config.wrapperFunction args;
+            // rec {
+              wrapper = lib.warn ''
+                the `wrapper` argument of config.builderFunction is deprecated.
+
+                Instead of `wrapper`, you will need to run `buildCommand` argument instead.
+
+                It contains the sorted and concatenated value of `config.buildCommand` DAG option
+
+                If you wish to sort the `config.buildCommand` DAG yourself instead, this is fine,
+                but it has been provided in sorted form via the `buildCommand` argument for convenience.
+              '' buildCommand;
+              buildCommand = lib.pipe config.buildCommand [
+                (wlib.dag.unwrapSort "buildCommand")
+                (map (v: v.data))
+                (builtins.concatStringsSep "\n")
+              ];
             }
           );
         in
