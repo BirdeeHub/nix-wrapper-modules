@@ -6,13 +6,13 @@
   ...
 }:
 let
-  gitIniFmt = pkgs.formats.gitIni { };
+  gitconfigPath = "${placeholder config.outputName}/${config.binName}config";
 in
 {
   imports = [ wlib.modules.default ];
   options = {
     settings = lib.mkOption {
-      type = gitIniFmt.type;
+      inherit (pkgs.formats.gitIni { }) type;
       default = { };
       description = ''
         Git configuration settings.
@@ -22,13 +22,23 @@ in
 
     configFile = lib.mkOption {
       type = wlib.types.file pkgs;
-      default.path = gitIniFmt.generate "gitconfig" config.settings;
+      default.path = gitconfigPath;
+      default.content = "";
       description = "Generated git configuration file.";
     };
   };
 
   config.env.GIT_CONFIG_GLOBAL = config.configFile.path;
   config.package = lib.mkDefault pkgs.git;
+  config.drv = {
+    gitconfig = lib.generators.toGitINI config.settings + "\n" + config.configFile.content;
+    passAsFile = [ "gitconfig" ];
+    buildPhase = ''
+      runHook preBuild
+      cp "$gitconfigPath" ${lib.escapeShellArg gitconfigPath}
+      runHook postBuild
+    '';
+  };
   config.meta.maintainers = [ wlib.maintainers.birdee ];
   config.meta.description = ''
     Nix uses git for all sorts of things. Including fetching flakes!
