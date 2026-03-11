@@ -7,7 +7,6 @@ There are 2 kinds of modules in this repository. One kind which defines the `pac
 If you are making a wrapper module, i.e. one which **does** define the `config.package` option, and thus wraps a package:
 
 You must define a `wrapperModules/<first_letter>/<your_package_name>/wrapper.nix` file.
-
 The file must contain a single, unevaluated module. In other words, it must be importable without calling it like a function first.
 
 All wrapper modules must have a `config.meta.maintainers = [ <your wlib.maintainers listing> ];` entry.
@@ -173,19 +172,19 @@ else
 
 # Commit Messages
 
-Changes to wrapper modules should be titled `type(wrapperModules.<name>): some description`.
+Changes to wrapper modules should be titled `<type>(wrapperModules.<name>): some description`.
 For new additions, the description should be `init`, with any further explanation on subsequent lines
 
-Changes to helper modules should be titled `type(modules.<name>): some description`.
+Changes to helper modules should be titled `<type>(modules.<name>): some description`.
 For new additions, the description should be `init`, with any further explanation on subsequent lines
 
-For `lib` additions and changes, the description should be `type(lib.<set>.<name>): some description` or `type(lib.<name>): some description`.
+For `lib` additions and changes, the description should be `<type>(lib.<set>.<name>): some description` or `type(lib.<name>): some description`.
 
-For template additions and changes, the description should be `type(templates.<name>): some description`.
+For template additions and changes, the description should be `<type>(templates.<name>): some description`.
 
-Changes to the core options set defined in `lib/core.nix` should be titled `type(core): some description`.
+Changes to the core options set defined in `lib/core.nix` should be titled `<type>(core): some description`.
 
-`type` refers to a one word tag [like `feat`, `fix`, `docs`, or `test`](https://gist.github.com/Zekfad/f51cb06ac76e2457f11c80ed705c95a3#commit-types) as specified by [Conventional Commits](https://www.conventionalcommits.org)
+`<type>` refers to a one word tag [like `feat`, `fix`, `docs`, or `test`](https://gist.github.com/Zekfad/f51cb06ac76e2457f11c80ed705c95a3#commit-types) as specified by [Conventional Commits](https://www.conventionalcommits.org)
 
 For everything else, do the best you can to follow conventional commit message style.
 
