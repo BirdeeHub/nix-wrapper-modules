@@ -22,13 +22,12 @@ let
   mkKeyValue = lib.generators.mkKeyValueDefault { inherit mkValueString; } "=";
   toHtopConf = lib.generators.toKeyValue { inherit mkKeyValue; };
 
-  htopConfig = pkgs.writeText "htoprc" (
-    lib.concatLines [
-      # header_layout must be the first in file (or at least just above) so column_meter* parameters can work
-      (toHtopConf (lib.filterAttrs (n: _: n == "header_layout") config.settings))
-      (toHtopConf (lib.filterAttrs (n: _: n != "header_layout") config.settings))
-    ]
-  );
+  configPath = "${placeholder config.outputName}/${config.binName}rc";
+  htopConfig = lib.concatLines [
+    # header_layout must be the first in file (or at least just above) so column_meter* parameters can work
+    (toHtopConf (lib.filterAttrs (n: _: n == "header_layout") config.settings))
+    (toHtopConf (lib.filterAttrs (n: _: n != "header_layout") config.settings))
+  ];
 in
 {
   imports = [ wlib.modules.default ];
@@ -59,7 +58,15 @@ in
   };
 
   config.package = lib.mkDefault pkgs.htop;
-  config.envDefault.HTOPRC = htopConfig;
+
+  config.drv.htopConfig = htopConfig;
+  config.drv.passAsFile = [ "htopConfig" ];
+  config.envDefault.HTOPRC = configPath;
+  config.drv.buildPhase = ''
+    runHook preBuild
+    cp "$htopConfigPath" ${configPath}
+    runHook postBuild
+  '';
 
   meta.maintainers = [ wlib.maintainers.alexlov ];
 }
