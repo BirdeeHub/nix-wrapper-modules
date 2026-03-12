@@ -13,15 +13,7 @@ in
   options = {
     settings = lib.mkOption {
       type = tomlFmt.type;
-      default = {
-        flags = {
-          avg_cpu = true;
-          temperature_type = "c";
-        };
-        colors = {
-          low_battery_color = "red";
-        };
-      };
+      default = { };
       description = ''
         Configuration passed to `btm` using `--config_location` flag.
 
