@@ -88,15 +88,15 @@ let
             name = "NIX_PROPAGATED_LUA_PATH";
             type = "UNPROCESSED";
             data =
-              (wrapcmd "wrapperSuffixEnv LUA_PATH ';' ${lib.escapeShellArg NVIM_LUA_PATH}\n")
-              + "echo \"wrapperSuffixEnv LUA_PATH ';' \${LUA_PATH@Q}\" >> ${outpath}";
+              (wrapcmd "wrapperSuffixEnv LUA_PATH ';' ${lib.escapeShellArg NVIM_LUA_PATH}")
+              + "\necho \"wrapperSuffixEnv LUA_PATH ';' \${LUA_PATH@Q}\" >> ${outpath}";
           }
           {
             name = "NIX_PROPAGATED_LUA_CPATH";
             type = "UNPROCESSED";
             data =
-              (wrapcmd "wrapperSuffixEnv LUA_CPATH ';' ${lib.escapeShellArg NVIM_LUA_CPATH}\n")
-              + "echo \"wrapperSuffixEnv LUA_CPATH ';' \${LUA_CPATH@Q}\" >> ${outpath}";
+              (wrapcmd "wrapperSuffixEnv LUA_CPATH ';' ${lib.escapeShellArg NVIM_LUA_CPATH}")
+              + "\necho \"wrapperSuffixEnv LUA_CPATH ';' \${LUA_CPATH@Q}\" >> ${outpath}";
           }
         ]
         ++ lib.optional isFinal {
