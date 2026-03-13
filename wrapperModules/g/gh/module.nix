@@ -21,6 +21,9 @@ in
   };
   config = {
     package = lib.mkDefault pkgs.gh;
+    env = {
+      GH_CONFIG_DIR = "${placeholder config.outputName}/gh-config";
+    };
     drv = {
       configYml = yamlFormat.generate "config.yml" config.settings;
       passAsFile = [
@@ -32,9 +35,6 @@ in
         cp "$(cat "$configYmlPath")" "${placeholder config.outputName}/gh-config/config.yml"
         runHook postBuild
       '';
-      env = {
-        GH_CONFIG_DIR = "${placeholder config.outputName}/gh-config";
-      };
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };
