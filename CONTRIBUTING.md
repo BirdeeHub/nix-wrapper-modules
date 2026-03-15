@@ -1,4 +1,4 @@
-# Adding modules!
+# Adding Modules!
 
 There are 2 kinds of modules in this repository. One kind which defines the `package` option, and one kind which does not.
 
@@ -117,10 +117,6 @@ Example:
   };
 }
 ```
-
-On the other hand, using `wlib.types.file` makes it more difficult to accept `${placeholder "out"}` within the generated configuration and have it point to the final derivation.
-
-So, if this might be important for your program, you can consider providing a different way to override the path. But in most cases, `${placeholder "out"}` is only something you use in the `config.drv` options when adding new files to the wrapper derivation itself. So, generally, using `wlib.types.file` is better for uniformity.
 
 # Formatting
 
