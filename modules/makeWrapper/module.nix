@@ -408,7 +408,7 @@ let
           ];
         };
       options.${if !(excluded.env or false) then "env" else null} = lib.mkOption {
-        type = wlib.types.dagWithEsc wlib.types.stringable;
+        type = wlib.types.dagWithEsc (lib.types.nullOr wlib.types.stringable);
         default = if mainConfig != null && config.mirror or false then mainConfig.env else { };
         example = {
           "XDG_DATA_HOME" = "/somewhere/on/your/machine";
@@ -425,7 +425,7 @@ let
         '';
       };
       options.${if !(excluded.envDefault or false) then "envDefault" else null} = lib.mkOption {
-        type = wlib.types.dagWithEsc wlib.types.stringable;
+        type = wlib.types.dagWithEsc (lib.types.nullOr wlib.types.stringable);
         default = if mainConfig != null && config.mirror or false then mainConfig.envDefault else { };
         example = {
           "XDG_DATA_HOME" = "/only/if/not/set";

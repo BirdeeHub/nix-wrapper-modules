@@ -368,7 +368,9 @@ in
         ++ mapAndLiftDal "addFlag" (config.addFlag or [ ])
         ++ mapAndLiftDal "appendFlag" (config.appendFlag or [ ]);
     in
-    if sortResult then wlib.dag.unwrapSort "makeWrapper" unsorted else unsorted;
+    builtins.filter (v: !(v.type == "env" || v.type == "envDefault") || v.data or null != null) (
+      if sortResult then wlib.dag.unwrapSort "makeWrapper" unsorted else unsorted
+    );
 
   /*
     splitDal receives the dal as returned by `aggregateSingleOptionSet` and splits it into 2 lists, `args` and `other`.
