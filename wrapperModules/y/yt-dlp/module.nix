@@ -58,17 +58,10 @@ in
 
   config = {
     package = pkgs.yt-dlp;
-    flags = {
-      "--config-location" = "${placeholder config.outputName}/${config.binName}-settings.conf";
-    };
-    drv = {
-      renderedSettings = renderSettings config.settings;
-      passAsFile = [ "renderedSettings" ];
-      buildPhase = ''
-        runHook preBuild
-        cp $renderedSettingsPath "${placeholder config.outputName}/${config.binName}-settings.conf"
-        runHook postBuild
-      '';
+    flags."--config-location" = config.constructFiles.renderedSettings.path;
+    constructFiles.renderedSettings = {
+      relPath = "${config.binName}-settings.conf";
+      content = renderSettings config.settings;
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };

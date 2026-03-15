@@ -47,10 +47,10 @@ You may optionally set the `meta.description` option to provide a short descript
 
 ## Guidelines and Examples:
 
-When you provide an option to `enable` or `disable` something, you should call it `enable` regardless of its default value.
+- When you provide an option to `enable` or `disable` something, you should call it `enable` regardless of its default value.
 This prevents people from needing to look it up to use it, and prevents contributors from having to think too hard about which to call it.
 
-When you provide a `wlib.types.file` option, you should name it the actual filename, especially if there are multiple, but `configFile` is also OK, especially if it is unambiguous.
+- When you provide a `wlib.types.file` option, you should name it the actual filename, especially if there are multiple, but `configFile` is also OK, especially if it is unambiguous.
 
 If you do name it `configFile` instead, you can fix the filename if necessary/desired by setting `default.path` explicitly, as shown in the example below.
 
@@ -59,6 +59,14 @@ Keep in mind that even if you do not choose to use `wlib.types.file`, the user c
 However, this makes the user of your module search for it, and in some situations, such as when your module is adding stuff to `list` or `DAL` type options, this can be slightly harder to override later.
 
 So making use of the `wlib.types.file` type or giving some other method of overriding the filepath when providing a file is generally recommended for this reason.
+
+- When you generate a file, it is generally better to do so as a string, and create it using the `constructFiles` option.
+
+This is because, this will make placeholders such as `${placeholder "out"}` work consistently across all your options.
+
+What this allows you to do, is manually build files later using `buildCommand` option or a stdenv phase, and then refer to that created file within your settings!
+
+Making placeholders work in your module makes your modules generally more easily extensible, and is preferred when it is possible to generate a usable string.
 
 Example:
 
@@ -70,31 +78,40 @@ Example:
   pkgs,
   ...
 }:
-let
-  gitIniFmt = pkgs.formats.gitIni { };
-in
 {
   imports = [ wlib.modules.default ];
   options = {
     settings = lib.mkOption {
-      inherit (gitIniFmt) type;
+      inherit (pkgs.formats.gitIni { }) type;
       default = { };
       description = ''
         Git configuration settings.
         See {manpage}`git-config(1)` for available options.
       '';
     };
-
     configFile = lib.mkOption {
       type = wlib.types.file pkgs;
-      default.path = gitIniFmt.generate "gitconfig" config.settings;
+      default = {
+        path = config.constructFiles.gitconfig.path; # <- we can refer to the placeholder of our constructed file!
+        content = "";
+      };
       description = "Generated git configuration file.";
     };
   };
-
-  config.env.GIT_CONFIG_GLOBAL = config.configFile.path;
-  config.package = lib.mkDefault pkgs.git;
-  config.meta.maintainers = [ wlib.maintainers.birdee ];
+  config = {
+    env.GIT_CONFIG_GLOBAL = config.configFile.path;
+    package = lib.mkDefault pkgs.git;
+    constructFiles.gitconfig = { # <- constructs the path directly in the final wrapper derivation, such that placeholders work correctly.
+      relPath = "${config.binName}config";
+      # A string, which is to become the file contents
+      content =
+        # nixpkgs has a lot of handy generation functions!
+        lib.generators.toGitINI config.settings
+        # and gitconfig format allows you to arbitrarily append contents!
+        + "\n" + config.configFile.content;
+    };
+    meta.maintainers = [ wlib.maintainers.birdee ]; # <- don't forget to make yourself the maintainer of your module!
+  };
 }
 ```
 

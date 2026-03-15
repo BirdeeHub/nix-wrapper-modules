@@ -15,7 +15,6 @@ let
 in
 {
   imports = [ wlib.modules.default ];
-
   options = {
     settings = lib.mkOption {
       type =
@@ -34,21 +33,13 @@ in
     package = pkgs.aria2;
     binName = "aria2c";
     outputs = (config.package.outputs or [ "out" ]) ++ [ "conf" ];
-    flags = {
-      "--conf-path" = "${placeholder "conf"}/${config.binName}-settings.conf";
+    flags."--conf-path" = config.constructFiles.renderedSettings.path;
+    constructFiles.renderedSettings = {
+      relPath = "${config.binName}-settings.conf";
+      output = "conf";
+      content = lib.concatStringsSep "\n" (lib.mapAttrsToList formatLine config.settings);
     };
     flagSeparator = "=";
-    drv = {
-      renderedSettings = lib.concatStringsSep "\n" (lib.mapAttrsToList formatLine config.settings);
-      passAsFile = [ "renderedSettings" ];
-
-      buildPhase = ''
-        runHook preBuild
-        mkdir -p $conf
-        cp $renderedSettingsPath "$conf/${config.binName}-settings.conf"
-        runHook postBuild
-      '';
-    };
     wrapperVariants.aria2c.outputName = "out";
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };

@@ -135,104 +135,114 @@ in
     '';
   };
   config.package = lib.mkDefault pkgs.xplr;
-  config.drv.passAsFile = [
-    "nixLuaInit"
-    "nixLuaInfo"
-  ];
-  config.drv.nixLuaInfo = /* lua */ ''
-    return setmetatable(${lib.generators.toLua { } config.luaInfo}, {
-      __call = function(self, default, ...)
-        if select('#', ...) == 0 then return default end
-        local tbl = self;
-        for _, key in ipairs({...}) do
-          if type(tbl) ~= "table" then return default end
-          tbl = tbl[key]
-        end
-        return tbl
-      end
-    })
-  '';
-  config.drv.nixLuaInit =
-    let
-      versionstr =
-        if hasFnl then
-          "(tset _G :version ${builtins.toJSON config.package.version})"
-        else
-          "version = ${builtins.toJSON config.package.version}";
-      generatedConfig = lib.pipe initDal [
-        (map (
-          v:
-          let
-            lua = "(function(...) ${v.data} end)(${
-              lib.generators.toLua { } v.opts
-            }, ${builtins.toJSON v.name})";
-            fnl = ''((fn [...] ${v.data}) (lua "" ${builtins.toJSON "${lib.generators.toLua { } v.opts}"}) ${builtins.toJSON v.name})'';
-          in
-          if hasFnl then if v.type == "fnl" then fnl else ''(lua "" ${builtins.toJSON lua})'' else lua
-        ))
-        (builtins.concatStringsSep (if hasFnl then "\n" else ",\n"))
-      ];
+  config.constructFiles = {
+    nixLuaInfo = {
+      relPath = "${config.binName}-plugins/${config.infopath}.lua";
+      content = /* lua */ ''
+        return setmetatable(${lib.generators.toLua { } config.luaInfo}, {
+          __call = function(self, default, ...)
+            if select('#', ...) == 0 then return default end
+            local tbl = self;
+            for _, key in ipairs({...}) do
+              if type(tbl) ~= "table" then return default end
+              tbl = tbl[key]
+            end
+            return tbl
+          end
+        })
+      '';
+    };
+    nixLuaInit = {
+      relPath = "${config.binName}-rc.lua";
+      content =
+        let
+          versionstr =
+            if hasFnl then
+              "(tset _G :version ${builtins.toJSON config.package.version})"
+            else
+              "version = ${builtins.toJSON config.package.version}";
+          generatedConfig = lib.pipe initDal [
+            (map (
+              v:
+              let
+                lua = "(function(...) ${v.data} end)(${
+                  lib.generators.toLua { } v.opts
+                }, ${builtins.toJSON v.name})";
+                fnl = ''((fn [...] ${v.data}) (lua "" ${builtins.toJSON "${lib.generators.toLua { } v.opts}"}) ${builtins.toJSON v.name})'';
+              in
+              if hasFnl then if v.type == "fnl" then fnl else ''(lua "" ${builtins.toJSON lua})'' else lua
+            ))
+            (builtins.concatStringsSep (if hasFnl then "\n" else ",\n"))
+          ];
 
-      nixInit = (
-        if builtins.isString initDal then
-          initDal
-        else if hasFnl then
-          /* fennel */ ''
-            ((fn [hooks]
-               (fn add-hooks [res b]
-                 (each [k vlist (pairs b)]
-                   (local acc (. res k))
-                   (if (not= (type acc) :table) (tset res k vlist)
-                       (not= (type vlist) :table)
-                       (error (.. "expected a list of hooks at " (tostring k)
-                                  ", but got a " (type vlist)))
-                       (let [n (length acc)]
-                         (for [i 1 (length vlist)] (tset acc (+ n i) (. vlist i))))))
-                 res)
+          nixInit = (
+            if builtins.isString initDal then
+              initDal
+            else if hasFnl then
+              /* fennel */ ''
+                ((fn [hooks]
+                   (fn add-hooks [res b]
+                     (each [k vlist (pairs b)]
+                       (local acc (. res k))
+                       (if (not= (type acc) :table) (tset res k vlist)
+                           (not= (type vlist) :table)
+                           (error (.. "expected a list of hooks at " (tostring k)
+                                      ", but got a " (type vlist)))
+                           (let [n (length acc)]
+                             (for [i 1 (length vlist)] (tset acc (+ n i) (. vlist i))))))
+                     res)
 
-               (var result {})
-               (for [i 1 (select "#" ((or unpack table.unpack) hooks))]
-                 (local h (. hooks i))
-                 (when (= (type h) :table) (set result (add-hooks result h))))
-               result) [
-                ${generatedConfig}
-               ])''
-        else
-          /* lua */ ''
-            return (function(hooks)
-              local function add_hooks(res, b)
-                for k, vlist in pairs(b) do
-                  local acc = res[k]
-                  if type(acc) ~= "table" then
-                    res[k] = vlist
-                  elseif type(vlist) ~= "table" then
-                    error("expected a list of hooks at ".. tostring(k) ..", but got a " .. type(vlist))
-                  else
-                    local n = #acc
-                    for i = 1, #vlist do
-                      acc[n + i] = vlist[i]
+                   (var result {})
+                   (for [i 1 (select "#" ((or unpack table.unpack) hooks))]
+                     (local h (. hooks i))
+                     (when (= (type h) :table) (set result (add-hooks result h))))
+                   result) [
+                    ${generatedConfig}
+                   ])''
+            else
+              /* lua */ ''
+                return (function(hooks)
+                  local function add_hooks(res, b)
+                    for k, vlist in pairs(b) do
+                      local acc = res[k]
+                      if type(acc) ~= "table" then
+                        res[k] = vlist
+                      elseif type(vlist) ~= "table" then
+                        error("expected a list of hooks at ".. tostring(k) ..", but got a " .. type(vlist))
+                      else
+                        local n = #acc
+                        for i = 1, #vlist do
+                          acc[n + i] = vlist[i]
+                        end
+                      end
+                    end
+                    return res
+                  end
+                  local result = {}
+                  for i = 1, select('#', (unpack or table.unpack)(hooks)) do
+                    local h = hooks[i]
+                    if type(h) == "table" then
+                      result = add_hooks(result, h)
                     end
                   end
-                end
-                return res
-              end
-              local result = {}
-              for i = 1, select('#', (unpack or table.unpack)(hooks)) do
-                local h = hooks[i]
-                if type(h) == "table" then
-                  result = add_hooks(result, h)
-                end
-              end
-              return result
-            end)({
-              ${generatedConfig}
-            })''
-      );
-    in
-    ''
-      ${versionstr}
-      ${nixInit}
-    '';
+                  return result
+                end)({
+                  ${generatedConfig}
+                })''
+          );
+        in
+        ''
+          ${versionstr}
+          ${nixInit}
+        '';
+      builder = ''
+        mkdir -p "$(dirname "$2")"
+        { [ -e "$1" ] && cat "$1" || echo "$nixLuaInit"; }${
+          if hasFnl then " | ${pkgs.luajitPackages.fennel}/bin/fennel --compile - " else " "
+        }> "$2"
+      '';
+    };
+  };
   config.drv.buildPhase =
     let
       errORname =
@@ -258,11 +268,6 @@ in
     in
     /* bash */ ''
       runHook preBuild
-      mkdir -p ${lib.escapeShellArg "${basePluginDir}"}
-      { [ -e "$nixLuaInitPath" ] && cat "$nixLuaInitPath" || echo "$nixLuaInit"; }${
-        if hasFnl then " | ${pkgs.luajitPackages.fennel}/bin/fennel --compile - " else " "
-      }> ${lib.escapeShellArg "${placeholder config.outputName}/${config.binName}-rc.lua"}
-      { [ -e "$nixLuaInfoPath" ] && cat "$nixLuaInfoPath" || echo "$nixLuaInfo"; } > ${lib.escapeShellArg "${basePluginDir}/${config.infopath}.lua"}
       ${linkCommands}
       runHook postBuild
     '';
@@ -301,7 +306,7 @@ in
       name = "GENERATED_WRAPPER_LUA";
       data = [
         "-c"
-        "${placeholder config.outputName}/${config.binName}-rc.lua"
+        config.constructFiles.nixLuaInit.path
       ];
       esc-fn = lib.escapeShellArg;
     }

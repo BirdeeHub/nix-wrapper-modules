@@ -49,51 +49,41 @@
       This will help prevent indexing errors when querying nested values which may not exist.
     '';
   };
-
-  config.drv.passAsFile = [ "nixLuaInit" ];
-  config.drv.nixLuaInit =
-    let
-      withPackages = config.lua.withPackages or pkgs.luajit.withPackages;
-      genLuaCPathAbsStr =
-        config.lua.pkgs.luaLib.genLuaCPathAbsStr or pkgs.luajit.pkgs.luaLib.genLuaCPathAbsStr;
-      genLuaPathAbsStr =
-        config.lua.pkgs.luaLib.genLuaPathAbsStr or pkgs.luajit.pkgs.luaLib.genLuaPathAbsStr;
-      luaEnv = withPackages config.luaEnv;
-    in
-    /* lua */ ''
-      ${lib.optionalString ((config.luaEnv config.lua.pkgs) != [ ]) /* lua */ ''
-        package.path = package.path .. ";" .. ${builtins.toJSON (genLuaPathAbsStr luaEnv)}
-        package.cpath = package.cpath .. ";" .. ${builtins.toJSON (genLuaCPathAbsStr luaEnv)}
-      ''}
-      local wezterm = require 'wezterm'
-      package.preload["nix-info"] = function()
-        return setmetatable(${lib.generators.toLua { } config.luaInfo}, {
-          __call = function(self, default, ...)
-            if select('#', ...) == 0 then return default end
-            local tbl = self;
-            for _, key in ipairs({...}) do
-              if type(tbl) ~= "table" then return default end
-              tbl = tbl[key]
+  config.constructFiles.nixLuaInit = {
+    relPath = "${config.binName}-rc.lua";
+    content =
+      let
+        withPackages = config.lua.withPackages or pkgs.luajit.withPackages;
+        genLuaCPathAbsStr =
+          config.lua.pkgs.luaLib.genLuaCPathAbsStr or pkgs.luajit.pkgs.luaLib.genLuaCPathAbsStr;
+        genLuaPathAbsStr =
+          config.lua.pkgs.luaLib.genLuaPathAbsStr or pkgs.luajit.pkgs.luaLib.genLuaPathAbsStr;
+        luaEnv = withPackages config.luaEnv;
+      in
+      /* lua */ ''
+        ${lib.optionalString ((config.luaEnv config.lua.pkgs) != [ ]) /* lua */ ''
+          package.path = package.path .. ";" .. ${builtins.toJSON (genLuaPathAbsStr luaEnv)}
+          package.cpath = package.cpath .. ";" .. ${builtins.toJSON (genLuaCPathAbsStr luaEnv)}
+        ''}
+        local wezterm = require 'wezterm'
+        package.preload["nix-info"] = function()
+          return setmetatable(${lib.generators.toLua { } config.luaInfo}, {
+            __call = function(self, default, ...)
+              if select('#', ...) == 0 then return default end
+              local tbl = self;
+              for _, key in ipairs({...}) do
+                if type(tbl) ~= "table" then return default end
+                tbl = tbl[key]
+              end
+              return tbl
             end
-            return tbl
-          end
-        })
-      end
-      return dofile(${builtins.toJSON config."wezterm.lua".path})
-    '';
-  config.drv.buildPhase = ''
-    runHook preBuild
-    { [ -e "$nixLuaInitPath" ] && cat "$nixLuaInitPath" || echo "$nixLuaInit"; } > ${lib.escapeShellArg "${placeholder config.outputName}/${config.binName}-rc.lua"}
-    runHook postBuild
-  '';
-  config.flagSeparator = "=";
-  config.flags = {
-    "--config-file" = {
-      data = "${placeholder config.outputName}/${config.binName}-rc.lua";
-      esc-fn = lib.escapeShellArg;
-    };
+          })
+        end
+        return dofile(${builtins.toJSON config."wezterm.lua".path})
+      '';
   };
-
+  config.flagSeparator = "=";
+  config.flags."--config-file" = config.constructFiles.nixLuaInit.path;
   config.package = lib.mkDefault pkgs.wezterm;
 
   config.meta.maintainers = [ wlib.maintainers.birdee ];

@@ -22,7 +22,6 @@ let
   mkKeyValue = lib.generators.mkKeyValueDefault { inherit mkValueString; } "=";
   toHtopConf = lib.generators.toKeyValue { inherit mkKeyValue; };
 
-  configPath = "${placeholder config.outputName}/${config.binName}rc";
   htopConfig = lib.concatLines [
     # header_layout must be the first in file (or at least just above) so column_meter* parameters can work
     (toHtopConf (lib.filterAttrs (n: _: n == "header_layout") config.settings))
@@ -31,7 +30,6 @@ let
 in
 {
   imports = [ wlib.modules.default ];
-
   options = {
     settings = lib.mkOption {
       type =
@@ -56,17 +54,13 @@ in
       '';
     };
   };
-
-  config.package = lib.mkDefault pkgs.htop;
-
-  config.drv.htopConfig = htopConfig;
-  config.drv.passAsFile = [ "htopConfig" ];
-  config.envDefault.HTOPRC = configPath;
-  config.drv.buildPhase = ''
-    runHook preBuild
-    cp "$htopConfigPath" ${configPath}
-    runHook postBuild
-  '';
-
-  meta.maintainers = [ wlib.maintainers.alexlov ];
+  config = {
+    package = lib.mkDefault pkgs.htop;
+    constructFiles.htopConfig = {
+      content = htopConfig;
+      relPath = "${config.binName}rc";
+    };
+    envDefault.HTOPRC = config.constructFiles.htopConfig.path;
+    meta.maintainers = [ wlib.maintainers.alexlov ];
+  };
 }

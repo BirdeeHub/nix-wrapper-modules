@@ -76,19 +76,11 @@ in
     };
     flagSeparator = "=";
     wrapperVariants.zathura-sandbox = lib.mkIf pkgs.stdenv.hostPlatform.isLinux { };
-    drv = {
-      renderedRc = lib.concatStringsSep "\n" (
-        [ ]
-        ++ lib.mapAttrsToList formatLine config.options
-        ++ lib.mapAttrsToList formatMapLine config.mappings
+    constructFiles.renderedRc = {
+      relPath = "config/${config.binName}rc";
+      content = lib.concatStringsSep "\n" (
+        lib.mapAttrsToList formatLine config.options ++ lib.mapAttrsToList formatMapLine config.mappings
       );
-      passAsFile = [ "renderedRc" ];
-      buildPhase = ''
-        runHook preBuild
-        mkdir -p "${placeholder config.outputName}/config"
-        cp "$renderedRcPath" "${placeholder config.outputName}/config/${config.binName}rc"
-        runHook postBuild
-      '';
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };
