@@ -47,12 +47,11 @@ You may optionally set the `meta.description` option to provide a short descript
 
 ## Guidelines and Examples:
 
-- When you provide an option to `enable` or `disable` something, you should call it `enable` regardless of its default value.
+When you provide an option to `enable` or `disable` something, you should call it `enable` regardless of its default value.
+
 This prevents people from needing to look it up to use it, and prevents contributors from having to think too hard about which to call it.
 
-- When you provide a `wlib.types.file` option, you should name it the actual filename, especially if there are multiple, but `configFile` is also OK, especially if it is unambiguous.
-
-If you do name it `configFile` instead, you can fix the filename if necessary/desired by setting `default.path` explicitly, as shown in the example below.
+When you provide a `wlib.types.file` option, you should name it the actual filename, especially if there are multiple, but `configFile` is also OK, especially if it is unambiguous.
 
 Keep in mind that even if you do not choose to use `wlib.types.file`, the user can usually still override the option that you set to provide the generated path if needed.
 
@@ -60,13 +59,17 @@ However, this makes the user of your module search for it, and in some situation
 
 So making use of the `wlib.types.file` type or giving some other method of overriding the filepath when providing a file is generally recommended for this reason.
 
-- When you generate a file, it is generally better to do so as a string, and create it using the `constructFiles` option.
+- Placeholders
+
+When you generate a file, it is generally better to do so as a string, and create it using the `constructFiles` option.
 
 This is because, this will make placeholders such as `${placeholder "out"}` work consistently across all your options.
 
 What this allows you to do, is manually build files later using `buildCommand` option or a stdenv phase, and then refer to that created file within your settings!
 
 Making placeholders work in your module makes your modules generally more easily extensible, and is preferred when it is possible to generate a usable string.
+
+It works by using `drv.passAsFile` and making a derivation attribute with the file contents, which is copied into place.
 
 Example:
 
@@ -195,11 +198,11 @@ For new additions, the description should be `init`, with any further explanatio
 Changes to helper modules should be titled `<type>(modules.<name>): some description`.
 For new additions, the description should be `init`, with any further explanation on subsequent lines
 
-For `lib` additions and changes, the description should be `<type>(lib.<set>.<name>): some description` or `type(lib.<name>): some description`.
+For `lib` additions and changes, the description should be `<type>(lib.<set>.<name>): some description` or `<type>(lib.<name>): some description`.
 
 For template additions and changes, the description should be `<type>(templates.<name>): some description`.
 
-Changes to the core options set defined in `lib/core.nix` should be titled `<type>(core): some description`.
+Changes to the core options set defined in `lib/core.nix` should be titled `<type>(core.<option>): some description`.
 
 `<type>` refers to a one word tag [like `feat`, `fix`, `docs`, or `test`](https://gist.github.com/Zekfad/f51cb06ac76e2457f11c80ed705c95a3#commit-types) as specified by [Conventional Commits](https://www.conventionalcommits.org)
 
