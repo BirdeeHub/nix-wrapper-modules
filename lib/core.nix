@@ -4,7 +4,7 @@
   lib,
   wlib,
   extendModules,
-  # NOTE: makes sure builderFunction and wrapperFunction get name from _module.args
+  # NOTE: makes sure builderFunction gets name from _module.args
   name ? null,
   ...
 }@args:
@@ -155,11 +155,12 @@ in
 
     They are somewhat minimal by design. They pertain to building the derivation, not the wrapper script.
 
-    The default `builderFunction` value provides no options.
+    The default `builderFunction` value is `{ buildCommand, ... }: buildCommand;`,
+    which just runs the result of `buildCommand`, and the non-problematic stdenv phases by default
 
-    The default `wrapperFunction` is null.
+    `buildCommand` is also empty by default.
 
-    `wlib.modules.default` provides great values for these options, and creates many more for you to use.
+    `wlib.modules.default` provides great starting values for these options, and creates many more for you to use.
 
     But you may want to wrap your package via different means, provide different options, or provide modules for others to use to help do those things!
 
@@ -423,7 +424,7 @@ in
           config.package.pname or config.package.name
             or (throw "config.binName was not able to be detected!");
       description = ''
-        The name of the binary output by `wrapperFunction` to `config.wrapperPaths.placeholder`
+        The name of the binary to be output to `config.wrapperPaths.placeholder`
 
         If not specified, the default name from the package will be used.
       '';
@@ -459,13 +460,13 @@ in
         type = lib.types.str;
         readOnly = true;
         default = "${config.package}" + lib.optionalString (config.exePath != null) "/${config.exePath}";
-        description = "The path which is to be wrapped by the wrapperFunction implementation";
+        description = "The path which is to be wrapped by the result of `buildCommand`";
       };
       placeholder = lib.mkOption {
         type = lib.types.str;
         readOnly = true;
         default = "${placeholder config.outputName}${config.wrapperPaths.relPath}";
-        description = "The path which the wrapperFunction implementation is to output its result to.";
+        description = "The path which the result of `buildCommand` is to output its result to.";
       };
       relPath = lib.mkOption {
         type = lib.types.str;
