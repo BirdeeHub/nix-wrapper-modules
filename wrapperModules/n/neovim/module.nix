@@ -181,6 +181,7 @@ in
         wrapperFunction = import ./makeWrapper;
       }
     )
+    wlib.modules.constructFiles
     ./packDir.nix
     ./default-config.nix
   ];
