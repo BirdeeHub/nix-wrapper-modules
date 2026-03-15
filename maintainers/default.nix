@@ -29,6 +29,11 @@
     email = "github.drapery867@simplelogin.com";
     githubId = 31852070;
   };
+  fluxza = {
+    name = "FluxZA";
+    github = "FluxZA";
+    githubId = 48944232;
+  };
   rachitvrma = {
     name = "Rachit Kumar Verma";
     github = "rachitvrma";
