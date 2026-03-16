@@ -533,11 +533,11 @@ in
           }
         else
           {
-            ${name} = specAfter after current // {
+            ${name} = specBetween before after current // {
               inherit name;
             };
           }
-          // go (i + 1) before [ name ] (tail entries);
+          // go (i + 1) before (after ++ [ name ]) (tail entries);
     in
     go 0;
 
