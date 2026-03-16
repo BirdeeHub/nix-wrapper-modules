@@ -155,6 +155,22 @@ in
       this directory if they exist: `.zshenv`, `.zshrc`, `.zlogin` and `.zlogout`.
     '';
   };
+  options.hmSessionVariables = lib.mkOption {
+    type = types.nullOr wlib.types.stringable;
+    description = ''
+      Absolute path of the `hm-session-vars.sh` script to be loaded.
+
+      For standalone home manager setups to source `~/.nix-profile/etc/profile.d/hm-session-vars.sh`
+
+      This allows home manager to provide things such as `home.sessionVariables` to the shell.
+    '';
+    example = lib.literalMD ''
+      ```nix
+      "''${config.home.profileDirectory}/etc/profile.d/hm-session-vars.sh"
+      ```
+    '';
+    default = "~/.nix-profile/etc/profile.d/hm-session-vars.sh";
+  };
   options.zshenv = lib.mkOption {
     description = ''
       Specifies a file which will be sourced as part of the local `.zshenv` file.

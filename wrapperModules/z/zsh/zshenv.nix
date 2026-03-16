@@ -15,9 +15,9 @@ let
     if [[ -v __WRAPPED_ZSHENV_SOURCED ]]; then return; fi
     __WRAPPED_ZSHENV_SOURCED=1
 
-    ${lib.optionalString (config.homeManagerProfileDir != null) ''
-      if [[ -f ${config.homeManagerProfileDir}/etc/profile.d/hm-session-vars.sh ]]; then
-        . ${config.homeManagerProfileDir}/etc/profile.d/hm-session-vars.sh
+    ${lib.optionalString (config.hmSessionVariables != null) ''
+      if [[ -f ${config.hmSessionVariables} ]]; then
+        . ${config.hmSessionVariables}
       fi
     ''}
 
