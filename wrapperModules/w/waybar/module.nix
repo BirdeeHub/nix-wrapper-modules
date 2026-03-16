@@ -57,8 +57,8 @@ in
 
   config.package = lib.mkDefault config.pkgs.waybar;
   config.flags = {
-    "--config" = toString config.configFile.path;
-    "--style" = toString config."style.css".path;
+    "--config" = config.configFile.path;
+    "--style" = config."style.css".path;
   };
   config.filesToPatch = [
     "share/systemd/user/waybar.service"

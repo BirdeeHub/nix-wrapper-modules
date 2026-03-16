@@ -440,26 +440,24 @@ in
 
   config.package = lib.mkDefault pkgs.yazi;
   config.env = {
-    YAZI_CONFIG_HOME = toString (
-      pkgs.linkFarm "yazi-merged-config" (
-        map
-          (a: {
-            inherit (a) path;
-            name = a.name;
-          })
-          (
-            let
-              entry = name: path: { inherit name path; };
-            in
-            [
-              (entry "yazi.toml" yazi)
-              (entry "keymap.toml" keymap)
-              (entry "theme.toml" theme)
-              (entry "vfs.toml" vfs)
-              (entry "package.toml" package)
-            ]
-          )
-      )
+    YAZI_CONFIG_HOME = pkgs.linkFarm "yazi-merged-config" (
+      map
+        (a: {
+          inherit (a) path;
+          name = a.name;
+        })
+        (
+          let
+            entry = name: path: { inherit name path; };
+          in
+          [
+            (entry "yazi.toml" yazi)
+            (entry "keymap.toml" keymap)
+            (entry "theme.toml" theme)
+            (entry "vfs.toml" vfs)
+            (entry "package.toml" package)
+          ]
+        )
     );
   };
   config.meta.maintainers = [ wlib.maintainers.apetrovic6 ];

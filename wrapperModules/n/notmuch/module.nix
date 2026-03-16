@@ -7,7 +7,6 @@
 }:
 let
   iniFmt = pkgs.formats.ini { };
-  writeNotmuchConfig = cfg: iniFmt.generate "notmuch.ini" cfg;
 in
 {
   imports = [ wlib.modules.default ];
@@ -36,7 +35,7 @@ in
     };
     configFile = lib.mkOption {
       type = wlib.types.file pkgs;
-      default.path = toString (writeNotmuchConfig config.settings);
+      default.path = iniFmt.generate "notmuch.ini" config.settings;
       description = ''
         Path or inline definition of the generated Notmuch configuration file.
 

@@ -82,25 +82,23 @@ in
   };
   config.package = lib.mkDefault pkgs.helix;
   config.env = {
-    XDG_CONFIG_HOME = builtins.toString (
-      pkgs.linkFarm "helix-merged-config" (
-        map
-          (a: {
-            inherit (a) path;
-            name = "helix/" + a.name;
-          })
-          (
-            let
-              entry = name: path: { inherit name path; };
-            in
-            [
-              (entry "config.toml" conf)
-              (entry "languages.toml" langs)
-              (entry "ignore" ignore)
-            ]
-            ++ themes
-          )
-      )
+    XDG_CONFIG_HOME = pkgs.linkFarm "helix-merged-config" (
+      map
+        (a: {
+          inherit (a) path;
+          name = "helix/" + a.name;
+        })
+        (
+          let
+            entry = name: path: { inherit name path; };
+          in
+          [
+            (entry "config.toml" conf)
+            (entry "languages.toml" langs)
+            (entry "ignore" ignore)
+          ]
+          ++ themes
+        )
     );
   };
   config.meta.maintainers = [ wlib.maintainers.birdee ];
