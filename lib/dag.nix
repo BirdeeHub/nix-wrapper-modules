@@ -38,7 +38,6 @@ let
   inherit (wlib.dag)
     isEntry
     entryBetween
-    entryAfter
     entriesBetween
     topoSort
     gmap
@@ -47,6 +46,9 @@ let
     dagNameModule
     unwrapSort
     pushDownDagNames
+    specBetween
+    specAfter
+    specsBetween
     ;
   mkDagEntryModule =
     settings: elemType:
@@ -413,6 +415,57 @@ in
   mapDagToDal = f: dag: dagToDal (gmap f dag);
 
   /**
+    Adds `before` and `after` dependencies to a spec.
+
+    This is similar to `entryBetween`, but instead of constructing a new
+    entry it augments an existing spec. Any existing `before` or `after`
+    fields on the spec are preserved and extended.
+
+    Arguments:
+    - `before`: `[ string ]`
+      Additional nodes that the spec should appear before.
+    - `after`: `[ string ]`
+      Additional nodes that the spec should appear after.
+    - `spec`: `attrset`
+      The spec to modify.
+
+    Returns the spec with merged dependency fields.
+  */
+  specBetween =
+    before: after: spec:
+    spec
+    // {
+      before = spec.before or [ ] ++ before;
+      after = spec.after or [ ] ++ after;
+    };
+
+  /**
+    Adds `after` dependencies to a spec.
+
+    Equivalent to:
+
+    ```nix
+    specBetween [ ] after spec
+    ```
+
+    Existing dependency fields on the spec are preserved and extended.
+  */
+  specAfter = specBetween [ ];
+
+  /**
+    Adds `before` dependencies to a spec.
+
+    Equivalent to:
+
+    ```nix
+    specBetween before [ ] spec
+    ```
+
+    Existing dependency fields on the spec are preserved and extended.
+  */
+  specBefore = before: specBetween before [ ];
+
+  /**
     Creates a DAG entry with specified `before` and `after` dependencies.
   */
   entryBetween = before: after: data: { inherit data before after; };
@@ -433,47 +486,183 @@ in
   entryBefore = before: entryBetween before [ ];
 
   /**
-    Given a list of entries, this function places them in order within the DAG.
-    Each entry is labeled "${tag}-${entry index}" and other DAG entries can be
-    added with 'before' or 'after' referring these indexed entries.
+    Given a list of specs (attribute sets with stuff in them, and optional `name`, `before`, and `after` fields), places them sequentially within the DAG.
 
-    The entries as a whole can be given a relation to other DAG nodes. All
-    generated nodes are then placed before or after those dependencies.
+    This is approximately the opposite of `wlib.dag.dagToDal`.
+
+    Each generated node receives a name of the form:
+
+    ```
+    "${tag}-${index}"
+    ```
+
+    If a spec already has a `name` field it will be used instead.
+
+    The specs are chained via their before and after fields so that their order in the list is preserved.
+    The entire sequence can also be constrained relative to other DAG
+    nodes using the `before` and `after` arguments.
+
+    Arguments:
+    - `tag`: `string`
+      Prefix used when generating names.
+    - `before`: `[ string ]`
+      Nodes that the first generated entry must appear before.
+    - `after`: `[ string ]`
+      Nodes that the first generated entry must appear after.
+    - `entries`: `[ attrset ]`
+      Specs to insert into the DAG.
+
+    Returns a DAG (attribute set) containing the generated entries.
   */
-  entriesBetween =
+  specsBetween =
     tag:
     let
       go =
         i: before: after: entries:
         let
-          name = "${tag}-${toString i}";
+          current = head entries;
+          name = current.name or "${tag}-${toString i}";
         in
         if entries == [ ] then
           { }
         else if length entries == 1 then
           {
-            "${name}" = entryBetween before after (head entries);
+            ${name} = specBetween before after current // {
+              inherit name;
+            };
           }
         else
           {
-            "${name}" = entryAfter after (head entries);
+            ${name} = specAfter after current // {
+              inherit name;
+            };
           }
           // go (i + 1) before [ name ] (tail entries);
     in
     go 0;
 
   /**
-    Convenience function for creating multiple entries without specific dependencies.
+    defined as:
+
+    ```nix
+    tag: before: after: entries:
+    wlib.dag.specsBetween tag before after (map (data: { inherit data; }) entries)
+    ```
+  */
+  entriesBetween =
+    tag: before: after: entries:
+    specsBetween tag before after (map (data: { inherit data; }) entries);
+
+  /**
+    Convenience wrapper around `specsBetween` that inserts a sequence
+    of specs without adding any external ordering constraints.
+
+    The generated entries will still be chained relative to each other
+    so that their order in the input list is preserved.
+
+    Equivalent to:
+
+    ```nix
+    tag: specsBetween tag [ ] [ ]
+    ```
+
+    Arguments:
+    - `tag`: `string`
+      Prefix used when generating names.
+  */
+  specsAnywhere = tag: specsBetween tag [ ] [ ];
+
+  /**
+    Convenience wrapper around `specsBetween` that inserts a sequence
+    of specs which must appear after the given nodes.
+
+    Equivalent to:
+
+    ```nix
+    tag: after: specsBetween tag [ ] after
+    ```
+
+    Arguments:
+    - `tag`: `string`
+      Prefix used when generating names.
+    - `after`: `[ string ]`
+      Nodes that the first generated entry must appear after.
+  */
+  specsAfter = tag: specsBetween tag [ ];
+
+  /**
+    Convenience wrapper around `specsBetween` that inserts a sequence
+    of specs which must appear before the given nodes.
+
+    Equivalent to:
+
+    ```nix
+    tag: before: specsBetween tag before [ ]
+    ```
+
+    Arguments:
+    - `tag`: `string`
+      Prefix used when generating names.
+    - `before`: `[ string ]`
+      Nodes that the first generated entry must appear before.
+  */
+  specsBefore = tag: before: specsBetween tag before [ ];
+
+  /**
+    Convenience wrapper around `entriesBetween` that inserts a sequence
+    of entries without adding any external ordering constraints.
+
+    Equivalent to:
+
+    ```nix
+    tag: entries: entriesBetween tag [ ] [ ] entries
+    ```
+
+    Arguments:
+    - `tag`: `string`
+      Prefix used when generating names.
+    - `entries`: `[ any ]`
+      Payload values that will be converted into DAG entries.
   */
   entriesAnywhere = tag: entriesBetween tag [ ] [ ];
 
   /**
-    Convenience function for creating multiple entries that must be after another entry
+    Convenience wrapper around `entriesBetween` that inserts a sequence
+    of entries which must appear after the given nodes.
+
+    Equivalent to:
+
+    ```nix
+    tag: after: entries: entriesBetween tag [ ] after entries
+    ```
+
+    Arguments:
+    - `tag`: `string`
+      Prefix used when generating names.
+    - `after`: `[ string ]`
+      Nodes that the first generated entry must appear after.
+    - `entries`: `[ any ]`
+      Payload values that will be converted into DAG entries.
   */
   entriesAfter = tag: entriesBetween tag [ ];
 
   /**
-    Convenience function for creating multiple entries that must be before another entry
+    Convenience wrapper around `entriesBetween` that inserts a sequence
+    of entries which must appear before the given nodes.
+
+    Equivalent to:
+
+    ```nix
+    tag: before: entries: entriesBetween tag before [ ] entries
+    ```
+
+    Arguments:
+    - `tag`: `string`
+      Prefix used when generating names.
+    - `before`: `[ string ]`
+      Nodes that the first generated entry must appear before.
+    - `entries`: `[ any ]`
+      Payload values that will be converted into DAG entries.
   */
   entriesBefore = tag: before: entriesBetween tag before [ ];
 
