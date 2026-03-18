@@ -154,9 +154,13 @@ in
     description = ''
       Absolute path of the `hm-session-vars.sh` script to be loaded.
 
-      For standalone home manager setups to source `~/.nix-profile/etc/profile.d/hm-session-vars.sh`
+      For standalone home-manager setups to source `~/.nix-profile/etc/profile.d/hm-session-vars.sh`
 
-      This allows home manager to provide things such as `home.sessionVariables` to the shell.
+      This allows home-manager to provide things such as `home.sessionVariables` to the shell.
+
+      If you import home-manager as a nixos module, you can safely set this to `null`
+
+      You can also obviously safely set it to `null` if you do not use home-manager
     '';
     example = lib.literalMD ''
       ```nix
