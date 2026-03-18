@@ -102,8 +102,8 @@ let
     let
       setvarfunc = /* zsh */ ''wrapperSetEnv() { export "$1=$2"; }'';
       setvardefaultfunc = /* zsh */ ''wrapperSetEnvDefault() { [ -z "''${(P)1+x}" ] && export "$1=$2"; }'';
-      prefixvarfunc = /* zsh */ ''wrapperPrefixEnv() { [[ "''${(P)1}" != "$3$2"* ]] && export "$1=''${(P)1:+$3$2}''${(P)1:-$3}"; }'';
-      suffixvarfunc = /* zsh */ ''wrapperSuffixEnv() { [[ "''${(P)1}" != *"$2$3"* ]] && export "$1=''${(P)1:+''${(P)1}$2}$3"; }'';
+      prefixvarfunc = /* zsh */ ''wrapperPrefixEnv() { [[ "''${(P)1}" != "$3"* ]] && export "$1=''${(P)1:+$3$2}''${(P)1:-$3}"; }'';
+      suffixvarfunc = /* zsh */ ''wrapperSuffixEnv() { [[ "''${(P)1}" != *"$3" ]] && export "$1=''${(P)1:+''${(P)1}$2}$3"; }'';
     in
     builtins.concatStringsSep "\n" (
       lib.optional (config.env or { } != { }) setvarfunc
