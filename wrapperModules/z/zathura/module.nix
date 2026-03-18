@@ -18,7 +18,7 @@ in
 {
   imports = [ wlib.modules.default ];
   options = {
-    options = lib.mkOption {
+    settings = lib.mkOption {
       type =
         with lib.types;
         attrsOf (oneOf [
