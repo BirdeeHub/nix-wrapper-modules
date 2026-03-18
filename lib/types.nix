@@ -5,9 +5,12 @@
 let
   attrsRecursive =
     lazy:
+    let
+      name = (if lazy then "lazyA" else "a") + "ttrsRecursive";
+    in
     lib.mkOptionType {
-      name = "attrsRecursive";
-      description = "attrsRecursive";
+      inherit name;
+      description = name;
       descriptionClass = "noun";
       check = value: true;
       merge =
