@@ -12,6 +12,7 @@
       ...
     }:
     {
+      _file = ./module.nix;
       options.pluginDeps = lib.mkOption {
         default = parentSpec.parentSpec or "startup";
         type = lib.types.enum [
