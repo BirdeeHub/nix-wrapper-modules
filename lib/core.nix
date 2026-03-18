@@ -377,12 +377,21 @@ in
       '';
     };
     passthru = lib.mkOption {
-      type = wlib.types.attrsRecursive;
+      type = wlib.types.lazyAttrsRecursive;
       default = { };
       description = ''
         Additional attributes to add to the resulting derivation's passthru.
         This can be used to add additional metadata or functionality to the wrapped package.
         Anything added under the attribute name `configuration` will be ignored, as that value is used internally.
+
+        This uses `wlib.types.lazyAttrsRecursive` to support lazy evaluation of the attributes,
+        as is often desired of passthru values.
+
+        This means that you cannot `config.passthru.somevalue = lib.mkIf condition "some value";`
+
+        But as a result, you can `config.passthru.somevalue = "''${config.wrapper}/some/path";`
+
+        To achieve an optional value, use `config.passthru = lib.optionalAttrs { somevalue = "some value"; };`
       '';
     };
     drv = lib.mkOption {

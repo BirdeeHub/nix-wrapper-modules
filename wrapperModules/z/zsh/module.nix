@@ -104,20 +104,8 @@ in
   config.package = lib.mkDefault pkgs.zsh;
   # Allow use as a system/user shell
   config.passthru.shellPath = config.wrapperPaths.relPath;
+  config.passthru.ZDOTDIR = "${config.wrapper.${config.zdotFilesOutput}}/${config.zdotFilesDirname}";
   config.flags."-d" = config.skipGlobalRC;
-  # I think I can't just add this to passthru because passthru is not read only
-  # It worked so well for constructFiles that I just expected that to work too.
-  config.builderFunction = lib.mkDefault (
-    { buildCommand, ... }:
-    args:
-    args
-    // {
-      inherit buildCommand;
-      passthru = args.passthru // {
-        ZDOTDIR = "${config.wrapper.${config.zdotFilesOutput}}/${config.zdotFilesDirname}";
-      };
-    }
-  );
   config.meta.maintainers = [
     wlib.maintainers.fluxza
     wlib.maintainers.birdee
