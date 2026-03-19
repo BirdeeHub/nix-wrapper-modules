@@ -18,6 +18,19 @@ in
 {
   imports = [ wlib.modules.default ];
   options = {
+    options = lib.mkOption {
+      type =
+        with lib.types;
+        attrsOf (oneOf [
+          bool
+          str
+          int
+          float
+        ]);
+      default = { };
+      internal = true;
+      apply = x: if x != { } then lib.warn "'options' has been renamed to 'settings'" else x;
+    };
     settings = lib.mkOption {
       type =
         with lib.types;
@@ -79,7 +92,7 @@ in
     constructFiles.renderedRc = {
       relPath = "config/${config.binName}rc";
       content = lib.concatStringsSep "\n" (
-        lib.mapAttrsToList formatLine config.options ++ lib.mapAttrsToList formatMapLine config.mappings
+        lib.mapAttrsToList formatLine config.settings ++ lib.mapAttrsToList formatMapLine config.mappings
       );
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
