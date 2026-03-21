@@ -72,6 +72,16 @@ in
               Executes command when logind signals that the session should be unlocked
             '';
           };
+          idlehint = mkOption {
+            type = types.nullOr types.ints.positive;
+            default = null;
+            apply = v: if v == null then null else toString v;
+            description = ''
+              Set IdleHint to indicate an idle logind/elogind session after <timeout>
+              seconds. Adding an idlehint event will also cause swayidle to call SetIdleHint(false) when run, on
+              resume, unlock, etc.
+            '';
+          };
         };
       };
       default = { };
