@@ -24,7 +24,12 @@ in
   config = {
     package = lib.mkDefault pkgs.jujutsu;
     env = {
-      JJ_CONFIG = builtins.toString (tomlFmt.generate "jujutsu.toml" config.settings);
+      JJ_CONFIG = config.constructFiles.generatedConfig.path;
+    };
+    constructFiles.generatedConfig = {
+      content = builtins.toJSON config.settings;
+      relPath = "${config.binName}-config.toml";
+      builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     };
 
     meta.maintainers = [ wlib.maintainers.birdee ];

@@ -25,7 +25,12 @@ in
   config = {
     package = pkgs.bottom;
     flags = {
-      "--config_location" = tomlFmt.generate "bottom-config.toml" config.settings;
+      "--config_location" = config.constructFiles.generatedConfig.path;
+    };
+    constructFiles.generatedConfig = {
+      content = builtins.toJSON config.settings;
+      relPath = "${config.binName}-config.toml";
+      builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };

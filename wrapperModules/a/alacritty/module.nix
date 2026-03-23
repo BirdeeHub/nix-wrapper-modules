@@ -20,7 +20,12 @@ in
       '';
     };
   };
-  config.flags."--config-file" = tomlFmt.generate "alacritty.toml" config.settings;
+  config.flags."--config-file" = config.constructFiles.generatedConfig.path;
+  config.constructFiles.generatedConfig = {
+    content = builtins.toJSON config.settings;
+    relPath = "${config.binName}-config.toml";
+    builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+  };
   config.package = lib.mkDefault pkgs.alacritty;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
 }
