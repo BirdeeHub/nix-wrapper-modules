@@ -1,5 +1,6 @@
 {
   config,
+  pkgs,
   wlib,
   lib,
   ...
@@ -264,7 +265,7 @@ in
             config.settings.extraConfig
           ]
         );
-        checkedConfig = config.pkgs.writeTextFile {
+        checkedConfig = pkgs.writeTextFile {
           name = "niri.kdl";
           text = compiledConfig;
           checkPhase = ''
@@ -273,7 +274,7 @@ in
         };
       in
       lib.mkOption {
-        type = wlib.types.file config.pkgs;
+        type = wlib.types.file pkgs;
         default.path = checkedConfig;
         description = ''
           Configuration file for Niri.
@@ -301,7 +302,7 @@ in
     "share/applications/*.desktop"
     "share/systemd/user/niri.service"
   ];
-  config.package = config.pkgs.niri;
+  config.package = pkgs.niri;
   config.env = {
     NIRI_CONFIG = toString config."config.kdl".path;
   };
@@ -309,4 +310,5 @@ in
     wlib.maintainers.patwid
   ];
   config.meta.platforms = lib.platforms.linux;
+  config.passthru.providedSessions = pkgs.niri.passthru.providedSessions;
 }
