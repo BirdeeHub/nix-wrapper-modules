@@ -111,23 +111,15 @@ in
   }
   // lib.pipe config.themes [
     (lib.filterAttrs (_: theme: theme != { }))
-    (lib.mapAttrsToList (
-      name: theme:
+    (wlib.mapAttrsToList0 (
+      i: name: theme:
       lib.nameValuePair name {
+        key = "theme_${toString i}";
         relPath = lib.mkOverride 0 "${config.binName}-config/helix/themes/${name}.toml";
         output = lib.mkOverride 0 config.generatedConfig.output;
         content = if builtins.isString theme then theme else builtins.toJSON theme;
         ${if builtins.isString theme then null else "builder"} =
           ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
-      }
-    ))
-    (lib.imap0 (
-      i: v:
-      v
-      // {
-        value = v.value // {
-          key = "theme_${toString i}";
-        };
       }
     ))
     builtins.listToAttrs

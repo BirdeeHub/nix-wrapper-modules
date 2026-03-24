@@ -383,22 +383,14 @@ in
     (lib.filterAttrs (_: plugin: plugin.enabled && plugin.settings != { }))
     (lib.mapAttrs (_: plugin: plugin.settings))
     (v: lib.recursiveUpdate v config.pluginSettings)
-    (lib.mapAttrsToList (
-      name: value:
+    (wlib.mapAttrsToList0 (
+      i: name: value:
       lib.nameValuePair name {
+        key = "plugin_${toString i}";
         relPath = lib.mkOverride 0 "${config.generatedConfigDirname}/plugins/${name}/settings.json";
         output = lib.mkOverride 0 config.configDrvOutput;
         content = builtins.toJSON value;
         builder = ''mkdir -p "$(dirname "$2")" && cp -f "$1" "$2"'';
-      }
-    ))
-    (lib.imap0 (
-      i: v:
-      v
-      // {
-        value = v.value // {
-          key = "plugin_${toString i}";
-        };
       }
     ))
     builtins.listToAttrs

@@ -520,6 +520,31 @@ in
     );
 
   /**
+    Map over the values of an attribute set, yielding a list with index.
+
+    ```nix
+    mapAttrsToList0 ::
+      (int -> string -> a -> b) -> AttrSet -> List b
+    ```
+
+    Converts an attribute set to a list by applying `f` to each name/value pair
+    along with its 0-based index. Equivalent to `lib.mapAttrsToList` but includes
+    the index as the first argument.
+
+    Parameters:
+    - `f`: A function receiving `(index, name, value)` for each attribute
+    - `v`: The attribute set to iterate over
+
+    Example:
+    ```nix
+    mapAttrsToList0 (i: name: value: "${toString i}-${name}-${value}") { a = "x"; b = "y"; }
+    => [ "0-a-x" "1-b-y" ]
+    ```
+  */
+  mapAttrsToList0 =
+    f: v: lib.imap0 (i: v: f i v.name v.value) (lib.mapAttrsToList lib.nameValuePair v);
+
+  /**
     Placeholder value used when overriding a non-main field of a spec type.
 
     When overriding the main field of a spec type, things work as you might expect.

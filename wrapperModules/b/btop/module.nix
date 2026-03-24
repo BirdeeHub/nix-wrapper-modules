@@ -134,23 +134,15 @@ in
     };
   }
   // lib.pipe config.themes [
-    (lib.mapAttrsToList (
-      n: v:
+    (wlib.mapAttrsToList0 (
+      i: n: v:
       lib.nameValuePair n {
+        key = "theme_${toString i}";
         relPath = lib.mkOverride 0 "${config.binName}-themes/${n}.theme";
         output = lib.mkOverride 0 config.configDrvOutput;
         ${if builtins.isPath v || lib.isStorePath v then null else "content"} = v;
         ${if builtins.isPath v || lib.isStorePath v then "builder" else null} =
           ''mkdir -p "$(dirname "$2")" && cp ${v} "$2"'';
-      }
-    ))
-    (lib.imap0 (
-      i: v:
-      v
-      // {
-        value = v.value // {
-          key = "theme_${toString i}";
-        };
       }
     ))
     builtins.listToAttrs
