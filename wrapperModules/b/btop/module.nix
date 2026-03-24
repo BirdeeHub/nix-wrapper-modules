@@ -7,7 +7,6 @@
 }:
 let
   types = lib.types;
-
   toBtopConf = lib.generators.toKeyValue {
     mkKeyValue = lib.generators.mkKeyValueDefault {
       mkValueString =
@@ -20,17 +19,26 @@ let
           toString v;
     } " = ";
   };
-
-  mkBtopTheme =
-    name: theme:
-    if builtins.isPath theme || lib.isStorePath theme then theme else pkgs.writeText "btop.theme" theme;
-
-  themesDir = "${placeholder config.outputName}/themes";
 in
 {
   imports = [ wlib.modules.default ];
 
   options = {
+    configDrvOutput = lib.mkOption {
+      type = types.str;
+      default = config.outputName;
+      description = ''
+        The derivation output name the generated configuration will be output to.
+      '';
+    };
+    themesDir = lib.mkOption {
+      type = types.str;
+      readOnly = true;
+      default = "${placeholder config.configDrvOutput}/${config.binName}-themes";
+      description = ''
+        The placeholder for the location of the themes directory.
+      '';
+    };
     settings = lib.mkOption {
       type = types.attrsOf (
         types.oneOf [
@@ -106,26 +114,47 @@ in
       '';
     };
   };
-
-  config.drv.buildPhase =
-    let
-      themes = builtins.mapAttrs mkBtopTheme config.themes;
-      cpCommands = lib.mapAttrsToList (
-        name: theme: "cp ${theme} ${themesDir}/${lib.escapeShellArg name}.theme"
-      ) themes;
-    in
-    ''
-      runHook preBuild
-      mkdir -p ${themesDir}
-      ${lib.concatStringsSep "\n" cpCommands}
-      runHook postBuild
-    '';
-
   config.package = lib.mkDefault pkgs.btop;
   config.flags = {
-    "--config" = pkgs.writeText "btop.conf" (toBtopConf config.settings);
-    "--themes-dir" = themesDir;
+    "--config" = lib.mkIf (config.settings != { }) config.constructFiles.generatedConfig.path;
+    "--themes-dir" = lib.mkIf (config.themes != { }) config.themesDir;
   };
+  config.passthru = {
+    ${if config.settings != { } then "generatedConfig" else null} =
+      config.constructFiles.generatedConfig.outPath;
+    ${if config.themes != { } then "generatedThemes" else null} = "${
+      config.wrapper.${config.configDrvOutput}
+    }/${config.binName}-themes";
+  };
+  config.constructFiles = {
+    generatedConfig = lib.mkIf (config.settings != { }) {
+      content = toBtopConf config.settings;
+      relPath = "${config.binName}-config.conf";
+      output = config.configDrvOutput;
+    };
+  }
+  // lib.pipe config.themes [
+    (lib.mapAttrsToList (
+      n: v:
+      lib.nameValuePair n {
+        relPath = lib.mkOverride 0 "${config.binName}-themes/${n}.theme";
+        output = lib.mkOverride 0 config.configDrvOutput;
+        ${if builtins.isPath v || lib.isStorePath v then null else "content"} = v;
+        ${if builtins.isPath v || lib.isStorePath v then "builder" else null} =
+          ''mkdir -p "$(dirname "$2")" && cp ${v} "$2"'';
+      }
+    ))
+    (lib.imap0 (
+      i: v:
+      v
+      // {
+        value = v.value // {
+          key = "theme_${toString i}";
+        };
+      }
+    ))
+    builtins.listToAttrs
+  ];
 
   meta.maintainers = [ wlib.maintainers.ameer ];
 }

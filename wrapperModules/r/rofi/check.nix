@@ -26,7 +26,7 @@ if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.rofi.meta.platfor
       exit 1
     fi
 
-    if ! echo "$res" | grep -q '/nix/store/.*-rofi-theme'; then
+    if ! echo "$res" | grep -q '/nix/store/.*/rofi-theme.rasi'; then
       echo "Rofi doesn't see theme"
       touch $out
       exit 1
