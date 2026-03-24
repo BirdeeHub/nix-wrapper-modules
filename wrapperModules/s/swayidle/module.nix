@@ -77,7 +77,7 @@ in
             default = null;
             apply = v: if v == null then null else toString v;
             description = ''
-              Set IdleHint to indicate an idle logind/elogind session after <timeout>
+              Set IdleHint to indicate an idle logind/elogind session after \<timeout\>
               seconds. Adding an idlehint event will also cause swayidle to call SetIdleHint(false) when run, on
               resume, unlock, etc.
             '';

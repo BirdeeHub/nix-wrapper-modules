@@ -154,6 +154,10 @@ in
                 active-color = "#f5c2e7";
                 inactive-color = "#313244";
               };
+              preset-column-widths = [
+                { proportion = 0.5; }
+                { proportion = 0.666667; }
+              ];
             };
           };
           spawn-at-startup = lib.mkOption {
