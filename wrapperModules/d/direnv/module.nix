@@ -1,4 +1,10 @@
-{ config, lib, wlib, pkgs, ... }:
+{
+  config,
+  lib,
+  wlib,
+  pkgs,
+  ...
+}:
 let
   cfg = config;
 
@@ -27,7 +33,7 @@ in
     };
     lib = lib.mkOption {
       type = with lib.types; attrsOf lines;
-      default = {};
+      default = { };
     };
     extraConfig = lib.mkOption {
       inherit (tomlFmt) type;
@@ -40,19 +46,19 @@ in
   };
   config = {
     package = lib.mkDefault pkgs.direnv;
-    env = { 
+    env = {
       # **IMPORTANT** DIRENV_CONFIG needs to be explicitly set in your shells environment
-      # because right now, direnv will use the `direnv` binary directly in its shell 
-      # hook and not the wrapper (in which $DIRENV_CONFIG got injected). 
-      # Hence the wrapped config will not be picked up unless you explicitly reference 
-      # this variable and set it. 
-      # 
+      # because right now, direnv will use the `direnv` binary directly in its shell
+      # hook and not the wrapper (in which $DIRENV_CONFIG got injected).
+      # Hence the wrapped config will not be picked up unless you explicitly reference
+      # this variable and set it.
+      #
       # If the PR below will ever be merged, this issue can be fixed by setting:
       #
       # env.DIRENV_EXE_PATH = "${placeholder "out"}/bin/direnv";
       #
       # This would make the direnv hook use the wrapper instead of the original binary.
-      # 
+      #
       # https://github.com/direnv/direnv/pull/1564
 
       # **IMPORTANT** Using `placeholder "out"` here seems to cause issues if this wrapper issue
@@ -61,9 +67,8 @@ in
       # DIRENV_CONFIG = "${placeholder "out"}/${config.configDirname}";
     };
     passthru.DIRENV_CONFIG = "${config.wrapper.${config.outputName}}/${config.configDirname}";
-    lib."nix-direnv.sh" = lib.mkIf 
-      (config.nix-direnv.enable) 
-      "source ${cfg.nix-direnv.package}/share/nix-direnv/direnvrc";
+    lib."nix-direnv.sh" =
+      lib.mkIf (config.nix-direnv.enable) "source ${cfg.nix-direnv.package}/share/nix-direnv/direnvrc";
     extraConfig = {
       global = lib.mkIf (config.silent) {
         log_format = "-";
@@ -79,14 +84,17 @@ in
         content = config.direnvrc;
         relPath = "${config.configDirname}/direnvrc";
       };
-    } // 
-    # TODO: As of now, construcFiles does not accept keys like 'nix-direnv.sh'.
-    # This hack somehow avoids the issue. Find out if this needs to be fixed in 
-    # `constructFiles`.
-    lib.mapAttrs' (name: value: lib.nameValuePair (builtins.replaceStrings ["." "-"] ["" ""] name) {
-      content = value;
-      relPath = "${config.configDirname}/lib/${name}";
-    }) config.lib;
+    }
+    //
+      # TODO: As of now, construcFiles does not accept keys like 'nix-direnv.sh'.
+      # This hack somehow avoids the issue. Find out if this needs to be fixed in
+      # `constructFiles`.
+      lib.mapAttrs' (
+        name: value:
+        lib.nameValuePair (builtins.replaceStrings [ "." "-" ] [ "" "" ] name) {
+          content = value;
+          relPath = "${config.configDirname}/lib/${name}";
+        }
+      ) config.lib;
   };
 }
-
