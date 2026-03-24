@@ -7,7 +7,6 @@
 }:
 let
   iniFmt = pkgs.formats.ini { };
-  configFile = iniFmt.generate "cava-config" config.settings;
 in
 {
   imports = [ wlib.modules.default ];
@@ -24,7 +23,11 @@ in
   config = {
     package = lib.mkDefault pkgs.cava;
     flags = {
-      "-p" = configFile;
+      "-p" = config.constructFiles.generatedConfig.path;
+    };
+    constructFiles.generatedConfig = {
+      content = lib.generators.toINI { } config.settings;
+      relPath = "${config.binName}.ini";
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
     meta.platforms = lib.platforms.linux;

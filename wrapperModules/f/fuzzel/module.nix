@@ -22,7 +22,11 @@ in
   };
   config.flagSeparator = "=";
   config.flags = {
-    "--config" = iniFmt.generate "fuzzel.ini" config.settings;
+    "--config" = config.constructFiles.generatedConfig.path;
+  };
+  config.constructFiles.generatedConfig = {
+    content = lib.generators.toINI { } config.settings;
+    relPath = "${config.binName}.ini";
   };
   config.package = lib.mkDefault pkgs.fuzzel;
   config.meta.maintainers = [ wlib.maintainers.birdee ];

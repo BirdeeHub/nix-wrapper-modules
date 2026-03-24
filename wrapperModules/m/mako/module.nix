@@ -14,7 +14,8 @@ in
   options = {
     "--config" = lib.mkOption {
       type = wlib.types.file pkgs;
-      default.path = iniFormat.generate "mako-settings" { globalSection = config.settings; };
+      default.path = config.constructFiles.generatedConfig.path;
+      default.content = "";
       description = ''
         Path to the generated Mako configuration file.
 
@@ -51,7 +52,14 @@ in
     "share/systemd/user/*.service"
     "lib/systemd/user/*.service"
   ];
-
+  config.constructFiles.generatedConfig = {
+    content =
+      if config."--config".content or "" != "" then
+        config."--config".content
+      else
+        lib.generators.toINIWithGlobalSection { } { globalSection = config.settings; };
+    relPath = "${config.binName}-config.ini";
+  };
   config.package = lib.mkDefault pkgs.mako;
 
   config.meta.maintainers = [ wlib.maintainers.birdee ];

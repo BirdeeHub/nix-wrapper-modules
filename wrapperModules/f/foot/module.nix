@@ -20,7 +20,11 @@ in
       '';
     };
   };
-  config.flags."--config" = iniFmt.generate "foot.ini" config.settings;
+  config.flags."--config" = config.constructFiles.generatedConfig.path;
+  config.constructFiles.generatedConfig = {
+    content = lib.generators.toINI { } config.settings;
+    relPath = "${config.binName}.ini";
+  };
   config.filesToPatch = [ "share/systemd/user/*.service" ];
   config.package = lib.mkDefault pkgs.foot;
   config.meta.maintainers = [ wlib.maintainers.birdee ];

@@ -35,7 +35,8 @@ in
     };
     configFile = lib.mkOption {
       type = wlib.types.file pkgs;
-      default.path = iniFmt.generate "notmuch.ini" config.settings;
+      default.path = config.constructFiles.generatedConfig.path;
+      default.content = "";
       description = ''
         Path or inline definition of the generated Notmuch configuration file.
 
@@ -44,7 +45,15 @@ in
       '';
     };
   };
-  config.package = pkgs.notmuch;
+  config.constructFiles.generatedConfig = {
+    content =
+      if config.configFile.content or "" != "" then
+        config.configFile.content
+      else
+        lib.generators.toINI { } config.settings;
+    relPath = "${config.binName}.ini";
+  };
+  config.package = lib.mkDefault pkgs.notmuch;
   config.env.NOTMUCH_CONFIG = config.configFile.path;
   config.meta.maintainers = [ wlib.maintainers.birdee ];
 }
