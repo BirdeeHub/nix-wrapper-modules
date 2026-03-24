@@ -278,7 +278,6 @@ in
       else
         lib.strings.concatLines (
           lib.lists.flatten [
-            # (attrsToKdl { inherit (config.settings) binds layout; })
             (map (mkRule "window-rule") config.settings.window-rules)
             (map (mkRule "layer-rule") config.settings.layer-rules)
             (map (
