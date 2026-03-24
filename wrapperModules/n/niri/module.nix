@@ -271,7 +271,7 @@ in
   config.package = pkgs.niri;
   config.env.NIRI_CONFIG = config."config.kdl".path;
   config.constructFiles.generatedConfig = {
-    relPath = "${config.binName}-config.json";
+    relPath = "${config.binName}-config.kdl";
     content =
       if config."config.kdl".content or "" != "" then
         config."config.kdl".content
