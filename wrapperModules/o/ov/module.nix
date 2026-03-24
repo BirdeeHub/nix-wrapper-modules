@@ -21,7 +21,12 @@ in
     };
   };
   config.flags = {
-    "--config" = yamlFmt.generate "ov.yaml" config.settings;
+    "--config" = config.constructFiles.generatedConfig.path;
+  };
+  config.constructFiles.generatedConfig = {
+    content = builtins.toJSON config.settings;
+    relPath = "${config.binName}-config.yaml";
+    builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2yaml "$1" "$2"'';
   };
   config.package = lib.mkDefault pkgs.ov;
   config.meta.maintainers = [ wlib.maintainers.rencire ];

@@ -233,9 +233,50 @@ in
         };
       };
     };
-    "config.kdl" =
-      let
-        compiledConfig = lib.strings.concatLines (
+    "config.kdl" = lib.mkOption {
+      type = wlib.types.file pkgs;
+      default.path = config.constructFiles.generatedConfig.path;
+      default.content = "";
+      description = ''
+        Configuration file for Niri.
+        See <https://github.com/YaLTeR/niri/wiki/Configuration:-Introduction>
+      '';
+      example = ''
+        input {
+          keyboard {
+              numlock
+          }
+
+          touchpad {
+              tap
+              natural-scroll
+          }
+
+          focus-follows-mouse = {
+            _attrs = { max-scroll-amount = "0%"; };
+          };
+        }
+      '';
+    };
+  };
+  config.filesToPatch = [
+    "share/applications/*.desktop"
+    "share/systemd/user/niri.service"
+  ];
+  config.drv.installPhase = ''
+    runHook preInstall
+    ${lib.getExe config.package} validate -c ${config.constructFiles.generatedConfig.path}
+    runHook postInstall
+  '';
+  config.package = pkgs.niri;
+  config.env.NIRI_CONFIG = config."config.kdl".path;
+  config.constructFiles.generatedConfig = {
+    relPath = "${config.binName}-config.json";
+    content =
+      if config."config.kdl".content or "" != "" then
+        config."config.kdl".content
+      else
+        lib.strings.concatLines (
           lib.lists.flatten [
             # (attrsToKdl { inherit (config.settings) binds layout; })
             (map (mkRule "window-rule") config.settings.window-rules)
@@ -265,46 +306,6 @@ in
             config.settings.extraConfig
           ]
         );
-        checkedConfig = pkgs.writeTextFile {
-          name = "niri.kdl";
-          text = compiledConfig;
-          checkPhase = ''
-            ${lib.getExe config.package} validate -c $out
-          '';
-        };
-      in
-      lib.mkOption {
-        type = wlib.types.file pkgs;
-        default.path = checkedConfig;
-        description = ''
-          Configuration file for Niri.
-          See <https://github.com/YaLTeR/niri/wiki/Configuration:-Introduction>
-        '';
-        example = ''
-          input {
-            keyboard {
-                numlock
-            }
-
-            touchpad {
-                tap
-                natural-scroll
-            }
-
-            focus-follows-mouse = {
-              _attrs = { max-scroll-amount = "0%"; };
-            };
-          }
-        '';
-      };
-  };
-  config.filesToPatch = [
-    "share/applications/*.desktop"
-    "share/systemd/user/niri.service"
-  ];
-  config.package = pkgs.niri;
-  config.env = {
-    NIRI_CONFIG = toString config."config.kdl".path;
   };
   config.meta.maintainers = [
     wlib.maintainers.patwid

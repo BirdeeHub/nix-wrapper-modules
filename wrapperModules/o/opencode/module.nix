@@ -15,8 +15,10 @@
   config = {
     meta.maintainers = [ wlib.maintainers.birdee ];
     package = lib.mkDefault pkgs.opencode;
-    envDefault = {
-      OPENCODE_CONFIG = pkgs.writeText "OPENCODE_CONFIG.json" (builtins.toJSON config.settings);
+    envDefault.OPENCODE_CONFIG = config.constructFiles.generatedConfig.path;
+    constructFiles.generatedConfig = {
+      relPath = "${config.binName}-config.json";
+      content = builtins.toJSON config.settings;
     };
   };
 }

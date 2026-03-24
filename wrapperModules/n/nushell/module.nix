@@ -11,6 +11,7 @@
     "env.nu" = lib.mkOption {
       type = wlib.types.file pkgs;
       default.content = "";
+      default.path = config.constructFiles.generatedEnv.path;
       description = ''
         The Nushell environment configuration file.
 
@@ -22,6 +23,7 @@
     "config.nu" = lib.mkOption {
       type = wlib.types.file pkgs;
       default.content = "";
+      default.path = config.constructFiles.generatedConfig.path;
       description = ''
         The main Nushell configuration file.
 
@@ -36,6 +38,14 @@
   config.flags = {
     "--config" = config."config.nu".path;
     "--env-config" = config."env.nu".path;
+  };
+  config.constructFiles.generatedConfig = {
+    content = config."config.nu".content;
+    relPath = "${config.binName}-config/config.nu";
+  };
+  config.constructFiles.generatedEnv = {
+    content = config."env.nu".content;
+    relPath = "${config.binName}-config/env.nu";
   };
   config.passthru.shellPath = "/bin/nu";
 
