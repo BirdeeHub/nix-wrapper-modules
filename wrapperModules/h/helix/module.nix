@@ -87,7 +87,7 @@ in
   config.drv.extraSettings = config.extraSettings;
   config.drv.passAsFile = [ "extraSettings" ];
   config.constructFiles = {
-    config = lib.mkIf (config.settings != { } && config.extraSettings != "") {
+    config = lib.mkIf (config.settings != { } || config.extraSettings != "") {
       relPath = lib.mkOverride 0 "${config.binName}-config/helix/config.toml";
       output = lib.mkOverride 0 config.generatedConfig.output;
       content = builtins.toJSON config.settings;
