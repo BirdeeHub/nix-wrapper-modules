@@ -21,6 +21,7 @@
     };
     "mpv.input" = lib.mkOption {
       type = wlib.types.file pkgs;
+      default.path = config.constructFiles.generatedInput.path;
       default.content = "";
       description = ''
         The MPV input configuration file.
@@ -32,6 +33,7 @@
     };
     "mpv.conf" = lib.mkOption {
       type = wlib.types.file pkgs;
+      default.path = config.constructFiles.generatedConfig.path;
       default.content = "";
       description = ''
         The main MPV configuration file.
@@ -46,6 +48,14 @@
   config.flags = {
     "--input-conf" = config."mpv.input".path;
     "--include" = config."mpv.conf".path;
+  };
+  config.constructFiles.generatedConfig = {
+    relPath = "${config.binName}-config/mpv.conf";
+    content = config."mpv.conf".content;
+  };
+  config.constructFiles.generatedInput = {
+    relPath = "${config.binName}-config/mpv.input";
+    content = config."mpv.input".content;
   };
   config.overrides = [
     {

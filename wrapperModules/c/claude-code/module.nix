@@ -119,11 +119,19 @@ in
       DISABLE_TELEMETRY = "1";
       DISABLE_INSTALLATION_CHECKS = "1";
     };
+    constructFiles.generatedMcpConfig = {
+      content = builtins.toJSON { mcpServers = config.mcpConfig; };
+      relPath = "${config.binName}-mcp-config.json";
+    };
+    constructFiles.generatedSettings = {
+      content = builtins.toJSON config.settings;
+      relPath = "${config.binName}-settings.json";
+    };
     flags = {
       "--agents" = builtins.toJSON config.agents;
-      "--mcp-config" = jsonFmt.generate "claude-mcp-config.json" { mcpServers = config.mcpConfig; };
+      "--mcp-config" = config.constructFiles.generatedMcpConfig.path;
       "--plugin-dir" = config.pluginDirs;
-      "--settings" = jsonFmt.generate "claude-settings.json" config.settings;
+      "--settings" = config.constructFiles.generatedSettings.path;
       "--strict-mcp-config" = config.strictMcpConfig;
     };
     meta.maintainers = [ wlib.maintainers.vinnymeller ];

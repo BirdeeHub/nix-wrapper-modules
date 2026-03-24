@@ -98,29 +98,20 @@ let
   configType = with types; (either (attrsOf (either primitive (listOf primitive))) str);
 
   themeType = with types; attrsOf configType;
-
-  theme =
-    if (isAttrs config.theme) then
-      builtins.toPath (
-        pkgs.writeTextFile {
-          name = "rofi-theme";
-          text = toRasi config.theme;
-        }
-      )
-    else
-      config.theme;
 in
 {
   imports = [ wlib.modules.default ];
   options = {
     "config.rasi" = lib.mkOption {
       type = wlib.types.file pkgs;
+      default.path = config.constructFiles.generatedConfig.path;
       default.content =
         toRasi {
           configuration = config.settings;
         }
-        + (lib.optionalString (theme != null) (toRasi {
-          "@theme" = theme;
+        + (lib.optionalString (config.theme != null) (toRasi {
+          "@theme" =
+            if builtins.isAttrs config.theme then config.constructFiles.generatedTheme.path else config.theme;
         }));
       description = ''
         The main Rofi configuration file (`config.rasi`).
@@ -170,6 +161,15 @@ in
 
   config.flags = {
     "-config" = config."config.rasi".path;
+  };
+
+  config.constructFiles.generatedConfig = {
+    relPath = "${config.binName}-config.rasi";
+    content = config."config.rasi".content;
+  };
+  config.constructFiles.generatedTheme = lib.mkIf (builtins.isAttrs config.theme) {
+    relPath = "${config.binName}-theme.rasi";
+    content = toRasi config.theme;
   };
 
   config.package = lib.mkDefault pkgs.rofi;

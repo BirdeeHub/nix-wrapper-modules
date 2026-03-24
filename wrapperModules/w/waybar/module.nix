@@ -31,7 +31,8 @@ in
     };
     configFile = lib.mkOption {
       type = wlib.types.file config.pkgs;
-      default.path = jsonFmt.generate "waybar-config" config.settings;
+      default.path = config.constructFiles.generatedConfig.path;
+      default.content = "";
       description = ''
         Waybar configuration settings file.
         See <https://github.com/Alexays/Waybar/wiki/Configuration>
@@ -50,6 +51,7 @@ in
     };
     "style.css" = lib.mkOption {
       type = wlib.types.file config.pkgs;
+      default.path = config.constructFiles.generatedStyle.path;
       default.content = "";
       description = "CSS style for Waybar.";
     };
@@ -59,6 +61,18 @@ in
   config.flags = {
     "--config" = config.configFile.path;
     "--style" = config."style.css".path;
+  };
+  config.constructFiles.generatedStyle = {
+    content = config.configFile.content or "";
+    relPath = "${config.binName}-style.css";
+  };
+  config.constructFiles.generatedConfig = {
+    content =
+      if config.configFile.content or "" != "" then
+        config.configFile.content
+      else
+        builtins.toJSON config.settings;
+    relPath = "${config.binName}-config.json";
   };
   config.filesToPatch = [
     "share/systemd/user/waybar.service"
