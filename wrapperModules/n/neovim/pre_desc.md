@@ -33,6 +33,31 @@ This module fully supports remote plugin hosts.
 By the same mechanism, it also allows arbitrary other items to be bundled into the context of your `neovim` derivation, such as `neovide`,
 via an option which accepts wrapper modules for maximum flexibility.
 
+A basic usage of this module might look something like this:
+
+```nix
+{ wlib, config, pkgs, lib, ... }:
+  imports = [ wlib.wrapperModules.neovim ];
+  specs.general = with pkgs.vimPlugins; [
+    # plugins which are loaded at startup ...
+  ];
+  specs.lazy = {
+    lazy = true;
+    data = with pkgs.vimPlugins; [
+      # plugins which are not loaded until you vim.cmd.packadd them ...
+    ];
+  };
+  info = {
+    values = "for lua";
+    which = "will be placed in the generated info plugin for access";
+  };
+  extraPackages = with pkgs; [
+    # lsps, formatters, etc...
+  ];
+  settings.config_directory = ./.; # or lib.generators.mkLuaInline "vim.fn.stdpath('config')";
+}
+```
+
 Please also check out the [Tips and Tricks](#tips-and-tricks) section for more information!
 
 ## Options:
