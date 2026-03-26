@@ -60,20 +60,28 @@ option. If the option is null, `user-emacs-directory` will point to a read-only 
 This is done at the start of `early-init.el`.";
     };
   };
-  config.constructFiles.earlyInit = {
-    relPath = "emacs.d/early-init.el";
-    content =
-      lib.optionalString (config.userDirectory != null) ''
-        (setq user-emacs-directory "${config.userDirectory}")
-      ''
-      + config.earlyConfigFile;
-  };
   config.wrapperImplementation = "binary";
   config.escapingFunction = lib.escapeShellArg;
-  config.constructFiles.init = {
-    relPath = "emacs.d/init.el";
-    content = config.configFile;
-  };
+  config.constructFiles =
+    builtins.mapAttrs
+      (
+        n:
+        { path, value }:
+        {
+          relPath = lib.mkOverride 0 "emacs.d/${path}.el";
+          content = value;
+        }
+      )
+      {
+        init = {
+          path = "init";
+          value = config.configFile;
+        };
+        earlyInit = {
+          path = "early-init";
+          value = config.earlyConfigFile;
+        };
+      };
   config.wrapperVariants = {
     ctags = { };
     ebrowse = { };
