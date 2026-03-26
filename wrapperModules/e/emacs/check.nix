@@ -11,10 +11,10 @@ let
         let
           m = epkgs.melpaPackages;
         in
-          [
-            m.evil
-            m.ivy
-          ];
+        [
+          m.evil
+          m.ivy
+        ];
       configFile = ''
         (setq inhibit-startup-message t)
         (set-fringe-mode 10)
