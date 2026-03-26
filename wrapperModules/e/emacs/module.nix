@@ -22,7 +22,7 @@ That input provides `.melpaPackages` which contains all packages from Melpa.
 Note that this value is used in the default value for config.package. If you want to change the
 emacs package, change `config.emacsPackage` or add your emacs packages back in manually.";
     };
-    emacsConfig = lib.mkOption {
+    configFile = lib.mkOption {
       type = lib.types.lines;
       default = "";
       example = ''
@@ -39,7 +39,7 @@ emacs package, change `config.emacsPackage` or add your emacs packages back in m
         to config.addFlag.
       '';
     };
-    emacsPreConfig = lib.mkOption {
+    preConfigFile = lib.mkOption {
       type = lib.types.lines;
       default = "";
       example = ''
@@ -72,7 +72,7 @@ This is done before config.emacsPreConfig, and is only read if `config.emacsConf
               (setq user-emacs-directory "${config.userDirectory}")
             '';
       in
-      move-emacs-d + config.emacsPreConfig + "\n" + config.emacsConfig;
+      move-emacs-d + config.preConfigFile + "\n" + config.configFile;
   };
   config.addFlag = lib.mkIf (config.emacsConfig != "") [
     [
@@ -80,8 +80,7 @@ This is done before config.emacsPreConfig, and is only read if `config.emacsConf
       (dirOf config.constructFiles.init.path)
     ]
   ];
-  config.package =
-    lib.mkDefault (config.emacsPackage.pkgs.withPackages config.emacsPackages);
+  config.package = lib.mkDefault (config.emacsPackage.pkgs.withPackages config.emacsPackages);
   config.meta.description = "Wrapper for emacs";
   config.meta.platforms = lib.platforms.linux;
   config.meta.maintainers = [ wlib.maintainers.boundless-recursion ];
