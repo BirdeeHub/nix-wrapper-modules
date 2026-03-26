@@ -86,6 +86,5 @@ This is done at the start of `early-init.el`.";
   ];
   config.package = lib.mkDefault (config.emacsPackage.pkgs.withPackages config.emacsPackages);
   config.meta.description = "Wrapper for emacs";
-  config.meta.platforms = lib.platforms.linux;
   config.meta.maintainers = [ wlib.maintainers.boundless-recursion ];
 }

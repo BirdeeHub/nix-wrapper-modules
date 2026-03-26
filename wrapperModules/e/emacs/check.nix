@@ -21,11 +21,8 @@ let
       '';
     }).wrapper;
 in
-if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.emacs.meta.platforms then
   pkgs.runCommand "emacs-test" { } ''
     "${emacsWrapped}/bin/emacs" --help | grep -q "Usage"
     grep -q --no-ignore-case -- "--init-directory" "${emacsWrapped}/bin/emacs"
     touch $out
   ''
-else
-  null
