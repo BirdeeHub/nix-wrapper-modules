@@ -78,6 +78,13 @@ This is done at the start of `early-init.el`.";
     relPath = "emacs.d/init.el";
     content = config.configFile;
   };
+  config.wrapperVariants = {
+    ctags = { };
+    ebrowse = { };
+    emacsclient = { };
+    etags = { };
+    "emacs-${config.emacsPackage.version}" = { };
+  };
   config.addFlag = lib.mkIf (config.configFile != "") [
     [
       "--init-directory"
