@@ -40,14 +40,13 @@ emacs package, change `config.emacsPackage` or add your emacs packages back in m
         to config.addFlag.
       '';
     };
-    preConfigFile = lib.mkOption {
+    earlyConfigFile = lib.mkOption {
       type = lib.types.lines;
       default = "";
       example = ''
         (setq extra-files-path $${./path/to/extra/files})
       '';
-      description = "Prepended to emacsConfig. Recommended to use if you want your emacsConfig to be
-a directly imported `.el` file, but want access to placeholder variables.
+      description = "The contents of `early-init.el`.
 
 This is only read if `config.emacsConfig` has been set.";
     };
@@ -58,22 +57,25 @@ This is only read if `config.emacsConfig` has been set.";
 option. If the option is null, `user-emacs-directory` will point to a read-only location in the nix store
 (not recommended, since some emacs packages depend on being able to write to .emacs.d).
 
-This is done before config.emacsPreConfig, and is only read if `config.emacsConfig` has been set.";
+This is done at the start of `early-init.el`.";
     };
+  };
+  config.constructFiles.earlyInit = {
+    relPath = "emacs.d/early-init.el";
+    content = let
+      move-emacs-d =
+        if null == config.userDirectory then
+          ""
+        else
+          ''
+              (setq user-emacs-directory "${config.userDirectory}")
+            '';
+    in
+      move-emacs-d + config.preConfigFile;
   };
   config.constructFiles.init = {
     relPath = "emacs.d/init.el";
-    content =
-      let
-        move-emacs-d =
-          if null == config.userDirectory then
-            ""
-          else
-            ''
-              (setq user-emacs-directory "${config.userDirectory}")
-            '';
-      in
-      move-emacs-d + config.preConfigFile + "\n" + config.configFile;
+    content = config.configFile;
   };
   config.addFlag = lib.mkIf (config.configFile != "") [
     [
