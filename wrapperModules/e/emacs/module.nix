@@ -91,15 +91,15 @@ This is done at the start of `early-init.el`.";
       {
         init = {
           path = "init";
+          value = config.configFile;
+        };
+        earlyInit = {
+          path = "early-init";
           value =
             lib.optionalString (config.userDirectory != null) ''
               (setq user-emacs-directory "${config.userDirectory}")
             ''
-            + config.configFile;
-        };
-        earlyInit = {
-          path = "early-init";
-          value = config.earlyConfigFile;
+            + config.earlyConfigFile;
         };
       };
   config.wrapperVariants = {
