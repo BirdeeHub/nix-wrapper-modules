@@ -50,7 +50,7 @@ a directly imported `.el` file, but want access to placeholder variables.
 
 This is only read if `config.emacsConfig` has been set.";
     };
-    emacsDotDLocation = lib.mkOption {
+    userDirectory = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = "~/.emacs.d";
       description = "After loading our config file, `user-emacs-directory` will be set to the value of this
@@ -65,11 +65,11 @@ This is done before config.emacsPreConfig, and is only read if `config.emacsConf
     content =
       let
         move-emacs-d =
-          if null == config.emacsDotDLocation then
+          if null == config.userDirectory then
             ""
           else
             ''
-              (setq user-emacs-directory "${config.emacsDotDLocation}")
+              (setq user-emacs-directory "${config.userDirectory}")
             '';
       in
       move-emacs-d + config.emacsPreConfig + "\n" + config.emacsConfig;
@@ -81,7 +81,7 @@ This is done before config.emacsPreConfig, and is only read if `config.emacsConf
     ]
   ];
   config.package =
-      lib.mkDefault (config.emacsPackage config.emacsPackages);
+    lib.mkDefault (config.emacsPackage config.emacsPackages);
   config.meta.description = "Wrapper for emacs";
   config.meta.platforms = lib.platforms.linux;
   config.meta.maintainers = [ wlib.maintainers.boundless-recursion ];
