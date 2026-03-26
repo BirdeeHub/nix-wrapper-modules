@@ -8,7 +8,6 @@
 {
   imports = [ wlib.modules.default ];
   options = {
-    imagemagick-support.enable = lib.mkEnableOption "Compile emacs with imagemagick support";
     emacsPackage = lib.mkOption {
       default = pkgs.emacs;
       description = "The base emacs package. Defaults to pkgs.emacs";
@@ -82,15 +81,7 @@ This is done before config.emacsPreConfig, and is only read if `config.emacsConf
     ]
   ];
   config.package =
-    let
-      modifications = lib.optionals config.imagemagick-support.enable [
-        (e: e.override { withImageMagick = true; })
-      ];
-    in
-    lib.mkDefault (
-      (builtins.foldl' (x: f: f x) config.emacsPackage modifications).pkgs.withPackages
-        config.emacsPackages
-    );
+      lib.mkDefault (config.emacsPackage config.emacsPackages);
   config.meta.description = "Wrapper for emacs";
   config.meta.platforms = lib.platforms.linux;
   config.meta.maintainers = [ wlib.maintainers.boundless-recursion ];
