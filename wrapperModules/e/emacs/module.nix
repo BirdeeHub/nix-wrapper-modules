@@ -13,6 +13,7 @@
       description = "The base emacs package. Defaults to pkgs.emacs";
     };
     emacsPackages = lib.mkOption {
+      type = wlib.types.withPackagesType;
       default = ps: [ ];
       example = lib.literalExpression "epkgs: with epkgs.melpaPackages; [ evil ivy ]";
       description = "Packages for emacs. This value is provided to pkgs.emacs.pkgs.withPackages, so it should
