@@ -62,16 +62,17 @@ This is done at the start of `early-init.el`.";
   };
   config.constructFiles.earlyInit = {
     relPath = "emacs.d/early-init.el";
-    content = let
-      move-emacs-d =
-        if null == config.userDirectory then
-          ""
-        else
-          ''
+    content =
+      let
+        move-emacs-d =
+          if null == config.userDirectory then
+            ""
+          else
+            ''
               (setq user-emacs-directory "${config.userDirectory}")
             '';
-    in
-      move-emacs-d + config.preConfigFile;
+      in
+      move-emacs-d + config.earlyConfigFile;
   };
   config.constructFiles.init = {
     relPath = "emacs.d/init.el";
