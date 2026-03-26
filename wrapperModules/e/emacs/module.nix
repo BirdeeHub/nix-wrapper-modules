@@ -74,6 +74,8 @@ This is done at the start of `early-init.el`.";
       in
       move-emacs-d + config.earlyConfigFile;
   };
+  config.wrapperImplementation = "binary";
+  config.escapingFunction = lib.escapeShellArg;
   config.constructFiles.init = {
     relPath = "emacs.d/init.el";
     content = config.configFile;
