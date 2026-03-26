@@ -81,7 +81,7 @@ This is done before config.emacsPreConfig, and is only read if `config.emacsConf
     ]
   ];
   config.package =
-    lib.mkDefault (config.emacsPackage config.emacsPackages);
+    lib.mkDefault (config.emacsPackage.pkgs.withPackages config.emacsPackages);
   config.meta.description = "Wrapper for emacs";
   config.meta.platforms = lib.platforms.linux;
   config.meta.maintainers = [ wlib.maintainers.boundless-recursion ];
