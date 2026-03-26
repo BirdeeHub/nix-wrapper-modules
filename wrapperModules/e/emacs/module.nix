@@ -74,7 +74,7 @@ This is done before config.emacsPreConfig, and is only read if `config.emacsConf
       in
       move-emacs-d + config.preConfigFile + "\n" + config.configFile;
   };
-  config.addFlag = lib.mkIf (config.emacsConfig != "") [
+  config.addFlag = lib.mkIf (config.configFile != "") [
     [
       "--init-directory"
       (dirOf config.constructFiles.init.path)

@@ -11,11 +11,11 @@ let
         let
           m = epkgs.melpaPackages;
         in
-        [
-          m.evil
-          m.ivy
-        ];
-      emacsConfig = ''
+          [
+            m.evil
+            m.ivy
+          ];
+      configFile = ''
         (setq inhibit-startup-message t)
         (set-fringe-mode 10)
       '';
