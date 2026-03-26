@@ -91,7 +91,11 @@ This is done at the start of `early-init.el`.";
       {
         init = {
           path = "init";
-          value = config.configFile;
+          value =
+            lib.optionalString (config.userDirectory != null) ''
+              (setq user-emacs-directory "${config.userDirectory}")
+            ''
+            + config.configFile;
         };
         earlyInit = {
           path = "early-init";
