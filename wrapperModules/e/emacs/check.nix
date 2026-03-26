@@ -21,8 +21,8 @@ let
       '';
     }).wrapper;
 in
-  pkgs.runCommand "emacs-test" { } ''
-    "${emacsWrapped}/bin/emacs" --help | grep -q "Usage"
-    grep -q --no-ignore-case -- "--init-directory" "${emacsWrapped}/bin/emacs"
-    touch $out
-  ''
+pkgs.runCommand "emacs-test" { } ''
+  "${emacsWrapped}/bin/emacs" --help | grep -q "Usage"
+  grep -q --no-ignore-case -- "--init-directory" "${emacsWrapped}/bin/emacs"
+  touch $out
+''
