@@ -31,6 +31,10 @@
               default = name;
               description = ''
                 The attribute to add the file contents to on the final derivation
+
+                If you get an error like "config.jsonPath: invalid variable name",
+                then that means you should set this value
+                to something which is a valid shell variable name.
               '';
             };
             content = lib.mkOption {
