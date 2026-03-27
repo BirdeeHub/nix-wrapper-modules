@@ -14,10 +14,7 @@
       example = lib.literalExpression "epkgs: with epkgs.melpaPackages; [ evil ivy ]";
       description = "Packages for emacs. This value is provided to pkgs.emacs.pkgs.withPackages, so it should
 either be a list of emacs packages, or a function that takes a single input and returns a list of packages.
-That input provides `.melpaPackages` which contains all packages from Melpa.
-
-Note that this value is used in the default value for config.package. If you want to change the
-emacs package, change `config.emacsPackage` or add your emacs packages back in manually.";
+That input provides `.melpaPackages` which contains all packages from Melpa.";
     };
     configFile = lib.mkOption {
       type = lib.types.lines;
@@ -42,9 +39,7 @@ emacs package, change `config.emacsPackage` or add your emacs packages back in m
       example = ''
         (setq extra-files-path $${./path/to/extra/files})
       '';
-      description = "The contents of `early-init.el`.
-
-This is only read if `config.emacsConfig` has been set.";
+      description = "The contents of `early-init.el`.";
     };
     userDirectory = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
