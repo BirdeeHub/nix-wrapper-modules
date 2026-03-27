@@ -89,13 +89,11 @@ in
       # TODO: As of now, construcFiles does not accept keys like 'nix-direnv.sh'.
       # This hack somehow avoids the issue. Find out if this needs to be fixed in
       # `constructFiles`.
-      lib.mapAttrs' (
-        name: value:
-        lib.nameValuePair (builtins.replaceStrings [ "." "-" ] [ "" "" ] name) {
-          content = value;
-          relPath = "${config.configDirname}/lib/${name}";
-        }
-      ) config.lib;
+      lib.mapAttrs (name: value: {
+        key = builtins.replaceStrings [ "." "-" ] [ "" "" ] name;
+        content = value;
+        relPath = "${config.configDirname}/lib/${name}";
+      }) config.lib;
     meta.maintainers = [ wlib.maintainers.zenoli ];
   };
 }
