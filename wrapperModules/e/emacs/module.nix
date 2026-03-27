@@ -82,7 +82,7 @@ This is done at the start of `early-init.el`.";
     content = config.configFile;
   };
   config.wrapperVariants = {
-    "emacs-${config.emacsPackage.version}" = { };
+    "emacs-${config.package.emacs.version}" = { };
   };
   config.addFlag = lib.mkIf (config.configFile != "") [
     [
