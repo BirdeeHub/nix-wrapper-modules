@@ -99,10 +99,6 @@ This is done at the start of `early-init.el`.";
         };
       };
   config.wrapperVariants = {
-    ctags = { };
-    ebrowse = { };
-    emacsclient = { };
-    etags = { };
     "emacs-${config.emacsPackage.version}" = { };
   };
   config.addFlag = lib.mkIf (config.configFile != "") [
