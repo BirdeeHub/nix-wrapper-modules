@@ -83,12 +83,9 @@ This is done at the start of `early-init.el`.";
   config.wrapperVariants = {
     "emacs-${config.package.emacs.version}" = { };
   };
-  config.addFlag = lib.mkIf (config.configFile != "") [
-    [
-      "--init-directory"
-      "${dirOf config.constructFiles.init.path}"
-    ]
-  ];
+  config.flags."--init-directory" = lib.mkIf (
+    config.configFile != "" || config.earlyConfigFile != ""
+  ) "${dirOf config.constructFiles.init.path}";
   config.package = lib.mkDefault pkgs.emacs;
   config.overrides = [
     {
