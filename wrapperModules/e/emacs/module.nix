@@ -115,7 +115,13 @@ This is done at the start of `early-init.el`.";
       "${config.generatedConfig.placeholder}"
     ]
   ];
-  config.package = lib.mkDefault (config.emacsPackage.pkgs.withPackages config.emacsPackages);
+  config.package = lib.mkDefault pkgs.emacs;
+  config.overrides = [
+    {
+      name = "emacsPackages";
+      data = v: v.pkgs.withPackages config.emacsPackages;
+    }
+  ];
   config.meta.description = "Wrapper for emacs";
   config.meta.maintainers = [ wlib.maintainers.boundless-recursion ];
 }
