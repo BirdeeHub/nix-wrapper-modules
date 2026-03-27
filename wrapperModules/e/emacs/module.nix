@@ -32,8 +32,8 @@ emacs package, change `config.emacsPackage` or add your emacs packages back in m
         emacs config file.
 
         Because of emacs quirks, if `~/.emacs` exists, then it will be used first.
-        If you need to work around this, add [ [ "-l" config.constructFiles.init-el.outPath ] "-q" ]
-        to config.addFlag.
+        If you need to work around this, add `[ [ "-l" config.constructFiles.init.path ] "-q" ]`
+        to `config.addFlag`, or set those arguments via `config.flags`.
       '';
     };
     earlyConfigFile = lib.mkOption {
@@ -51,7 +51,7 @@ This is only read if `config.emacsConfig` has been set.";
       default = "~/.emacs.d";
       description = "After loading our config file, `user-emacs-directory` will be set to the value of this
 option. If the option is null, `user-emacs-directory` will point to a read-only location in the nix store
-(not recommended, since some emacs packages depend on being able to write to .emacs.d).
+(not recommended, since some emacs packages depend on being able to write to the user config directory).
 
 This is done at the start of `early-init.el`.";
     };
