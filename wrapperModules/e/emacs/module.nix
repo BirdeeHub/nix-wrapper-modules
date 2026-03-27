@@ -64,7 +64,6 @@ This is done at the start of `early-init.el`.";
     };
   };
   config.wrapperImplementation = "binary";
-  config.escapingFunction = lib.escapeShellArg;
   config.passthru.generatedConfig = "${config.wrapper.${config.generatedConfigOutput}}/emacs.d";
   config.constructFiles.early-init = {
     key = "earlyInit";
