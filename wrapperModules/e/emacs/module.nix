@@ -8,10 +8,6 @@
 {
   imports = [ wlib.modules.default ];
   options = {
-    emacsPackage = lib.mkOption {
-      default = pkgs.emacs;
-      description = "The base emacs package. Defaults to pkgs.emacs";
-    };
     emacsPackages = lib.mkOption {
       type = wlib.types.withPackagesType;
       default = ps: [ ];
