@@ -45,4 +45,9 @@
     github = "alexlov";
     githubId = 100994;
   };
+  boundless-recursion = {
+    name = "boundless-recursion";
+    github = "boundless-recursion";
+    githubId = 59110523;
+  };
 }
