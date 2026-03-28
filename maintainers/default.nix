@@ -50,4 +50,10 @@
     github = "boundless-recursion";
     githubId = 59110523;
   };
+  nikitawootten = {
+    email = "me@nikita.computer";
+    github = "nikitawootten";
+    githubId = 8916363;
+    name = "Nikita Wootten";
+  };
 }
