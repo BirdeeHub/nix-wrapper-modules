@@ -96,6 +96,30 @@ runTests "direnv-test" [
       (notIsFile "${getDotdir wrapper}/lib/nix-direnv.sh")
     ]
   ))
+  (runTest "if mise is enabled then lib/mise.sh should exists" (
+    let
+      wrapper = self.wrappers.direnv.wrap {
+        inherit pkgs;
+        mise.enable = true;
+      };
+    in
+    [
+      (isDirectory (getDotdir wrapper))
+      (isFile "${getDotdir wrapper}/lib/mise.sh")
+    ]
+  ))
+  (runTest "if mise is disabled then lib/mise.sh should not exist" (
+    let
+      wrapper = self.wrappers.direnv.wrap {
+        inherit pkgs;
+        mise.enable = false;
+      };
+    in
+    [
+      (isDirectory (getDotdir wrapper))
+      (notIsFile "${getDotdir wrapper}/lib/mise.sh")
+    ]
+  ))
   (runTest "if a lib-script is set then it should be generated" (
     let
       libScriptFile = "${getDotdir wrapper}/lib/foo.sh";
