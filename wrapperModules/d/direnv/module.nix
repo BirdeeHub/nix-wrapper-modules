@@ -10,6 +10,7 @@ let
 
   tomlFmt = pkgs.formats.toml { };
   direnvToml = tomlFmt.generate "direnv.toml" config.extraConfig;
+  direnvDotdir = "${config.wrapper.${config.outputName}}/${config.configDirname}";
 in
 {
   imports = [ wlib.modules.default ];
@@ -22,9 +23,7 @@ in
     silent = lib.mkEnableOption "silent mode, that is, disabling direnv logging";
     direnvrc = lib.mkOption {
       type = lib.types.lines;
-      description = ''
-        Content of $DIRENV_CONFIG/direnv.toml
-      '';
+      description = "Content of `$DIRENV_CONFIG/direnv`";
       default = "";
     };
     nix-direnv = {
@@ -33,7 +32,13 @@ in
     };
     lib = lib.mkOption {
       type = with lib.types; attrsOf lines;
-      description = "TODO";
+      description = ''
+        Configuration of [extension files](https://direnv.net/#the-stdlib) 
+        that will be created at `$DIRENV_CONFIG/lib/*.sh`
+      '';
+      example = {
+        "my-lib-script.sh" = "echo 'content of my-lib-script.sh'";
+      };
       default = { };
     };
     extraConfig = lib.mkOption {
@@ -48,26 +53,15 @@ in
   config = {
     package = lib.mkDefault pkgs.direnv;
     env = {
-      # **IMPORTANT** DIRENV_CONFIG needs to be explicitly set in your shells environment
-      # because right now, direnv will use the `direnv` binary directly in its shell
-      # hook and not the wrapper (in which $DIRENV_CONFIG got injected).
-      # Hence the wrapped config will not be picked up unless you explicitly reference
-      # this variable and set it.
-      #
-      # If the PR below will ever be merged, this issue can be fixed by setting:
-      #
-      # env.DIRENV_EXE_PATH = "${placeholder "out"}/bin/direnv";
-      #
-      # This would make the direnv hook use the wrapper instead of the original binary.
-      #
-      # https://github.com/direnv/direnv/pull/1564
+      # We currently do not inject `DIRENV_CONFIG` for the reasons outlined in
+      # meta.description.pre.
 
-      # **IMPORTANT** Using `placeholder "out"` here seems to cause issues if this wrapper issue
+      # **IMPORTANT** Using `placeholder "out"` here seems to cause issues if this wrapper is
       # built inside a subWrapperModule (for example within the zshWrapper) as it refers
       # to the build zsh output in that context. The passthru variants seems to solve this issue.
       # DIRENV_CONFIG = "${placeholder "out"}/${config.configDirname}";
     };
-    passthru.DIRENV_CONFIG = "${config.wrapper.${config.outputName}}/${config.configDirname}";
+    passthru.DIRENV_CONFIG = direnvDotdir;
     lib."nix-direnv.sh" =
       lib.mkIf (config.nix-direnv.enable) "source ${cfg.nix-direnv.package}/share/nix-direnv/direnvrc";
     extraConfig = {
@@ -86,15 +80,34 @@ in
         relPath = "${config.configDirname}/direnvrc";
       };
     }
-    //
-      # TODO: As of now, construcFiles does not accept keys like 'nix-direnv.sh'.
-      # This hack somehow avoids the issue. Find out if this needs to be fixed in
-      # `constructFiles`.
-      lib.mapAttrs (name: value: {
-        key = builtins.replaceStrings [ "." "-" ] [ "" "" ] name;
-        content = value;
-        relPath = "${config.configDirname}/lib/${name}";
-      }) config.lib;
+    // lib.mapAttrs (name: value: {
+      # key must be a valid shell variable name
+      key = builtins.replaceStrings [ "." "-" ] [ "" "" ] name;
+      content = value;
+      relPath = "${config.configDirname}/lib/${name}";
+    }) config.lib;
     meta.maintainers = [ wlib.maintainers.zenoli ];
+    meta.description.pre = ''
+      **IMPORTANT** In order to use this wrapper, `DIRENV_CONFIG` needs to be explicitly 
+      set in your shells environment:
+
+      ```shell
+      DIRENV_CONFIG="''${direnvWrapper.passthru.DIRENV_CONFIG}"
+      ```
+
+      This is because right now, direnv will use the original `direnv` binary in its shell hook
+      and not the wrapper script. So injecting `DIRENV_CONFIG` currently has no effect.
+
+      If the PR below will ever be merged, this issue can be fixed by setting:
+
+      ```nix
+      env.DIRENV_EXE_PATH = "''${placeholder "out"}/bin/direnv";
+      ```
+
+      This would make the direnv hook use the wrapper instead of the original binary and 
+      injecting `DIRENV_CONFIG` into the wrapper would start to take effect. 
+
+      https://github.com/direnv/direnv/pull/1564
+    '';
   };
 }
