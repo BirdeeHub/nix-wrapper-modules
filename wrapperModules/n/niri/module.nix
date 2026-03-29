@@ -243,14 +243,24 @@ in
             type = lib.types.attrs;
             description = "Output configuration";
             apply = convertAndWarn;
-            example = {
-              "DP-3" = {
-                background-color = "#003300";
-                hot-corners = {
-                  off = _: { };
+            example = lib.literalMD ''
+              ```nix
+              {
+                "DP-3" = {
+                  position = _: {
+                    props = {
+                      x = 1440;
+                      y = 1080;
+                    };
+                  };
+                  background-color = "#003300";
+                  hot-corners = {
+                    off = _: { };
+                  };
                 };
-              };
-            };
+              }
+              ```
+            '';
           };
           extraConfig = lib.mkOption {
             default = "";
