@@ -61,12 +61,12 @@ in
       # **IMPORTANT** Using `placeholder "out"` here seems to cause issues if this wrapper is
       # built inside a subWrapperModule (for example within the zshWrapper) as it refers
       # to the build zsh output in that context. The passthru variants seems to solve this issue.
-      # DIRENV_CONFIG = "${placeholder "out"}/${config.configDirname}";
+      DIRENV_CONFIG = "${placeholder "out"}/${config.configDirname}";
     };
     passthru.DIRENV_CONFIG = direnvDotdir;
     lib = {
       "nix-direnv.sh" = lib.mkIf config.nix-direnv.enable ''
-        source ${config.nix-direnv.package}/share/nix-direnv/direnvRc
+        source ${config.nix-direnv.package}/share/nix-direnv/direnvrc
       '';
       "mise.sh" = lib.mkIf config.mise.enable ''
         eval "$(${lib.getExe config.mise.package} direnv activate)"
