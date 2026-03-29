@@ -96,5 +96,6 @@ in
           relPath = "${config.configDirname}/lib/${name}";
         }
       ) config.lib;
+    meta.maintainers = [ wlib.maintainers.zenoli ];
   };
 }
