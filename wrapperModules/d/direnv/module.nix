@@ -6,8 +6,6 @@
   ...
 }:
 let
-  cfg = config;
-
   tomlFmt = pkgs.formats.toml { };
   direnvToml = tomlFmt.generate "direnv.toml" config.extraConfig;
   direnvDotdir = "${config.wrapper.${config.outputName}}/${config.configDirname}";
@@ -29,6 +27,10 @@ in
     nix-direnv = {
       enable = lib.mkEnableOption "nix-direnv integration";
       package = lib.mkPackageOption pkgs "nix-direnv" { };
+    };
+    mise = {
+      enable = lib.mkEnableOption "mise integration";
+      package = lib.mkPackageOption pkgs "mise" { };
     };
     lib = lib.mkOption {
       type = with lib.types; attrsOf lines;
@@ -62,8 +64,14 @@ in
       # DIRENV_CONFIG = "${placeholder "out"}/${config.configDirname}";
     };
     passthru.DIRENV_CONFIG = direnvDotdir;
-    lib."nix-direnv.sh" =
-      lib.mkIf (config.nix-direnv.enable) "source ${cfg.nix-direnv.package}/share/nix-direnv/direnvrc";
+    lib = {
+      "nix-direnv.sh" = lib.mkIf config.nix-direnv.enable ''
+        source ${config.nix-direnv.package}/share/nix-direnv/direnvRc
+      '';
+      "mise.sh" = lib.mkIf config.mise.enable ''
+        eval "$(${lib.getExe config.mise.package} direnv activate)"
+      '';
+    };
     extraConfig = {
       global = lib.mkIf (config.silent) {
         log_format = "-";
