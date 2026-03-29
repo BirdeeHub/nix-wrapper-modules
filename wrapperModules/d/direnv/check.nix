@@ -11,6 +11,9 @@ let
   is_file = path: ''
     [ -f "${path}" ] || (echo "No such file ${path}" >&2; return 1)
   '';
+  not_is_file = path: ''
+    [ ! -f "${path}" ] || (echo "File ${path} should not exist" >&2; return 1)
+  '';
   file_contains = file: pattern: ''
     if grep -q '${pattern}' "${file}"; then
       return 0
@@ -62,7 +65,7 @@ let
 
   runTest2 = name: assertions: ''
     run() {
-      ${lib.concatMapStringsSep " && " (a: "(${a})") assertions}
+      ${lib.concatMapStringsSep " && " (a: "(${a})") (lib.toList assertions)}
     }
 
     run || (echo 'test "${name}" failed' >&2 && exit 1)
@@ -83,9 +86,8 @@ let
     in
     dotdir;
 in
-# runTests "direnv-all" checks
 runTests "direnv-test" [
-  (runTest "wrapper should output correct version" (
+  (runTest2 "wrapper should output correct version" (
     let
       wrapper = self.wrappers.direnv.wrap {
         inherit pkgs;
@@ -96,31 +98,31 @@ runTests "direnv-test" [
       "${wrapper}/bin/direnv" --version | grep -q "${wrapper.version}"
     ''
   ))
-  (runTest "if nix-direnv is enabled then lib/nix-direnv.sh should exists" (
+  (runTest2 "if nix-direnv is enabled then lib/nix-direnv.sh should exists" (
     let
       wrapper = self.wrappers.direnv.wrap {
         inherit pkgs;
         nix-direnv.enable = true;
       };
     in
-    ''
-      is_directory "${getDotdir wrapper}"
-      is_file "${getDotdir wrapper}/lib/nix-direnv.sh"
-    ''
+    [
+      (is_directory (getDotdir wrapper))
+      (is_file "${getDotdir wrapper}/lib/nix-direnv.sh")
+    ]
   ))
-  (runTest "if nix-direnv is disabled then lib/nix-direnv.sh should not exist" (
+  (runTest2 "if nix-direnv is disabled then lib/nix-direnv.sh should not exist" (
     let
       wrapper = self.wrappers.direnv.wrap {
         inherit pkgs;
         nix-direnv.enable = false;
       };
     in
-    ''
-      is_directory "${getDotdir wrapper}"
-      ! is_file "${getDotdir wrapper}/lib/nix-direnv.sh"
-    ''
+    [
+      (is_directory (getDotdir wrapper))
+      (not_is_file "${getDotdir wrapper}/lib/nix-direnv.sh")
+    ]
   ))
-  (runTest "if a lib-script is set then it should be generated" (
+  (runTest2 "if a lib-script is set then it should be generated" (
     let
       libScriptFile = "${getDotdir wrapper}/lib/foo.sh";
       libScriptContent = "echo foo";
@@ -129,26 +131,12 @@ runTests "direnv-test" [
         lib."foo.sh" = libScriptContent;
       };
     in
-    ''
-      is_directory "${getDotdir wrapper}"
-      is_file "${libScriptFile}"
-      file_contains ${libScriptFile} ${libScriptContent}
-    ''
-  ))
-  (runTest "if silent mode is enabled then log settings should be set" (
-    let
-      direnvTomlFile = "${getDotdir wrapper}/direnv.toml";
-      wrapper = self.wrappers.direnv.wrap {
-        inherit pkgs;
-        silent = true;
-      };
-    in
-    ''
-      is_directory "${getDotdir wrapper}"
-      is_file "${direnvTomlFile}"
-      file_contains ${direnvTomlFile} 'log_format'
-      file_contains ${direnvTomlFile} 'log_filter'
-    ''
+    [
+      (is_directory (getDotdir wrapper))
+      (is_file libScriptFile)
+      (file_contains libScriptFile libScriptContent)
+
+    ]
   ))
   (runTest2 "if silent mode is enabled then log settings should be set" (
     let
@@ -160,12 +148,13 @@ runTests "direnv-test" [
     in
     [
       (is_directory (getDotdir wrapper))
-      (is_file (direnvTomlFile))
+      (is_file direnvTomlFile)
       (file_contains direnvTomlFile "log_format")
       (file_contains direnvTomlFile "log_filter")
+
     ]
   ))
-  (runTest "if extraConfig is working" (
+  (runTest2 "if extraConfig is working" (
     let
       direnvTomlFile = "${getDotdir wrapper}/direnv.toml";
       wrapper = self.wrappers.direnv.wrap {
@@ -175,14 +164,15 @@ runTests "direnv-test" [
         };
       };
     in
-    ''
-      is_directory "${getDotdir wrapper}"
-      is_file "${direnvTomlFile}"
-      file_contains ${direnvTomlFile} '\[fooSection\]'
-      file_contains ${direnvTomlFile} 'fooKey.*fooValue'
-    ''
+    [
+      (is_directory (getDotdir wrapper))
+      (is_file direnvTomlFile)
+      (file_contains direnvTomlFile "\\[fooSection\\]")
+      (file_contains direnvTomlFile "fooKey.*fooValue")
+
+    ]
   ))
-  (runTest "if direnvrc is working" (
+  (runTest2 "if direnvrc is working" (
     let
       direnvrcFile = "${getDotdir wrapper}/direnvrc";
       direnvrcContent = "echo foo";
@@ -192,10 +182,11 @@ runTests "direnv-test" [
         direnvrc = direnvrcContent;
       };
     in
-    ''
-      is_directory "${getDotdir wrapper}"
-      is_file "${direnvrcFile}"
-      file_contains ${direnvrcFile} '${direnvrcContent}'
-    ''
+    [
+      (is_directory (getDotdir wrapper))
+      (is_file direnvrcFile)
+      (file_contains direnvrcFile direnvrcContent)
+
+    ]
   ))
 ]
