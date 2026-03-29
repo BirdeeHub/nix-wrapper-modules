@@ -5,6 +5,20 @@
 
 let
   lib = pkgs.lib;
+  is_directory = path: ''
+    [ -d "${path}" ] || (echo "No such directory ${path}" >&2; return 1)
+  '';
+  is_file = path: ''
+    [ -f "${path}" ] || (echo "No such file ${path}" >&2; return 1)
+  '';
+  file_contains = file: pattern: ''
+    if grep -q '${pattern}' "${file}"; then
+      return 0
+    else
+      echo "Pattern '${pattern}' not found in ${file}" >&2
+      return 1
+    fi
+  '';
   testUtils = ''
     is_directory() {
       local path="$1"
@@ -46,6 +60,13 @@ let
       touch $out
     '';
 
+  runTest2 = name: assertions: ''
+    run() {
+      ${lib.concatMapStringsSep " && " (a: "(${a})") assertions}
+    }
+
+    run || (echo 'test "${name}" failed' >&2 && exit 1)
+  '';
   runTest = name: script: ''
     run() {
       ${script}
@@ -129,6 +150,21 @@ runTests "direnv-test" [
       file_contains ${direnvTomlFile} 'log_filter'
     ''
   ))
+  (runTest2 "if silent mode is enabled then log settings should be set" (
+    let
+      direnvTomlFile = "${getDotdir wrapper}/direnv.toml";
+      wrapper = self.wrappers.direnv.wrap {
+        inherit pkgs;
+        silent = true;
+      };
+    in
+    [
+      (is_directory (getDotdir wrapper))
+      (is_file (direnvTomlFile))
+      (file_contains direnvTomlFile "log_format")
+      (file_contains direnvTomlFile "log_filter")
+    ]
+  ))
   (runTest "if extraConfig is working" (
     let
       direnvTomlFile = "${getDotdir wrapper}/direnv.toml";
@@ -142,7 +178,7 @@ runTests "direnv-test" [
     ''
       is_directory "${getDotdir wrapper}"
       is_file "${direnvTomlFile}"
-      file_contains ${direnvTomlFile} '[fooSection]'
+      file_contains ${direnvTomlFile} '\[fooSection\]'
       file_contains ${direnvTomlFile} 'fooKey.*fooValue'
     ''
   ))
