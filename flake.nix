@@ -10,28 +10,28 @@
     {
       templates = import ./templates;
       lib = import ./lib { inherit lib; };
+      wrappers = lib.mapAttrs (_: v: (self.lib.evalModule v).config) self.lib.wrapperModules;
+      wrapperModules = self.lib.wrapperModules;
       flakeModules = {
         wrappers = ./parts.nix;
         default = self.flakeModules.wrappers;
       };
-      nixosModules = builtins.mapAttrs (name: value: {
-        inherit name value;
-        _file = value;
-        key = value;
-        __functor = self.lib.mkInstallModule;
-      }) self.lib.wrapperModules;
-      homeModules = builtins.mapAttrs (
-        _: v:
-        v
-        // {
-          loc = [
-            "home"
-            "packages"
-          ];
-        }
-      ) self.nixosModules;
-      wrappers = lib.mapAttrs (_: v: (self.lib.evalModule v).config) self.lib.wrapperModules;
-      wrapperModules = self.lib.wrapperModules;
+      nixosModules = builtins.mapAttrs (
+        name: value: self.lib.getInstallModule { inherit name value; }
+      ) self.lib.wrapperModules;
+      homeModules = self.nixosModules;
+      formatter = forAllSystems (
+        system:
+        (
+          if inputs.pkgs.stdenv.hostPlatform.system or null == system then
+            inputs.pkgs
+          else
+            import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) {
+              inherit system;
+              overlays = inputs.pkgs.overlays or [ ];
+            }
+        ).nixfmt-tree
+      );
       wrappedModules = lib.mapAttrs (
         _:
         lib.warn ''
@@ -46,17 +46,5 @@
           This output will be removed on August 31, 2026
         ''
       ) self.wrappers;
-      formatter = forAllSystems (
-        system:
-        (
-          if inputs.pkgs.stdenv.hostPlatform.system or null == system then
-            inputs.pkgs
-          else
-            import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) {
-              inherit system;
-              overlays = inputs.pkgs.overlays or [ ];
-            }
-        ).nixfmt-tree
-      );
     };
 }

@@ -215,7 +215,7 @@ With a single, simple function, you can use any wrapper module directly as a mod
 # in a nixos module
 { ... }: {
   imports = [
-    (inputs.wrappers.lib.mkInstallModule { name = "tmux"; value = inputs.wrappers.lib.wrapperModules.tmux; })
+    (inputs.wrappers.lib.getInstallModule { name = "tmux"; value = inputs.wrappers.lib.wrapperModules.tmux; })
   ];
   wrappers.tmux = {
     enable = true;
@@ -230,8 +230,7 @@ With a single, simple function, you can use any wrapper module directly as a mod
 # in a home-manager module
 { config, lib, ... }: {
   imports = [
-    (inputs.wrappers.lib.mkInstallModule {
-      loc = [ "home" "packages" ];
+    (inputs.wrappers.lib.getInstallModule {
       name = "neovim";
       value = inputs.wrappers.lib.wrapperModules.neovim;
     })
@@ -261,7 +260,7 @@ With a single, simple function, you can use any wrapper module directly as a mod
 }
 ```
 
-See the [`wlib.mkInstallModule`](../lib/wlib.html#function-library-wlib.mkInstallModule) documentation for more info!
+See the [`wlib.getInstallModule`](../lib/wlib.html#function-library-wlib.getInstallModule) documentation for more info!
 
 ### `flake-parts`
 
@@ -294,32 +293,51 @@ It offers a template! `nix flake init -t github:BirdeeHub/nix-wrapper-modules#fl
       # Import the flake-parts module:
       imports = [ wrappers.flakeModules.wrappers ];
 
-      perSystem =
-        { pkgs, ... }:
-        {
-          # wrappers.pkgs = pkgs; # choose a different `pkgs`
-          wrappers.control_type = "exclude"; # | "build" (default: "exclude")
-          wrappers.packages = {
-            alacritty = true; # <- set to true to exclude from being built into `packages.*.*` flake output
-          };
-        };
+      # provide wrapper modules to flake.wrappers
       flake.wrappers.alacritty = { pkgs, wlib, ... }: {
         imports = [ wlib.wrapperModules.alacritty ];
         settings.terminal.shell.program = "${pkgs.zsh}/bin/zsh";
         settings.terminal.shell.args = [ "-l" ];
       };
+      flake.wrappers.xplr = wrappers.lib.wrapperModules.xplr;
       flake.wrappers.tmux =
         { wlib, pkgs, ... }:
         {
           imports = [ wlib.wrapperModules.tmux ];
           plugins = with pkgs.tmuxPlugins; [ onedark-theme ];
         };
-      flake.wrappers.xplr = wrappers.lib.wrapperModules.xplr;
+
+      flake.wrappers.tmux-modified = {
+        # using flake.wrappers will also make importable forms
+        # available in config.flake.wrapperModules!
+        imports = [ self.wrapperModules.tmux ];
+        # these will add to the above config which added the onedark-theme plugin
+        modeKeys = "vi";
+        statusKeys = "vi";
+        vimVisualKeys = true;
+      };
+
+      # no need for getInstallModule with flake-parts!
+      flake.nixosModules = builtins.mapAttrs (_: v: v.install) self.wrappers;
+      flake.homeModules = self.nixosModules;
+      # you don't have to export them from there specifically,
+      # this just shows that you can access `.install` directly when using the flake-parts module
+
+      # (optionally) Control which packages get built!
+      perSystem =
+        { pkgs, ... }:
+        {
+          # wrappers.pkgs = pkgs; # (optionally) choose a different `pkgs`
+          wrappers.control_type = "exclude"; # | "build" (default: "exclude")
+          wrappers.packages = {
+            tmux-modified = true; # <- set to true to exclude from being built into `packages.*.*` flake output
+          };
+        };
     };
 }
 ```
 
-The above flake will export the partially evaluated submodule from `outputs.wrappers` as it shows.
+The above flake will export the partially evaluated submodules from `outputs.wrappers` as it shows.
 
 However, it also offers the values in importable form from `outputs.wrapperModules` for you!
 
