@@ -36,6 +36,7 @@
                 then that means you should set this value
                 to something which is a valid shell variable name.
               '';
+              apply = wlib.sanitizeEnvVarName;
             };
             content = lib.mkOption {
               type = lib.types.lines;
@@ -85,16 +86,36 @@
   config.drv = lib.mkIf (config.constructFiles != { }) (
     let
       files = builtins.attrValues config.constructFiles;
+      mkUnique =
+        attrs: base:
+        let
+          try =
+            i:
+            let
+              candidate = if i == null then base else "${base}_${toString i}";
+            in
+            if attrs ? ${candidate} then try (if i == null then 0 else i + 1) else candidate;
+        in
+        try null;
       result =
         builtins.foldl'
-          (acc: v: {
-            attrs = acc.attrs // {
-              ${v.key} = v.content;
-            };
-            passAsFile = acc.passAsFile ++ [ v.key ];
-          })
+          (
+            acc: v:
+            let
+              key = mkUnique acc.attrs v.key;
+            in
+            {
+              attrs = acc.attrs // {
+                ${key} = v.content;
+              };
+              passAsFile = acc.passAsFile ++ [ key ];
+            }
+          )
           {
-            attrs = { };
+            attrs = {
+              # prevents something from being named this
+              passAsFile = [ ];
+            };
             passAsFile = [ ];
           }
           files;

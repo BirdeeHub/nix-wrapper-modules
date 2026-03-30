@@ -683,6 +683,44 @@ in
   toKdl = import ./toKdl.nix { inherit lib wlib; };
 
   /**
+    Sanitize a string into a valid environment variable name.
+
+    This function sanitizes all characters that are not allowed in typical
+    POSIX environment variable names (`[A-Za-z0-9_]`), and ensures the
+    resulting string starts with a valid leading character (`[A-Za-z_]`).
+
+    Behavior:
+    - All invalid characters are replaced with underscore characters (`_`)
+
+    Examples:
+    ```
+      sanitizeEnvVarName "FOO-BAR"     => "FOO_BAR"
+      sanitizeEnvVarName "123.abc"      => "_23_abc"
+      sanitizeEnvVarName "!@#"         => "___"
+      sanitizeEnvVarName "hello, world!" => "hello__world_"
+    ```
+
+    Notes:
+    - Only ASCII characters are considered; all other characters are removed
+    - This does not guarantee uniqueness across multiple inputs
+  */
+  sanitizeEnvVarName =
+    s:
+    let
+      isUpper = c: c >= "A" && c <= "Z";
+      isLower = c: c >= "a" && c <= "z";
+      isDigit = c: c >= "0" && c <= "9";
+
+      valid =
+        i: c:
+        if i == 0 then
+          isUpper c || isLower c || c == "_"
+        else
+          isUpper c || isLower c || isDigit c || c == "_";
+    in
+    lib.concatStrings (lib.imap0 (i: c: if valid i c then c else "_") (lib.stringToCharacters s));
+
+  /**
     Placeholder value used when overriding a non-main field of a spec type.
 
     When overriding the main field of a spec type, things work as you might expect.
