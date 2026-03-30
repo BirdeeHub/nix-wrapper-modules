@@ -6,7 +6,7 @@ There are 2 kinds of modules in this repository. One kind which defines the `pac
 
 If you are making a wrapper module, i.e. one which **does** define the `config.package` option, and thus wraps a package:
 
-You must define a `wrapperModules/<first_letter>/<your_package_name>/wrapper.nix` file.
+You must define a `wrapperModules/<first_letter>/<your_package_name>/module.nix` file.
 The file must contain a single, unevaluated module. In other words, it must be importable without calling it like a function first.
 
 All wrapper modules must have a `config.meta.maintainers = [ <your wlib.maintainers listing> ];` entry.
