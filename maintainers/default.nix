@@ -56,4 +56,10 @@
     githubId = 8916363;
     name = "Nikita Wootten";
   };
+  pengolord = {
+    name = "pengo";
+    email = "pbalternates@gmail.com";
+    github = "Pengolord";
+    githubId = 152470365;
+  };
 }
