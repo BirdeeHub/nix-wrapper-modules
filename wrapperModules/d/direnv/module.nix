@@ -89,8 +89,6 @@ in
       };
     }
     // lib.mapAttrs (name: value: {
-      # key must be a valid shell variable name
-      key = builtins.replaceStrings [ "." "-" ] [ "" "" ] name;
       content = value;
       relPath = "${config.configDirname}/lib/${name}";
     }) config.lib;
