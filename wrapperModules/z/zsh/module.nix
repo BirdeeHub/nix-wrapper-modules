@@ -4,7 +4,7 @@
   wlib,
   pkgs,
   ...
-}:
+}@top:
 let
   inherit (lib) types;
   rcfile = lib.types.submodule {
@@ -58,24 +58,13 @@ in
 
       You may also wish to set this as your default shell via a nixos module.
 
-      To do this, you will need to set the following options in a nixos module:
-
       ```nix
-      # nixos provides configuration in /etc/
-      # It will also throw an error if we set zsh as the default shell without setting this.
-      programs.zsh.enable = true;
-      # installs shell completions from environment.systemPackages derivations
-      environment.pathsToLink = [ "/share/zsh" ];
-      # you need to install it.
-      environment.systemPackages = [ your-zsh-wrapper ];
-      ```
-
-      Once you do that, you can set the shell as your default shell!
-
-      ```nix
-      # set one or both
-      users.defaultUserShell = your-zsh-wrapper;
-      users.users.''${username}.shell = your-zsh-wrapper;
+      { config, ... }: {
+        imports = [ (wlib.installModule { name = "zsh"; value = ./yourzshwrappermodule.nix; }) ];
+        wrappers.zsh.enable = true;
+        wrappers.zsh.asSystemDefault = true;
+        users.users.''${username}.shell = config.wrappers.zsh.wrapper;
+      }
       ```
 
       - Note:
@@ -220,4 +209,22 @@ in
     default = { };
     type = rcfile;
   };
+  config.install.modules.nixos =
+    { config, lib, ... }:
+    let
+      cfg = top.config.install.getWrapperConfig config;
+    in
+    {
+      config = lib.mkMerge [
+        (top.config.install.mkWrapperExtension "${./module.nix} zsh as defaultUserShell" {
+          _file = ./module.nix;
+          options.asSystemDefault = lib.mkEnableOption "zsh as defaultUserShell";
+        })
+        (lib.mkIf cfg.enable {
+          environment.pathsToLink = [ "/share/zsh" ];
+          users.defaultUserShell = lib.mkIf cfg.asSystemDefault cfg.wrapper;
+          programs.zsh.enable = lib.mkIf cfg.asSystemDefault true;
+        })
+      ];
+    };
 }

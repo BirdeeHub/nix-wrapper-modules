@@ -110,35 +110,39 @@ in
     ```nix
     {
       name, # string
-      value, # module or list of modules
-      optloc ? [ "wrappers" ],
-      loc ? [
-        "environment"
-        "systemPackages"
-      ],
-      as_list ? true,
-      # Also accepts any valid top-level module attribute
-      # other than `config` or `options`
-      ...
+      value, # wrapper module or list of wrapper modules
+      loc ? [ "wrappers" ]
     }:
     ```
 
-    Creates a `wlib.types.subWrapperModule` option with an extra `enable` option at
-    the path indicated by `optloc ++ [ name ]`, with the default `optloc` being `[ "wrappers" ]`
+    Sets `config.install.optionLocation` to the path indicated by `loc ++ [ name ]`,
+    with the default `loc` being `[ "wrappers" ]`
 
-    Defines a list value at the path indicated by `loc` containing the `.wrapper` value of the submodule,
-    with the default `loc` being `[ "environment" "systemPackages" ]`
+    It will then return the value of `config.install`, which may be imported as a module in other module systems.
 
-    If `as_list` is false, it will set the value at the path indicated by `loc` as it is,
-    without putting it into a list.
+    The exported module may contain specific integrations for the module classes
+    indicated by the provided attributes in `config.install.modules` for that wrapper module.
 
-    This means it will create a module that can be used like so:
+    If used in a module class not specified in that set, it will only create the submodule option containing the wrapper module.
+
+    Likewise, if used in another wrapper module, that is all it will do as well.
+
+    If you have your wrapper module imported via an `attrsOf subWrapperModule` option in an evaluation external to the target module system,
+    as is the case when using the `flake-parts` module, you DO NOT NEED THIS FUNCTION.
+
+    This is because `config.install.optionLocation` will default to `[ "wrappers" config._module.args.name ]` if present.
+
+    In that case, you should do something like `flake.nixosModules.<name> = { imports = [ config.flake.wrappers.<name>.install ]; };` directly.
+
+    Again, if you are using the `flake-parts` module, or importing it in a similar manner, YOU DO NOT NEED THIS FUNCTION.
+
+    *Examples:*
 
     ```nix
     # in a nixos module
     { ... }: {
       imports = [
-        (mkInstallModule { name = "?"; value = someWrapperModule; })
+        (installModule { name = "?"; value = someWrapperModule; })
       ];
       config.wrappers."?" = {
         enable = true;
@@ -151,7 +155,7 @@ in
     # in a home-manager module
     { ... }: {
       imports = [
-        (mkInstallModule { name = "?"; loc = [ "home" "packages" ]; value = someWrapperModule; })
+        (installModule { name = "?"; value = someWrapperModule; })
       ];
       config.wrappers."?" = {
         enable = true;
@@ -162,81 +166,33 @@ in
 
     If needed, you can also grab the package directly with `config.wrappers."?".wrapper`
 
-    Note: This function will try to provide a `pkgs` to the `subWrapperModule` automatically.
+    It will try to provide a `pkgs` to the `subWrapperModule` automatically.
 
     If the target module evaluation does not provide a `pkgs` via its module arguments to use,
     you will need to supply it to the submodule yourself later.
+
+    Again, if you are using the `nix-wrapper-modules` `flake-parts` module, you should do something like this instead:
+
+    ```nix
+    { config, ... }: {
+      flake.wrappers.someWrapperModule = a_wrapper_module;
+      flake.modules.nixos.someWrapperModule = config.flake.wrappers.someWrapperModule.install;
+      flake.modules.homeManager.someWrapperModule = config.flake.wrappers.someWrapperModule.install;
+    };
+    ```
   */
-  mkInstallModule =
+  installModule =
     {
-      optloc ? [ "wrappers" ],
-      loc ? [
-        "environment"
-        "systemPackages"
-      ],
-      as_list ? true,
       name,
       value,
-      ...
-    }@args:
-    {
-      pkgs ? null,
-      lib,
-      config,
-      ...
+      loc ? [ "wrappers" ],
     }:
-    # https://github.com/NixOS/nixpkgs/blob/c171bfa97744c696818ca23d1d0fc186689e45c7/lib/modules.nix#L615C1-L623C25
-    builtins.intersectAttrs {
-      _class = null;
-      _file = null;
-      key = null;
-      disabledModules = null;
-      imports = null;
-      meta = null;
-      freeformType = null;
-    } args
-    // {
-      options = lib.setAttrByPath (optloc ++ [ name ]) (
-        lib.mkOption {
-          default = { };
-          description = ''
-            wrapper module for `${name}` as a submodule option
-          '';
-          type = wlib.types.subWrapperModule (
-            (lib.toList value)
-            ++ [
-              {
-                _file = ./lib.nix;
-                config.pkgs = lib.mkIf (pkgs != null) pkgs;
-                options.enable = lib.mkEnableOption name;
-              }
-            ]
-          );
-        }
-      );
-      config = lib.setAttrByPath loc (
-        lib.mkIf
-          (lib.getAttrFromPath (
-            optloc
-            ++ [
-              name
-              "enable"
-            ]
-          ) config)
-          (
-            let
-              res = lib.getAttrFromPath (
-                optloc
-                ++ [
-                  name
-                  "wrapper"
-                ]
-              ) config;
-            in
-            if as_list then [ res ] else res
-          )
-      );
-    };
+    (wlib.evalModule (
+      [
+        { config.install.optionLocation = loc ++ [ name ]; }
+      ]
+      ++ toList value
+    )).config.install;
 
   /**
     Imports `wlib.modules.default` then evaluates the module. It then returns `.config` so that `.wrap` is easily accessible!
@@ -825,4 +781,82 @@ in
   */
   ignoreSpecField = lib.mkIf false null;
 
+  mkInstallModule =
+    lib.warn
+      ''
+        mkInstallModule deprecated: use `installModule`, or grab `flake.wrappers.<name>.install` (or any other method of setting `config.install.optionLocation` and retrieving that value)
+
+        This function will be removed on August 31, 2026
+      ''
+      (
+        {
+          optloc ? [ "wrappers" ],
+          loc ? [
+            "environment"
+            "systemPackages"
+          ],
+          as_list ? true,
+          name,
+          value,
+          ...
+        }@args:
+        {
+          pkgs ? null,
+          lib,
+          config,
+          ...
+        }:
+        # https://github.com/NixOS/nixpkgs/blob/c171bfa97744c696818ca23d1d0fc186689e45c7/lib/modules.nix#L615C1-L623C25
+        builtins.intersectAttrs {
+          _class = null;
+          _file = null;
+          key = null;
+          disabledModules = null;
+          imports = null;
+          meta = null;
+          freeformType = null;
+        } args
+        // {
+          options = lib.setAttrByPath (optloc ++ [ name ]) (
+            lib.mkOption {
+              default = { };
+              description = ''
+                wrapper module for `${name}` as a submodule option
+              '';
+              type = wlib.types.subWrapperModule (
+                (lib.toList value)
+                ++ [
+                  {
+                    _file = ./lib.nix;
+                    config.pkgs = lib.mkIf (pkgs != null) pkgs;
+                    options.enable = lib.mkEnableOption name;
+                  }
+                ]
+              );
+            }
+          );
+          config = lib.setAttrByPath loc (
+            lib.mkIf
+              (lib.getAttrFromPath (
+                optloc
+                ++ [
+                  name
+                  "enable"
+                ]
+              ) config)
+              (
+                let
+                  res = lib.getAttrFromPath (
+                    optloc
+                    ++ [
+                      name
+                      "wrapper"
+                    ]
+                  ) config;
+                in
+                if as_list then [ res ] else res
+              )
+          );
+        }
+      );
 }
