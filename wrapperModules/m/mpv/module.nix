@@ -19,6 +19,28 @@
         These are appended to MPV’s build with `pkgs.mpv.override`.
       '';
     };
+    scriptFiles = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = { };
+      description = ''
+        Additional files to be included in the MPV config directory.
+
+        By using this option, mpv will no longer look for script-opts in the default
+        $XDG_CONFIG_HOME/mpv/script-opts location, and all additional files will have
+        to be specified in this option.
+
+        Each entry of the attrset is the relative path to the file and their content respectively.
+      '';
+      example = lib.literalMD ''
+        ```nix
+        {
+          "script-opts/modernz.conf" = '''
+            window_top_bar=no
+            seekbarfg_color=#FFFFFF
+          ''';
+        };
+      '';
+    };
     "mpv.input" = lib.mkOption {
       type = wlib.types.file pkgs;
       default.path = config.constructFiles.generatedInput.path;
@@ -44,19 +66,39 @@
       '';
     };
   };
+
   config.flagSeparator = "=";
-  config.flags = {
-    "--input-conf" = config."mpv.input".path;
-    "--include" = config."mpv.conf".path;
-  };
-  config.constructFiles.generatedConfig = {
-    relPath = "${config.binName}-config/mpv.conf";
-    content = config."mpv.conf".content;
-  };
-  config.constructFiles.generatedInput = {
-    relPath = "${config.binName}-config/mpv.input";
-    content = config."mpv.input".content;
-  };
+  config.flags =
+    if config.scriptFiles == { } then
+      {
+        "--config-dir" = "${placeholder config.outputName}/${config.binName}-config";
+      }
+    else
+      {
+        "--input-conf" = config."mpv.input".path;
+        "--include" = config."mpv.conf".path;
+      };
+
+  config.constructFiles = (
+    {
+      generatedConfig = {
+        relPath = "${config.binName}-config/mpv.conf";
+        content = config."mpv.conf".content;
+      };
+      generatedInput = {
+        relPath = "${config.binName}-config/input.conf";
+        content = config."mpv.input".content;
+      };
+    }
+    // (lib.mapAttrs' (
+      relPath: content:
+      lib.nameValuePair relPath {
+        inherit content;
+        relPath = "${config.binName}-config/${relPath}";
+      }
+    ) config.scriptFiles)
+  );
+
   config.overrides = [
     {
       name = "MPV_SCRIPTS";
