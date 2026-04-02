@@ -10,7 +10,7 @@
 
   options = {
     sourcedFiles = lib.mkOption {
-      type = lib.types.listOf lib.types.path;
+      type = lib.types.listOf wlib.types.stringable;
       description = ''
         Paths to files that will be sourced at the top of the generated config file.
       '';
