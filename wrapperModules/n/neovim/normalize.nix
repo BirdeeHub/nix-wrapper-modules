@@ -232,17 +232,29 @@ in
     (builtins.concatStringsSep "\n")
   ];
 
-  buildPackDir = lib.pipe allPlugins [
-    (map (
-      v:
-      "ln -s ${lib.escapeShellArg v.data} ${lib.escapeShellArg "${if v.lazy then opt_dir else start_dir}/${v.name}"}"
-    ))
-    (builtins.concatStringsSep "\n")
-  ];
+  buildPackDir = lib.pipe allPlugins (
+    let
+      maptocmd =
+        dir: v:
+        v
+        // {
+          value = "ln -s ${lib.escapeShellArg v.data} ${lib.escapeShellArg "${dir}/${v.name}"}";
+        };
+    in
+    [
+      (lib.partition (p: p.lazy))
+      (
+        { right, wrong }:
+        builtins.attrValues (builtins.listToAttrs (map (maptocmd start_dir) wrong))
+        ++ builtins.attrValues (builtins.listToAttrs (map (maptocmd opt_dir) right))
+      )
+      (builtins.concatStringsSep "\n")
+    ]
+  );
 
   plugins = lib.pipe allPlugins (
     let
-      foldplugins = (builtins.foldl' (acc: v: acc // { ${v.name} = v.data; }) { });
+      foldplugins = ps: builtins.listToAttrs (map (v: lib.nameValuePair v.name v.data) ps);
     in
     [
       (lib.partition (p: p.lazy))
