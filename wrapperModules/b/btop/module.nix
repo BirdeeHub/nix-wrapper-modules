@@ -133,20 +133,14 @@ in
       output = config.configDrvOutput;
     };
   }
-  // lib.pipe config.themes [
-    (wlib.mapAttrsToList0 (
-      i: n: v:
-      lib.nameValuePair n {
-        key = "theme_${toString i}";
-        relPath = lib.mkOverride 0 "${config.binName}-themes/${n}.theme";
-        output = lib.mkOverride 0 config.configDrvOutput;
-        ${if builtins.isPath v || lib.isStorePath v then null else "content"} = v;
-        ${if builtins.isPath v || lib.isStorePath v then "builder" else null} =
-          ''mkdir -p "$(dirname "$2")" && cp ${v} "$2"'';
-      }
-    ))
-    builtins.listToAttrs
-  ];
+  // builtins.mapAttrs (n: v: {
+    key = "theme_${n}";
+    relPath = lib.mkOverride 0 "${config.binName}-themes/${n}.theme";
+    output = lib.mkOverride 0 config.configDrvOutput;
+    ${if builtins.isPath v || lib.isStorePath v then null else "content"} = v;
+    ${if builtins.isPath v || lib.isStorePath v then "builder" else null} =
+      ''mkdir -p "$(dirname "$2")" && cp ${v} "$2"'';
+  }) config.themes;
 
   meta.maintainers = [ wlib.maintainers.ameer ];
 }
