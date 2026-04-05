@@ -350,7 +350,7 @@ in
             acc: elem: acc + " " + (mkAbbrArg elem abbr)
           ) "abbr --add ${abbr.word} ${mkCursorArg abbr}" abbrArgs)
           + " "
-          + abbr.expansion;
+          + "\"${abbr.expansion}\"";
 
         abbrs = concatStringsSep "\n" (map mkAbbrStr (attrValues cfg.abbreviations));
         aliases = concatStringsSep "\n" (
