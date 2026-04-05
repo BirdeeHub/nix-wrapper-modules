@@ -298,7 +298,7 @@ in
           '';
         };
 
-        mkAbbrArg = attr: abbr: optionalString (abbr.${attr} != null) "--${attr} ${abbr.attr}";
+        mkAbbrArg = attr: abbr: optionalString (abbr.${attr} != null) "--${attr} ${abbr.${attr}}";
         abbrArgs = [
           "position"
           "regex"
