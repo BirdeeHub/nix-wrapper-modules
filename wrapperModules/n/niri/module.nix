@@ -199,6 +199,17 @@ in
               ]
             ];
           };
+          spawn-sh-at-startup = lib.mkOption {
+            default = [ ];
+            type = lib.types.listOf lib.types.str;
+            description = ''
+              List of sh commands as strings to run at startup.
+            '';
+            example = [
+              "sleep 1 && echo 'hello world'"
+              "kitty"
+            ];
+          };
           window-rules = lib.mkOption {
             default = [ ];
             type = lib.types.listOf lib.types.attrs;
@@ -333,6 +344,7 @@ in
             (map (mkRule "window-rule") config.settings.window-rules)
             (map (mkRule "layer-rule") config.settings.layer-rules)
             (map (v: { spawn-at-startup = _: { props = v; }; }) config.settings.spawn-at-startup)
+            (map (v: { spawn-sh-at-startup = _: { props = v; }; }) config.settings.spawn-sh-at-startup)
             (attrAsArg "workspace" config.settings.workspaces)
             (attrAsArg "output" config.settings.outputs)
             [
@@ -341,6 +353,7 @@ in
                   "window-rules"
                   "layer-rules"
                   "spawn-at-startup"
+                  "spawn-sh-at-startup"
                   "workspaces"
                   "outputs"
                   "extraConfig"

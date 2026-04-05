@@ -94,6 +94,12 @@ let
           "build"
         ]
       ];
+
+      spawn-sh-at-startup = [
+        "sleep 1 && echo 'hello world'"
+        "kitty"
+      ];
+
       hotkey-overlay.skip-at-startup = [ ];
       prefer-no-csd = true;
       overview.zoom = 0.25;
