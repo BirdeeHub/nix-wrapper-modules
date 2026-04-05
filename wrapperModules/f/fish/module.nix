@@ -211,7 +211,7 @@ in
     mkdir -p ${placeholder config.outputName}/completions
     ${concatStringsSep "\n" (
       mapAttrsToList (
-        c: "cp ${c.path} ${placeholder config.outputName}/completions/${c.command}"
+        _: c: "cp ${c.path} ${placeholder config.outputName}/completions/${c.command}"
       ) cfg.completionFiles
     )}
   '';
