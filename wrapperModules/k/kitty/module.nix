@@ -1,0 +1,209 @@
+{
+  wlib,
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+let
+  inherit (lib)
+    types
+    mkIf
+    mkOption
+    mkOrder
+    optionalString
+    literalExpression
+    ;
+
+  fontType = types.submodule {
+    options = {
+      package = mkOption {
+        type = types.nullOr types.package;
+        default = null;
+        example = literalExpression "pkgs.dejavu_fonts";
+        description = ''
+          Package providing the font. This package will be installed
+          to your profile. If `null` then the font is assumed to
+          already be available in your profile.
+        '';
+      };
+
+      name = mkOption {
+        type = types.str;
+        example = "DejaVu Sans";
+        description = "The family name of the font within the package.";
+      };
+
+      size = mkOption {
+        type = types.nullOr types.number;
+        default = null;
+        example = 12;
+        description = "The size of the font.";
+      };
+    };
+  };
+
+  settingsValueType =
+    with types;
+    oneOf [
+      str
+      bool
+      int
+      float
+    ];
+
+  toKittyConfig = lib.generators.toKeyValue {
+    mkKeyValue =
+      key: value:
+      let
+        yesNo = v: if v then "yes" else "no";
+        value' = (if builtins.isBool value then yesNo else toString) value;
+      in
+      "${key} ${value'}";
+  };
+
+  toKittyKeybindings = lib.generators.toKeyValue {
+    # kitty keybindings are written as `map <key> <action>`
+    mkKeyValue = key: command: "map ${key} ${command}";
+  };
+
+  toKittyMouseBindings = lib.generators.toKeyValue {
+    mkKeyValue = key: command: "mouse_map ${key} ${command}";
+  };
+
+  toKittyActionAliases = lib.generators.toKeyValue {
+    mkKeyValue = alias_name: action: "action_alias ${alias_name} ${action}";
+  };
+
+  toKittyEnv = lib.generators.toKeyValue {
+    mkKeyValue = name: value: "env ${name}=${value}";
+  };
+in
+{
+  imports = [ wlib.modules.default ];
+
+  options = {
+    settings = mkOption {
+      type = types.attrsOf settingsValueType;
+      default = { };
+      example = literalExpression ''
+        {
+          scrollback_lines = 10000;
+          enable_audio_bell = false;
+          update_check_interval = 0;
+        }
+      '';
+      description = ''
+        Key/value pairs written into `kitty.conf`.
+        See <https://sw.kovidgoyal.net/kitty/conf.html>.
+      '';
+    };
+
+    themeFile = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        Apply a Kitty color theme. This option takes the file name of a theme
+        in `kitty-themes`, without the `.conf` suffix. See
+        <https://github.com/kovidgoyal/kitty-themes/tree/master/themes> for a
+        list of themes.
+      '';
+      example = "SpaceGray_Eighties";
+    };
+
+    font = mkOption {
+      type = types.nullOr fontType;
+      default = null;
+      description = "The font to use.";
+    };
+
+    actionAliases = mkOption {
+      type = types.attrsOf types.str;
+      default = { };
+      description = "Define action aliases.";
+      example = lib.literalExpression ''
+        {
+          "launch_tab" = "launch --cwd=current --type=tab";
+          "launch_window" = "launch --cwd=current --type=os-window";
+        }
+      '';
+    };
+
+    keybindings = mkOption {
+      type = types.attrsOf types.str;
+      default = { };
+      example = literalExpression ''
+        {
+          "ctrl+c" = "copy_or_interrupt";
+          "ctrl+f>2" = "set_font_size 20";
+        }
+      '';
+      description = "Mapping of keybindings to actions.";
+    };
+
+    mouseBindings = mkOption {
+      type = types.attrsOf types.str;
+      default = { };
+      description = "Mapping of mouse bindings to actions.";
+      example = literalExpression ''
+        {
+          "ctrl+left click" = "ungrabbed mouse_handle_click selection link prompt";
+          "left click" = "ungrabbed no-op";
+        };
+      '';
+    };
+
+    environment = mkOption {
+      type = types.attrsOf types.str;
+      default = { };
+      description = "Environment variables to set or override.";
+      example = literalExpression ''
+        {
+          "LS_COLORS" = "1";
+        }
+      '';
+    };
+
+    extraConfig = mkOption {
+      type = types.lines;
+      default = "";
+      description = "Additional configuration appended verbatim to kitty.conf.";
+    };
+  };
+
+  config = {
+    package = pkgs.kitty;
+
+    extraConfig = lib.mkMerge [
+      (mkIf (config.font != null) (
+        mkOrder 510 ''
+          font_family ${config.font.name}
+          ${optionalString (config.font.size != null) "font_size ${toString config.font.size}"}
+        ''
+      ))
+      (mkIf (config.themeFile != null) (
+        mkOrder 520 ''
+          include ${pkgs.kitty-themes}/share/kitty-themes/themes/${config.themeFile}.conf
+        ''
+      ))
+      (mkIf (config.actionAliases != { }) (mkOrder 550 (toKittyActionAliases config.actionAliases)))
+      (mkIf (config.keybindings != { }) (mkOrder 560 (toKittyKeybindings config.keybindings)))
+      (mkIf (config.mouseBindings != { }) (mkOrder 570 (toKittyMouseBindings config.mouseBindings)))
+      (mkIf (config.environment != { }) (mkOrder 580 (toKittyEnv config.environment)))
+      (mkIf (config.settings != { }) (mkOrder 540 (toKittyConfig config.settings)))
+    ];
+
+    constructFiles.kittyConfig = {
+      relPath = "${config.binName}.conf";
+      content = ''
+        # Generated by nix-wrapper-modules.
+        # See https://sw.kovidgoyal.net/kitty/conf.html
+        ${config.extraConfig}
+      '';
+    };
+
+    flags."--config" = config.constructFiles.kittyConfig.path;
+
+    meta.maintainers = [ wlib.maintainers.rachitvrma ];
+  };
+}
