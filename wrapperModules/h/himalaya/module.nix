@@ -31,12 +31,9 @@ in
     };
 
     flags = {
-      "--config" = config.constructFiles.generatedConfig.path;
+      "--config" = lib.mkIf (config.settings != { }) config.constructFiles.generatedConfig.path;
     };
 
-    env = {
-      HIMALAYA_CONFIG = config.constructFiles.generatedConfig.path;
-    };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };
 }
