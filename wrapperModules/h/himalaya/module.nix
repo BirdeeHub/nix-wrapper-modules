@@ -21,7 +21,7 @@ in
     };
   };
   config = {
-    package = pkgs.himalaya;
+    package = lib.mkDefault pkgs.himalaya;
     constructFiles = {
       generatedConfig = {
         relPath = "${config.binName}-config.toml";
