@@ -38,7 +38,7 @@
       relPath = "eww.${config.styleFormat}";
     };
 
-    flags."--config" = config.constructFiles.yuck.outPath;
+    flags."--config" = config.constructFiles.yuck.path;
     
     meta.maintainers = [ wlib.maintainers.clay53 ];
   };
