@@ -30,15 +30,15 @@
 
     constructFiles.yuck = {
       content = config.yuck;
-      relPath = "eww.yuck";
+      relPath = "${config.binName}-config/eww.yuck";
     };
 
     constructFiles.style = {
       content = config.style;
-      relPath = "eww.${config.styleFormat}";
+      relPath = "${config.binName}-config/eww.${config.styleFormat}";
     };
 
-    flags."--config" = config.constructFiles.yuck.path;
+    flags."--config" = config.output;
     
     meta.maintainers = [ wlib.maintainers.clay53 ];
   };
