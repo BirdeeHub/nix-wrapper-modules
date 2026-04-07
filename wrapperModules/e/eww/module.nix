@@ -58,6 +58,8 @@
 
     flags."--config" = config.generatedConfig.placeholder;
 
+    passthru.generatedConfig = "${config.wrapper.${config.generatedConfig.output}}/${config.binName}-config";
+
     meta.maintainers = [ wlib.maintainers.clay53 ];
   };
 }
