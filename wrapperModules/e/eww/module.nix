@@ -9,11 +9,11 @@
   imports = [ wlib.modules.default ];
   options = {
     yuck = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.lines;
       default = "";
     };
     style = lib.mkOption {
-      type = lib.types.str;
+      type = lib.types.lines;
       default = "";
     };
     styleFormat = lib.mkOption {
