@@ -172,7 +172,7 @@ in
   };
 
   config = {
-    package = pkgs.kitty;
+    package = lib.mkDefault pkgs.kitty;
 
     extraConfig = lib.mkMerge [
       (mkIf (config.font != null) (
