@@ -38,7 +38,7 @@
       relPath = "${config.binName}-config/eww.${config.styleFormat}";
     };
 
-    flags."--config" = placeholder "${config.binName}-config";
+    flags."--config" = placeholder "out";
     
     meta.maintainers = [ wlib.maintainers.clay53 ];
   };
