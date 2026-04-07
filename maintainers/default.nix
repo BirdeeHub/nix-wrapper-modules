@@ -67,4 +67,10 @@
     github = "Pengolord";
     githubId = 152470365;
   };
+  clay53 = {
+    name = "Clayton Hickey";
+    email = "clayton@claytonhickey.me";
+    github = "clay53";
+    githubId = 16981283;
+  };
 }
