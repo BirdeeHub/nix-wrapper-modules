@@ -39,7 +39,7 @@
     };
 
     flags."--config" = "${placeholder "out"}/${config.binName}-config";
-    
+
     meta.maintainers = [ wlib.maintainers.clay53 ];
   };
 }
