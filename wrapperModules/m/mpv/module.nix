@@ -155,6 +155,7 @@ in
             seekbarfg_color = "#FFFFFF";
           };
         };
+        ```
       '';
     };
     "mpv.input" = lib.mkOption {
@@ -230,6 +231,7 @@ in
             seekbarfg_color=#FFFFFF
           ''';
         };
+        ```
       '';
       apply =
         x:
