@@ -28,6 +28,7 @@
   options."wezterm.lua" = lib.mkOption {
     type = wlib.types.file pkgs;
     default.content = "return require('nix-info')";
+    default.path = config.constructFiles."wezterm.lua".path;
     description = "The wezterm config file. provide `.content`, or `.path`";
   };
   options.luaInfo = lib.mkOption {
@@ -48,6 +49,10 @@
 
       This will help prevent indexing errors when querying nested values which may not exist.
     '';
+  };
+  config.constructFiles."wezterm.lua" = {
+    relPath = "${config.binName}-init.lua";
+    content = config."wezterm.lua".content;
   };
   config.constructFiles.nixLuaInit = {
     relPath = "${config.binName}-rc.lua";
