@@ -87,26 +87,24 @@ let
       )
     ];
   };
-  pluginType = types.either types.package (
-    types.submodule {
-      options = {
-        src = mkOption {
-          type = types.package;
-          description = "The package which contains the plugin";
-        };
-        configDirs = mkOption {
-          type = types.listOf types.str;
-          default = cfg.pluginConfigDirs;
-          description = "The directories which will be checked for config files";
-        };
-        completionDirs = mkOption {
-          type = types.listOf types.str;
-          default = cfg.pluginCompletionDirs;
-          description = "The directories which will be checked for config files";
-        };
+  pluginModule = {
+    options = {
+      src = mkOption {
+        type = types.package;
+        description = "The package which contains the plugin";
       };
-    }
-  );
+      configDirs = mkOption {
+        type = types.listOf types.str;
+        default = cfg.pluginConfigDirs;
+        description = "The directories which will be checked for config files";
+      };
+      completionDirs = mkOption {
+        type = types.listOf types.str;
+        default = cfg.pluginCompletionDirs;
+        description = "The directories which will be checked for config files";
+      };
+    };
+  };
 in
 {
   imports = [ wlib.modules.default ];
@@ -174,20 +172,8 @@ in
     };
 
     plugins = mkOption {
-      type = types.listOf pluginType;
+      type = types.listOf (wlib.types.spec pluginModule);
       default = [ ];
-      apply = map (
-        plugin:
-        # Convert package type to submodule
-        if (!plugin ? configDirs) then
-          {
-            src = plugin;
-            configDirs = cfg.pluginConfigDirs;
-            completionDirs = cfg.pluginCompletionDirs;
-          }
-        else
-          plugin
-      );
       description = "List of fish plugins to install";
       example = literalExpression ''
         [
