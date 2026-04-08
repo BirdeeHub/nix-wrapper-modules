@@ -11,6 +11,9 @@
     yuck = lib.mkOption {
       type = lib.types.lines;
       default = "";
+      description = ''
+        Configure windows, widgets, and variables for eww.
+      '';
     };
     style = lib.mkOption {
       description = ''
