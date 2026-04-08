@@ -21,58 +21,55 @@ let
 
   cfg = config;
 
-  abbreviationType = types.either types.str (
-    types.submodule (
-      { name, ... }:
-      {
-        options = {
-          word = lib.mkOption {
-            type = lib.types.str;
-            default = name;
-            description = "The word to be replaced";
-          };
-          expansion = mkOption {
-            type = types.str;
-            description = "The expansion to replace the word with";
-          };
-          position = mkOption {
-            type = types.enum [
-              "anywhere"
-              "command"
-            ];
-            default = "anywhere";
-            description = ''
-              The scope of the abbreviation.
-
-              "anywhere": The abbreviation may expand anywhere in the command line
-
-              "command": The abbreviation would only expand if it is positioned as a command
-            '';
-          };
-          regex = mkOption {
-            type = types.nullOr types.str;
-            default = null;
-            description = "Special regex to expand instead of a word";
-          };
-          command = mkOption {
-            type = types.nullOr types.str;
-            default = null;
-            description = "The abbreviation will only expand if it is used as an argument to this command";
-          };
-          function = mkOption {
-            type = types.nullOr types.str;
-            default = null;
-            description = "When the abbreviation matches, this function will be called with the matching token as an argument";
-          };
-          cursor = mkOption {
-            type = types.either types.bool types.str;
-            default = false;
-            description = "The cursor is moved to the first occurrence of this in the expansion, or to \"%\" if set to true";
-          };
+  abbreviationModule =
+    { name, ... }:
+    {
+      options = {
+        word = lib.mkOption {
+          type = lib.types.str;
+          default = name;
+          description = "The word to be replaced";
         };
-      }
-    )
-  );
+        expansion = mkOption {
+          type = types.str;
+          description = "The expansion to replace the word with";
+        };
+        position = mkOption {
+          type = types.enum [
+            "anywhere"
+            "command"
+          ];
+          default = "anywhere";
+          description = ''
+            The scope of the abbreviation.
+
+            "anywhere": The abbreviation may expand anywhere in the command line
+
+            "command": The abbreviation would only expand if it is positioned as a command
+          '';
+        };
+        regex = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Special regex to expand instead of a word";
+        };
+        command = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "The abbreviation will only expand if it is used as an argument to this command";
+        };
+        function = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "When the abbreviation matches, this function will be called with the matching token as an argument";
+        };
+        cursor = mkOption {
+          type = types.either types.bool types.str;
+          default = false;
+          description = "The cursor is moved to the first occurrence of this in the expansion, or to \"%\" if set to true";
+        };
+      };
+    };
   completionType = types.submoduleWith {
     modules = [
       # Getting the module inside the wlib.types.file type
@@ -132,23 +129,8 @@ in
     };
 
     abbreviations = mkOption {
-      type = types.attrsOf abbreviationType;
+      type = types.attrsOf (wlib.types.spec abbreviationModule);
       default = { };
-      apply = builtins.mapAttrs (
-        word: abbr:
-        if (builtins.isString abbr) then
-          {
-            inherit word;
-            expansion = abbr;
-            position = "anywhere";
-            regex = null;
-            command = null;
-            function = null;
-            cursor = false;
-          }
-        else
-          abbr
-      );
       description = "Abbreviations to be included in the shell";
       example = literalExpression ''
         {
