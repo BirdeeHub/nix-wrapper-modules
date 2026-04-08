@@ -207,6 +207,8 @@ in
   };
 
   config.package = mkDefault pkgs.fish;
+  config.passthru.shellPath = config.wrapperPaths.relPath;
+
   config.buildCommand.completionFiles.data = optionalString (cfg.completionFiles != [ ]) ''
     mkdir -p ${placeholder config.outputName}/completions
     ${concatStringsSep "\n" (
