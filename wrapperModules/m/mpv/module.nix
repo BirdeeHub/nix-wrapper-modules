@@ -28,25 +28,11 @@ let
     (builtins.concatStringsSep "")
   ];
 
-  partitionAttrs =
-    pred: attrs:
-    lib.pipe attrs [
-      (lib.mapAttrsToList lib.nameValuePair)
-      (lib.partition (v: pred v.name v.value))
-      (
-        { right, wrong }:
-        {
-          right = builtins.listToAttrs right;
-          wrong = builtins.listToAttrs wrong;
-        }
-      )
-    ];
-
   partitioned =
     let
-      partitioned = partitionAttrs (name: v: builtins.isString (v.path.passthru.scriptName or null)) (
-        lib.filterAttrs (n: v: v.enable) config.script
-      );
+      partitioned = wlib.partitionAttrs (
+        name: v: builtins.isString (v.path.passthru.scriptName or null)
+      ) (lib.filterAttrs (n: v: v.enable) config.script);
     in
     {
       nixpkgsScripts = lib.mapAttrsToList (n: v: v.path) partitioned.right;
