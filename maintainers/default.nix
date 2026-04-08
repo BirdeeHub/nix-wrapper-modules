@@ -11,6 +11,11 @@
     github = "rencire";
     githubId = 546296;
   };
+  ricardomaps = {
+    name = "Ricardo Mapurunga Junior";
+    github = "ricardomaps";
+    githubId = 49507078;
+  };
   vinnymeller = {
     name = "Vinny Meller";
     github = "vinnymeller";
@@ -61,6 +66,12 @@
     email = "pbalternates@gmail.com";
     github = "Pengolord";
     githubId = 152470365;
+  };
+  clay53 = {
+    name = "Clayton Hickey";
+    email = "clayton@claytonhickey.me";
+    github = "clay53";
+    githubId = 16981283;
   };
   ormoyo = {
     name = "Ormoyo";

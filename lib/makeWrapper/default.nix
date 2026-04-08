@@ -16,7 +16,7 @@ let
           (
             if (wrapperImplementation != null) then
               wrapperImplementation
-            else if config.wrapperImplementation or "nix" == "nix" then
+            else if v.config.wrapperImplementation or config.wrapperImplementation or "nix" == "nix" then
               ./makeWrapperNix.nix
             else
               ./makeWrapper.nix

@@ -1,0 +1,39 @@
+{
+  wlib,
+  pkgs,
+  config,
+  lib,
+  ...
+}:
+let
+  tomlFmt = pkgs.formats.toml { };
+in
+{
+  imports = [ wlib.modules.default ];
+
+  options = {
+    settings = lib.mkOption {
+      type = tomlFmt.type;
+      default = { };
+      description = ''
+        Configuration for himalaya mail client CLI
+      '';
+    };
+  };
+  config = {
+    package = lib.mkDefault pkgs.himalaya;
+    constructFiles = {
+      generatedConfig = {
+        relPath = "${config.binName}-config.toml";
+        content = builtins.toJSON config.settings;
+        builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+      };
+    };
+
+    flags = {
+      "--config" = lib.mkIf (config.settings != { }) config.constructFiles.generatedConfig.path;
+    };
+
+    meta.maintainers = [ wlib.maintainers.rachitvrma ];
+  };
+}
