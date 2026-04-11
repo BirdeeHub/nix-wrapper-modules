@@ -73,4 +73,10 @@
     github = "clay53";
     githubId = 16981283;
   };
+  xavwe = {
+    email = "git@xavwe.dev";
+    github = "xavwe";
+    githubId = 125409009;
+    name = "Xaver Wenhart";
+  };
 }
