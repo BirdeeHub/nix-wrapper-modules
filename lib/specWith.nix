@@ -69,7 +69,7 @@ let
 
       baseNoCheck = base.extendModules { modules = [ noCheckForDocsModule ]; };
       withoutDefaults = attrNames (
-        filterAttrs (n: v: isOption v && !(v.isDefined or true)) baseNoCheck.options
+        filterAttrs (n: v: isOption v && v.highestPrio == 9999) baseNoCheck.options
       );
       main_field =
         if isString mainField then
