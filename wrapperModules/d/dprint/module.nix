@@ -63,7 +63,7 @@ in
       content = builtins.toJSON configJson;
     };
 
-    flag = {
+    flags = {
       "--config" = config.constructFiles.generatedConfig.path;
     };
 
