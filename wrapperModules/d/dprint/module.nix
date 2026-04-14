@@ -63,6 +63,10 @@ in
       content = builtins.toJSON configJson;
     };
 
+    flag = {
+      "--config" = config.constructFiles.generatedConfig.path;
+    };
+
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };
 }
