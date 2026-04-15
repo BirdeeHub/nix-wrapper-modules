@@ -45,7 +45,7 @@
                   };
                   result = pkgs.callPackage value { inherit self; };
                 in
-                if isNull result then
+                if result == null then
                   [ ]
                 else if result ? outPath then
                   [ (helper prefix name result) ]
