@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   aria2Wrapper = self.wrappers.aria2.wrap {

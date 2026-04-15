@@ -20,6 +20,7 @@
             inherit system;
             config.allowUnfree = true;
           };
+          tlib = pkgs.callPackage ./test-lib.nix {};
 
           # Load checks from ci/checks/ directory
           coreAndCiChecks = lib.pipe ./checks [
@@ -43,9 +44,9 @@
                     name = "${prefix}-${name}";
                     inherit value;
                   };
-                  result = pkgs.callPackage value { inherit self; };
+                  result = pkgs.callPackage value { inherit self tlib; };
                 in
-                if isNull result then
+                if result == null then
                   [ ]
                 else if result ? outPath then
                   [ (helper prefix name result) ]

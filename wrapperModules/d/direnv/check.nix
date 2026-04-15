@@ -1,15 +1,18 @@
 {
   pkgs,
   self,
+  tlib,
+  ...
 }:
 
 let
   lib = pkgs.lib;
-  createAssertion =
-    { cond, message }:
-    ''
-      (${cond}) || (echo "${message}" >&2; return 1)
-    '';
+  createAssertion = tlib.createAssertion;
+  # createAssertion =
+  #   { cond, message }:
+  #   ''
+  #     (${cond}) || (echo "${message}" >&2; return 1)
+  #   '';
 
   isDirectory =
     path:
@@ -65,7 +68,6 @@ runTests "direnv-test" [
     let
       wrapper = self.wrappers.direnv.wrap {
         inherit pkgs;
-        nix-direnv.enable = true;
       };
     in
     ''

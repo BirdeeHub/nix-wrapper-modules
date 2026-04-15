@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   weztermWrapped = self.wrappers.wezterm.wrap (

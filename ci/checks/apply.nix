@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 # TODO: make sure theres no other stuff passing on accident in here
 let

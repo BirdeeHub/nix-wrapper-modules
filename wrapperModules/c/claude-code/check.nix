@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   claudeCodeWrapped = self.wrappers.claude-code.wrap {
