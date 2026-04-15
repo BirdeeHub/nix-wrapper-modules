@@ -51,25 +51,32 @@ When you provide an option to `enable` or `disable` something, you should call i
 
 This prevents people from needing to look it up to use it, and prevents contributors from having to think too hard about which to call it.
 
-When you provide a `wlib.types.file` option, you should name it the actual filename, especially if there are multiple, but `configFile` is also OK, especially if it is unambiguous.
-
-Keep in mind that even if you do not choose to use `wlib.types.file`, the user can usually still override the option that you set to provide the generated path if needed.
-
-However, this makes the user of your module search for it, and in some situations, such as when your module is adding stuff to `list` or `DAL` type options, this can be slightly harder to override later.
-
-So making use of the `wlib.types.file` type or giving some other method of overriding the filepath when providing a file is generally recommended for this reason.
-
 - Placeholders
 
 When you generate a file, it is generally better to do so as a string, and create it using the `constructFiles` option.
 
-This is because, this will make placeholders such as `${placeholder "out"}` work consistently across all your options.
+This is because, this will make placeholders such as `${placeholder "out"}` work consistently across all your options,
+allowing them to all point to the final wrapper derivation rather than several intermediate ones.
 
-What this allows you to do, is manually build files later using `buildCommand` option or a stdenv phase, and then refer to that created file within your settings!
+What this allows you to do, is manually build files via another option like `constructFiles`, and then refer to that created file within your settings!
 
 Making placeholders work in your module makes your modules generally more easily extensible, and is preferred when it is possible to generate a usable string.
 
 It works by using `drv.passAsFile` and making a derivation attribute with the file contents, which is copied into place.
+
+- `wlib.types.file`
+
+When you provide a `wlib.types.file` option, you should name it the actual filename, especially if there are multiple, but `configFile` is also OK, especially if it is unambiguous.
+
+Keep in mind that even if you do not choose to use `wlib.types.file`, the user can usually still override the option that you set to provide the generated path if needed.
+
+So using something like `wlib.types.file` is only truly important when the file you are making an option for is passed to a list-style option, but may still be nice more generally.
+
+However:
+
+For the same reason that we use `constructFiles` to build files, using `wlib.types.file` without overriding its default `path` value is discouraged in modules to be submitted to this repository.
+
+It builds the file using `pkgs.writeText` by default, and because this creates an intermediate derivation, it means placeholders in that file will not point to the final wrapper derivation.
 
 Example:
 
@@ -95,8 +102,10 @@ Example:
     configFile = lib.mkOption {
       type = wlib.types.file pkgs;
       default = {
-        path = config.constructFiles.gitconfig.path; # <- we can refer to the placeholder of our constructed file!
         content = "";
+        # we should override the default path value for wlib.types.file if we can to make placeholders work
+        # to do that, we can refer to the placeholder of our constructed file!
+        path = config.constructFiles.gitconfig.path;
       };
       description = "Generated git configuration file.";
     };
@@ -138,7 +147,8 @@ or
 
 You may also include a `check.nix` file in your module's directory.
 
-It will be provided with the flake `self` value and `pkgs`
+It will be called via `pkgs.callPackage`, provided with the flake `self` value.
+(i.e. `pkgs.callPackage your_check.nix { inherit self; }`)
 
 It should build a derivation which tests the wrapper derivation as best you can.
 
@@ -153,6 +163,7 @@ Example:
 ```nix
 {
   pkgs,
+  runCommand,
   self,
 }:
 let
@@ -165,9 +176,8 @@ let
       };
     };
   };
-
 in
-pkgs.runCommand "git-test" { } ''
+runCommand "git-test" { } ''
   "${gitWrapped}/bin/git" config user.name | grep -q "Test User"
   "${gitWrapped}/bin/git" config user.email | grep -q "test@example.com"
   touch $out
@@ -185,6 +195,8 @@ if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.waybar.meta.platf
 else
   null
 ```
+
+If you are writing a helper module, or something very complex, you may wish to have multiple derivations. Simply return a set of them instead.
 
 # Commit Messages
 

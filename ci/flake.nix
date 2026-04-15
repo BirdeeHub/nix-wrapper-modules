@@ -21,38 +21,46 @@
             config.allowUnfree = true;
           };
 
-          # Load checks from checks/ directory
-          checkFiles = builtins.readDir ./checks;
-          importCheck = name: {
-            name = lib.removeSuffix ".nix" name;
-            value = import (./checks + "/${name}") {
-              inherit pkgs;
-              self = self;
-            };
-          };
-          checksFromDir = builtins.listToAttrs (
-            map importCheck (builtins.filter (name: lib.hasSuffix ".nix" name) (builtins.attrNames checkFiles))
-          );
+          # Load checks from ci/checks/ directory
+          coreAndCiChecks = lib.pipe ./checks [
+            builtins.readDir
+            builtins.attrNames
+            (builtins.filter (name: lib.hasSuffix ".nix" name))
+            (map (n: {
+              name = lib.removeSuffix ".nix" n;
+              value = ./checks + "/${n}";
+            }))
+            builtins.listToAttrs
+          ];
 
-          importModuleCheck = prefix: name: value: {
-            name = "${prefix}-${name}";
-            value = import value {
-              inherit pkgs;
-              self = self;
-            };
-          };
-          checksFromModules = builtins.listToAttrs (
-            builtins.filter (v: v.value or null != null) (
-              lib.mapAttrsToList (importModuleCheck "module") (wlib.checks.helper or { })
-            )
-          );
-          checksFromWrapperModules = builtins.listToAttrs (
-            builtins.filter (v: v.value or null != null) (
-              lib.mapAttrsToList (importModuleCheck "wrapperModule") (wlib.checks.wrapper or { })
-            )
-          );
+          checksFrom =
+            prefix: attrset:
+            let
+              importModuleCheck =
+                name: value:
+                let
+                  helper = prefix: name: value: {
+                    name = "${prefix}-${name}";
+                    inherit value;
+                  };
+                  result = pkgs.callPackage value { inherit self; };
+                in
+                if isNull result then
+                  [ ]
+                else if result ? outPath then
+                  [ (helper prefix name result) ]
+                else
+                  lib.mapAttrsToList (helper "${prefix}-${name}") (lib.filterAttrs (_: v: v ? outPath) result);
+            in
+            lib.pipe attrset [
+              (lib.mapAttrsToList importModuleCheck)
+              builtins.concatLists
+              builtins.listToAttrs
+            ];
         in
-        checksFromDir // checksFromModules // checksFromWrapperModules
+        checksFrom "wlib" coreAndCiChecks
+        // checksFrom "module" (wlib.checks.helper or { })
+        // checksFrom "wrapperModule" (wlib.checks.wrapper or { })
       );
       formatter = forAllSystems (
         system: (wlib-flake (import nixpkgs { inherit system; })).formatter.${system}
