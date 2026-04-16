@@ -66,75 +66,95 @@ in
       default = [ ];
       description = "List of tmux plugins to source.";
       type = lib.types.listOf (
-        wlib.types.spec (
-          { config, ... }:
-          {
-            # NOTE: set here because if you put them in the actual default field,
-            # nixpkgs doc generator will try to show them.
-            # Ours actually won't, for our doc generator putting them in the normal place would be fine.
-            config.name = lib.mkOptionDefault (config.plugin.pname or null);
-            config.rtp = lib.mkOptionDefault (
-              config.plugin.rtp
-                or "${config.plugin}${lib.optionalString (config.name != null) "/${config.name}.tmux"}"
-            );
-            options = {
-              plugin = lib.mkOption {
-                type = wlib.types.stringable;
-                description = ''
-                  the tmux plugin to source
+        wlib.types.specWith {
+          dontConvertFunctions = true;
+          modules = [
+            (
+              { config, ... }:
+              {
+                # NOTE: set here because if you put them in the actual default field,
+                # nixpkgs doc generator will try to show them.
+                # Ours actually won't, for our doc generator putting them in the normal place would be fine.
+                config.name = lib.mkOptionDefault (config.plugin.pname or null);
+                config.rtp = lib.mkOptionDefault (
+                  if config.relPath != null then
+                    "${config.plugin}/${config.relPath}"
+                  else
+                    config.plugin.rtp
+                      or "${config.plugin}${lib.optionalString (config.name != null) "/${config.name}.tmux"}"
+                );
+                options = {
+                  plugin = lib.mkOption {
+                    type = wlib.types.stringable;
+                    description = ''
+                      the tmux plugin to source
 
-                  Used to determine `plugins.*.rtp` field
-                '';
-              };
-              rtp = lib.mkOption {
-                type = wlib.types.stringable;
-                description = ''
-                  The path actually sourced via `run-shell` within the plugin provided to the plugin field.
+                      Used to determine `plugins.*.rtp` field
+                    '';
+                  };
+                  relPath = lib.mkOption {
+                    type = lib.types.nullOr lib.types.str;
+                    default = null;
+                    description = ''
+                      If this is not `null`, then `plugins.*.rtp` is set to `"''${plugin}/''${relPath}"` by default
+                    '';
+                  };
+                  rtp = lib.mkOption {
+                    type = wlib.types.stringable;
+                    description = ''
+                      The path actually sourced via `run-shell` within the plugin provided to the plugin field.
 
-                  If the plugin has an `rtp` attribute, as the plugins from `pkgs.tmuxPlugins` do, then that is used as the default.
+                      If `relPath` is provided, this is set to `"''${plugin}/''${relPath}"`
 
-                  If it does not, `"''${plugin}/''${plugin.pname}.tmux"` is used.
+                      If the plugin has an `rtp` attribute, as the plugins from `pkgs.tmuxPlugins` do,
+                      then that is used as the default if `relPath` is not provided.
 
-                  If it does not have a `pname` attribute either, then the provided path is used directly.
-                '';
-              };
-              name = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
-                description = ''
-                  Name of the plugin, can be targeted by the before and after fields of other plugin specs
-                '';
-              };
-              before = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-                description = ''
-                  Plugins to source this plugin before
-                '';
-              };
-              after = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-                description = ''
-                  Plugins to source this plugin after
-                '';
-              };
-              configBefore = lib.mkOption {
-                type = lib.types.lines;
-                default = "";
-                description = ''
-                  configuration to run before the plugin is sourced
-                '';
-              };
-              configAfter = lib.mkOption {
-                type = lib.types.lines;
-                default = "";
-                description = ''
-                  configuration to run after the plugin is sourced
-                '';
-              };
-            };
-          }
-        )
+                      If it does not, `"''${plugin}/''${name}.tmux"` is used.
+
+                      If it does not have a name either, then the provided `plugin` path is used directly.
+                    '';
+                  };
+                  name = lib.mkOption {
+                    type = lib.types.nullOr lib.types.str;
+                    description = ''
+                      Name of the plugin, can be targeted by the before and after fields of other plugin specs
+
+                      Defaults to `plugin.pname`
+                    '';
+                  };
+                  before = lib.mkOption {
+                    type = lib.types.listOf lib.types.str;
+                    default = [ ];
+                    description = ''
+                      Plugins to source this plugin before
+                    '';
+                  };
+                  after = lib.mkOption {
+                    type = lib.types.listOf lib.types.str;
+                    default = [ ];
+                    description = ''
+                      Plugins to source this plugin after
+                    '';
+                  };
+                  configBefore = lib.mkOption {
+                    type = lib.types.lines;
+                    default = "";
+                    description = ''
+                      configuration to run before the plugin is sourced
+                    '';
+                  };
+                  configAfter = lib.mkOption {
+                    type = lib.types.lines;
+                    default = "";
+                    description = ''
+                      configuration to run after the plugin is sourced
+                    '';
+                  };
+                };
+              }
+            )
+          ];
+        }
       );
     };
     prefix = lib.mkOption {
