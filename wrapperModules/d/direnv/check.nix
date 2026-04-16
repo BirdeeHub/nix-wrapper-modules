@@ -14,7 +14,6 @@ let
     runTest
     runTests
     ;
-
   getDotdir =
     wrapper:
     let
@@ -23,7 +22,7 @@ let
     in
     dotdir;
 in
-runTests "direnv-test" [
+runTests self.wrappers.direnv [
   (runTest "wrapper should output correct version" (
     let
       wrapper = self.wrappers.direnv.wrap {

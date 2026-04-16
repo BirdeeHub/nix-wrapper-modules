@@ -1,4 +1,11 @@
-{ lib, runCommand, ... }:
+{
+  self,
+  lib,
+  runCommand,
+  stdenv,
+  pkgs,
+  ...
+}:
 let
   createAssertion =
     { cond, message }:
@@ -14,12 +21,14 @@ in
       cond = ''[ -d "${path}" ]'';
       message = "No such directory ${path}";
     };
+
   isFile =
     path:
     createAssertion {
       cond = ''[ -f "${path}" ]'';
       message = "No such file ${path}";
     };
+
   notIsFile =
     path:
     createAssertion {
@@ -35,11 +44,17 @@ in
     };
 
   runTests =
-    name: scripts:
-    runCommand name { } ''
-      ${lib.concatStringsSep "\n\n" scripts}
-      touch $out
-    '';
+    wrapperModule: scripts:
+    let
+      wrapper = wrapperModule.apply { inherit pkgs; };
+    in
+    if builtins.elem stdenv.hostPlatform.system wrapper.meta.platforms then
+      lib.trace "Running test!" runCommand "${wrapper.binName}-test" { } ''
+        ${lib.concatStringsSep "\n\n" scripts}
+        touch $out
+      ''
+    else
+      lib.trace "Skipping test..." null;
 
   runTest = name: assertions: ''
     run() {

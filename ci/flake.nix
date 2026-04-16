@@ -20,7 +20,7 @@
             inherit system;
             config.allowUnfree = true;
           };
-          tlib = pkgs.callPackage ./test-lib.nix { };
+          tlib = pkgs.callPackage ./test-lib.nix { inherit self; };
 
           # Load checks from ci/checks/ directory
           coreAndCiChecks = lib.pipe ./checks [
