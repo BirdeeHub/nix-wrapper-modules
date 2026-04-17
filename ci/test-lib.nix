@@ -56,11 +56,12 @@ in
       ''
     else
       lib.trace "Skipping test..." null;
-  runTest = name: config: assertions: 
-    wrapper: 
+  runTest =
+    name: config: assertions: wrapper:
     let
       wrapperWithConfig = wrapper.wrap config;
-    in ''
+    in
+    ''
       run() {
         ${lib.concatMapStringsSep " && " (a: "(${a})") (lib.toList (assertions wrapperWithConfig))}
       }
