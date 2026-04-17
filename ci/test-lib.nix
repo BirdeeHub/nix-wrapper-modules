@@ -44,13 +44,13 @@ in
     };
 
   runTests =
-    wrapperModule: scripts:
+    wrapperModule: tests:
     let
       wrapper = wrapperModule.apply { inherit pkgs; };
     in
     if builtins.elem stdenv.hostPlatform.system wrapper.meta.platforms then
       lib.trace "Running test!" runCommand "${wrapper.binName}-test" { } ''
-        ${lib.concatStringsSep "\n\n" scripts}
+        ${lib.concatStringsSep "\n\n" tests}
         touch $out
       ''
     else
@@ -63,4 +63,29 @@ in
 
     run || (echo 'test "${name}" failed' >&2 && exit 1)
   '';
+
+  runTests2 =
+    wrapperModule: tests:
+    let
+      wrapper = wrapperModule.apply { inherit pkgs; };
+      testsWithWrapper = lib.map (test: test wrapper) tests;
+    in
+    if builtins.elem stdenv.hostPlatform.system wrapper.meta.platforms then
+      lib.trace "Running test!" runCommand "${wrapper.binName}-test" { } ''
+        ${lib.concatStringsSep "\n\n" testsWithWrapper}
+        touch $out
+      ''
+    else
+      lib.trace "Skipping test..." null;
+  runTest2 = name: config: assertions: 
+    wrapper: 
+    let
+      wrapperWithConfig = wrapper.wrap config;
+    in ''
+      run() {
+        ${lib.concatMapStringsSep " && " (a: "(${a})") (lib.toList (assertions wrapperWithConfig))}
+      }
+
+      run || (echo 'test "${name}" failed' >&2 && exit 1)
+    '';
 }
