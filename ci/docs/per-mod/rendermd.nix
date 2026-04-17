@@ -84,7 +84,13 @@ let
 
         ${mkOptField opt "description" ""}${mkOptField opt "relatedPackages" "Related packages:\n"}${
           mkOptField opt "type" "Type:${lib.optionalString (opt.readOnly or false == true) " (read-only)"}"
-        }${mkOptField opt "default" "Default:"}${mkOptField opt "example" "Example:"}${
+        }${
+          let
+            # default can depend on another field without a default value
+            res = builtins.tryEval (mkOptField opt "default" "Default:");
+          in
+          if res.success or false then res.value else ""
+        }${mkOptField opt "example" "Example:"}${
           lib.optionalString (opt.declarations or [ ] != [ ]) ''
             Declared by:
 

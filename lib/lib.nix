@@ -545,6 +545,68 @@ in
     f: v: lib.imap0 (i: v: f i v.name v.value) (lib.mapAttrsToList lib.nameValuePair v);
 
   /**
+    Partition an attribute set into two attribute sets based on a predicate.
+
+    The predicate is applied to each attribute as `(name: value: ...)`. Attributes
+    for which the predicate returns `true` are placed in `right`, and all others
+    are placed in `wrong`.
+
+    This is like `lib.lists.partition`, but for attribute sets.
+
+    Type:
+    ```
+      (string -> any -> bool) -> attrs -> {
+        right :: attrs;
+        wrong :: attrs;
+      }
+    ```
+
+    Example:
+    ```nix
+      partitionAttrs (name: value: value > 10) {
+        a = 5;
+        b = 20;
+        c = 15;
+      }
+      => {
+        right = { b = 20; c = 15; };
+        wrong = { a = 5; };
+      }
+    ```
+
+    Notes:
+    - Iteration order follows `builtins.attrNames`, which is lexicographically sorted.
+  */
+  partitionAttrs =
+    pred: attrs:
+    builtins.foldl'
+      (
+        acc: name:
+        let
+          value = attrs.${name};
+        in
+        if pred name value then
+          acc
+          // {
+            right = acc.right // {
+              ${name} = value;
+            };
+          }
+        else
+          acc
+          // {
+            wrong = acc.wrong // {
+              ${name} = value;
+            };
+          }
+      )
+      {
+        right = { };
+        wrong = { };
+      }
+      (builtins.attrNames attrs);
+
+  /**
     genStr :: string -> int -> string
 
     Generates a string by repeating the input string the specified number of times

@@ -81,6 +81,7 @@ in
         zathura_cb
         zathura_djvu
         zathura_ps
+        zathura_pdf_mupdf
       ];
       description = ''
         Add plugins to zathura runtime.

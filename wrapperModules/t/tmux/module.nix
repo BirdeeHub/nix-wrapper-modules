@@ -21,31 +21,14 @@ let
 
   configPlugins =
     plugins:
-    (
-      let
-        pluginName = p: if lib.types.package.check p then p.pname else p.plugin.pname;
-        pluginRTP = p: if lib.types.package.check p then p.rtp else p.plugin.rtp;
-        pluginConfigPre = p: if lib.types.package.check p then "" else p.configBefore or "";
-        pluginConfigPost = p: if lib.types.package.check p then "" else p.configAfter or "";
-      in
-      if plugins == [ ] || !(builtins.isList plugins) then
-        ""
-      else
-        ''
-          # ============================================== #
-          ${
-            (lib.concatMapStringsSep "\n\n" (p: ''
-              # ${pluginName p}
-              # ---------------------
-              ${pluginConfigPre p}
-              run-shell ${pluginRTP p}
-              ${pluginConfigPost p}
-              # ---------------------
-            '') plugins)
-          }
-          # ============================================== #
-        ''
-    );
+    lib.concatMapStringsSep "\n\n" (p: ''
+      # ${toString p.name}
+      # ---------------------
+      ${p.configBefore}
+      run-shell ${p.rtp}
+      ${p.configAfter}
+      # ---------------------
+    '') (wlib.dag.unwrapSort "tmux plugins" plugins);
   tmux_bool_conv = v: if v then "on" else "off";
 in
 {
@@ -83,33 +66,95 @@ in
       default = [ ];
       description = "List of tmux plugins to source.";
       type = lib.types.listOf (
-        lib.types.oneOf [
-          lib.types.package
-          (lib.types.submodule {
-            options = {
-              plugin = lib.mkOption {
-                type = lib.types.package;
-                description = ''
-                  the tmux plugin to source
-                '';
-              };
-              configBefore = lib.mkOption {
-                type = lib.types.lines;
-                default = "";
-                description = ''
-                  configuration to run before the plugin is sourced
-                '';
-              };
-              configAfter = lib.mkOption {
-                type = lib.types.lines;
-                default = "";
-                description = ''
-                  configuration to run after the plugin is sourced
-                '';
-              };
-            };
-          })
-        ]
+        wlib.types.specWith {
+          dontConvertFunctions = true;
+          modules = [
+            (
+              { config, ... }:
+              {
+                # NOTE: set here because if you put them in the actual default field,
+                # nixpkgs doc generator will try to show them.
+                # Ours actually won't, for our doc generator putting them in the normal place would be fine.
+                config.name = lib.mkOptionDefault (config.plugin.pname or null);
+                config.rtp = lib.mkOptionDefault (
+                  if config.relPath != null then
+                    "${config.plugin}/${config.relPath}"
+                  else
+                    config.plugin.rtp
+                      or "${config.plugin}${lib.optionalString (config.name != null) "/${config.name}.tmux"}"
+                );
+                options = {
+                  plugin = lib.mkOption {
+                    type = wlib.types.stringable;
+                    description = ''
+                      the tmux plugin to source
+
+                      Used to determine `plugins.*.rtp` field
+                    '';
+                  };
+                  relPath = lib.mkOption {
+                    type = lib.types.nullOr lib.types.str;
+                    default = null;
+                    description = ''
+                      If this is not `null`, then `plugins.*.rtp` is set to `"''${plugin}/''${relPath}"` by default
+                    '';
+                  };
+                  rtp = lib.mkOption {
+                    type = wlib.types.stringable;
+                    description = ''
+                      The path actually sourced via `run-shell` within the plugin provided to the plugin field.
+
+                      If `relPath` is provided, this is set to `"''${plugin}/''${relPath}"`
+
+                      If the plugin has an `rtp` attribute, as the plugins from `pkgs.tmuxPlugins` do,
+                      then that is used as the default if `relPath` is not provided.
+
+                      If it does not, `"''${plugin}/''${name}.tmux"` is used.
+
+                      If it does not have a name either, then the provided `plugin` path is used directly.
+                    '';
+                  };
+                  name = lib.mkOption {
+                    type = lib.types.nullOr lib.types.str;
+                    description = ''
+                      Name of the plugin, can be targeted by the before and after fields of other plugin specs
+
+                      Defaults to `plugin.pname`
+                    '';
+                  };
+                  before = lib.mkOption {
+                    type = lib.types.listOf lib.types.str;
+                    default = [ ];
+                    description = ''
+                      Plugins to source this plugin before
+                    '';
+                  };
+                  after = lib.mkOption {
+                    type = lib.types.listOf lib.types.str;
+                    default = [ ];
+                    description = ''
+                      Plugins to source this plugin after
+                    '';
+                  };
+                  configBefore = lib.mkOption {
+                    type = lib.types.lines;
+                    default = "";
+                    description = ''
+                      configuration to run before the plugin is sourced
+                    '';
+                  };
+                  configAfter = lib.mkOption {
+                    type = lib.types.lines;
+                    default = "";
+                    description = ''
+                      configuration to run after the plugin is sourced
+                    '';
+                  };
+                };
+              }
+            )
+          ];
+        }
       );
     };
     prefix = lib.mkOption {
@@ -279,9 +324,15 @@ in
             bind-key -N "Kill the current pane" x kill-pane
           ''}
 
+          # ============================================== #
+
           ${config.configBefore}
 
+          # ============================================== #
+
           ${configPlugins config.plugins}
+
+          # ============================================== #
 
           ${config.configAfter}
         ''
@@ -290,7 +341,7 @@ in
     runShell = lib.mkIf config.secureSocket [
       ''export TMUX_TMPDIR=''${TMUX_TMPDIR:-''${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}}''
     ];
-    package = pkgs.tmux;
+    package = lib.mkDefault pkgs.tmux;
     meta.maintainers = [ wlib.maintainers.birdee ];
   };
 }

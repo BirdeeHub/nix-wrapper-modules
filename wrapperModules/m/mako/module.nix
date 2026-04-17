@@ -36,6 +36,13 @@ in
         ]
       );
       default = { };
+      example = {
+        icon-location = "left";
+        "urgency=high" = {
+          border-color = "#bf616a";
+          default-timeout = 0;
+        };
+      };
       description = ''
         Configuration settings for mako. Can include both global settings and sections.
         All available options can be found here:
@@ -57,7 +64,10 @@ in
       if config."--config".content or "" != "" then
         config."--config".content
       else
-        lib.generators.toINIWithGlobalSection { } { globalSection = config.settings; };
+        lib.generators.toINIWithGlobalSection { } {
+          globalSection = lib.filterAttrs (_: value: !builtins.isAttrs value) config.settings;
+          sections = lib.filterAttrs (_: value: builtins.isAttrs value) config.settings;
+        };
     relPath = "${config.binName}-config.ini";
   };
   config.package = lib.mkDefault pkgs.mako;

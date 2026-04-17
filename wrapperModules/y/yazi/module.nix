@@ -447,6 +447,49 @@ in
     '';
   };
 
+  options.plugins = lib.mkOption {
+    type = lib.types.attrsOf (lib.types.nullOr wlib.types.stringable);
+    default = { };
+    description = ''
+      An attribute set of plugin names and their paths
+    '';
+    example = lib.literalMD ''
+      ```nix
+      with pkgs.yaziPlugins; {
+        smart-enter = smart-enter;
+        drag = inputs.drag;
+        gvfs = inputs.gvfs-yazi;
+        git = git;
+        starship = starship;
+        full-border = full-border;
+      };
+      ```
+    '';
+  };
+  options.flavors = lib.mkOption {
+    type = lib.types.attrsOf (lib.types.nullOr wlib.types.stringable);
+    default = { };
+    description = ''
+      An attribute set of flavor names and their paths
+    '';
+  };
+  config.buildCommand.makePluginsAndFlavors = {
+    before = [ "constructFiles" ]; # <- by default constructFiles is the first of the 3 in modules.default
+    data =
+      let
+        toLink =
+          dir: n: v:
+          lib.optionalString (v != null)
+            "ln -s ${lib.escapeShellArg v} ${lib.escapeShellArg "${config.generatedConfig.placeholder}/${dir}/${n}.yazi"}";
+      in
+      ''
+        mkdir -p ${lib.escapeShellArg "${config.generatedConfig.placeholder}/plugins"}
+        mkdir -p ${lib.escapeShellArg "${config.generatedConfig.placeholder}/flavors"}
+      ''
+      + lib.concatMapAttrsStringSep "\n" (toLink "plugins") config.plugins
+      + lib.concatMapAttrsStringSep "\n" (toLink "flavors") config.flavors;
+  };
+
   config.package = lib.mkDefault pkgs.yazi;
   config.env.YAZI_CONFIG_HOME = config.generatedConfig.placeholder;
   # make `finalpackage.generatedConfig` point to the generated config so it can be used from outside of the wrapper module

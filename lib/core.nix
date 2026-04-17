@@ -419,7 +419,7 @@ in
     };
     binName = lib.mkOption {
       type = lib.types.str;
-      default =
+      default = builtins.unsafeDiscardStringContext (
         if config.package.meta.mainProgram or null != null then
           baseNameOf (
             builtins.addErrorContext ''
@@ -430,8 +430,8 @@ in
         else if builtins.isString config.package || builtins.isPath config.package then
           baseNameOf (toString config.package)
         else
-          config.package.pname or config.package.name
-            or (throw "config.binName was not able to be detected!");
+          config.package.pname or config.package.name or (throw "config.binName was not able to be detected!")
+      );
       description = ''
         The name of the binary to be output to `config.wrapperPaths.placeholder`
 
@@ -440,7 +440,7 @@ in
     };
     exePath = lib.mkOption {
       type = lib.types.nullOr wlib.types.nonEmptyLine;
-      default =
+      default = builtins.unsafeDiscardStringContext (
         if config.package.meta.mainProgram or null != null then
           lib.removePrefix "/" (
             lib.removePrefix "${config.package}" (
@@ -457,7 +457,8 @@ in
           lib.optionalString (config.binDir != null) "${config.binDir}/"
           + "${config.package.pname or config.package.name
             or (throw "config.binName was not able to be detected! Please specify it manually!")
-          }";
+          }"
+      );
       description = ''
         The relative path to the executable to wrap. i.e. `bin/exename`
 

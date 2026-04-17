@@ -108,13 +108,47 @@ For more information on how to do this, check out the [getting started](https://
 It is the ideal of this project to become a hub for everyone to contribute,
 so that we can all enjoy our portable configurations with as little individual strife as possible.
 
-In service of that ideal, the immediate goal would be to transfer this repo to nix-community the moment that becomes an option.
+In service of that ideal, the plan is that ownership will be transferred to nix-community,
+so that there is community ownership of where our contributions will be maintained.
 
-Eventually I hope to have wrapper modules in nixpkgs, but again, nix-community would be the first step.
+The road-map before beginning that process consists of at least most of the following items:
+
+- Better doc-generation options, less buggy and made more available to individual modules outside of the main repository.
+- Services options for generating service files which can be installed by passing the package to the correct option.
+- Non-intrusive `bubblewrap` helper module, for programs that are difficult to wrap.
+- Better documentation in general. Things should already be covered in the docs, but not yet always in a way digestible for everyone.
+- Maybe 1 or 2 other things.
+
+Once the dust has settled, the process will be started to move it to nix-community,
+and we will start building a core team to maintain the repository long into the future!
 
 ## Short-term Goals
 
 Help us add more modules! Contributors are what makes projects like these which contain modules for so many programs amazing!
+
+## Related Extension Projects:
+
+There may be projects that offer useful additions or pre-configurations of existing modules,
+or new ways of using wrapper modules that do not yet fit in the main repository.
+
+For example, a collection of Neovim modules for various languages would be a good item for this list
+
+- [hm-wrapper-modules](https://github.com/sini/hm-wrapper-modules)
+  - This is a library designed to run home manager modules, figure out what paths it would add,
+    and use `bubblewrap` and a wrapper module to use the home manager module as a wrapper module.
+  - This repository may be useful to create wrapper modules for difficult to wrap programs until more direct ones can be written.
+  - It does not fit in the main repository, because the correct way to do it is to add a `bubblewrap` helper module to the main repository,
+    and figure out what files that program actually needs us to wrap via `bubblewrap` or not.
+
+Hopefully more will be listed here soon!
+
+Some examples why something may not fit in the main repository:
+
+- It doesn't fit in an existing category of offered things.
+
+- It requires more flake inputs beyond `nixpkgs` in order to import it from this repository and use it somewhere.
+
+- It is a never ending job of its own (i.e. making modules for new editor language integrations and plugins for an existing wrapper module like the Neovim one)
 
 ---
 

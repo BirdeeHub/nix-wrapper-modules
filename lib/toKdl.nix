@@ -10,7 +10,7 @@ let
         let
           toVal =
             v:
-            if isNull v then
+            if v == null then
               "#null"
             else if lib.isFunction v then
               let
