@@ -109,7 +109,7 @@ in
 {
   imports = [ wlib.modules.default ];
   options = {
-    "config.fish" = mkOption {
+    configFile = mkOption {
       type = wlib.types.file pkgs;
       default = {
         content = "";
@@ -118,11 +118,8 @@ in
       description = ''
         The main fish configuration file.
 
-        Provide either `.content` to inline shell configuration or `.path` to reference an external file.
-        By default this file is generated from the configuration options declared in this module.
+        Provide either `.content` to inline shell configuration or `.path` to reference an external file. 
         It is sourced by fish using `--init-command`.
-
-        `configFiles.<name>` should be used instead.
       '';
     };
 
@@ -160,17 +157,6 @@ in
       default = { };
       description = "Completions to be included in the shell";
     };
-    configFiles = mkOption {
-      type = types.attrsOf (wlib.types.file pkgs);
-      default = { };
-      description = "Configuration files to be sourced by the shell";
-    };
-    functionFiles = mkOption {
-      type = types.attrsOf (wlib.types.file pkgs);
-      default = { };
-      description = "Function files to be sourced by the shell";
-    };
-
     plugins = mkOption {
       type = types.listOf (wlib.types.spec pluginModule);
       default = [ ];
@@ -327,18 +313,6 @@ in
           mapAttrsToList (name: value: "alias ${name}=\"${value}\"") cfg.shellAliases
         );
 
-        configs =
-          let
-            confs = (attrValues cfg.configFiles) ++ (attrValues cfg.functionFiles);
-          in
-          ''
-            set configs ${toString (map (conf: conf.path) confs)}
-            for config in $configs
-              source $config
-            end
-            set -e configs
-          '';
-
         completions = "set -a fish_complete_path ${placeholder config.outputName}/completions";
       in
       (concatStringsSep "\n" [
@@ -348,8 +322,8 @@ in
         customPluginCompletions
         aliases
         abbrs
-        configs
         completions
+        cfg.configFile.content
       ]);
   };
 
