@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   cavaWrapper = self.wrappers.cava.wrap { inherit pkgs; };

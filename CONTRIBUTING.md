@@ -143,58 +143,113 @@ or
 
 `nix run ./ci#docs`
 
-# Writing tests
+# Writing Tests
 
 You may also include a `check.nix` file in your module's directory.
 
-It will be called via `pkgs.callPackage`, provided with the flake `self` value.
-(i.e. `pkgs.callPackage your_check.nix { inherit self; }`)
+It will be called via `pkgs.callPackage`, provided with the flake `self` value, as well as a test-library `tlib` value.
+(i.e. `pkgs.callPackage your_check.nix { inherit self tlib; }`)
 
-It should build a derivation which tests the wrapper derivation as best you can.
+## Using the testing Library `tlib`
 
-If a command fails, it fails the test. If it builds the derivation successfully, it passes the test.
+We provide a testing library `tlib` that provides an easy to use interface to write tests specifically for wrapper modules.
 
-If the program gives options for running the program to check the generated configuration is correct, you should do that.
-
-Sometimes it is not easily possible to run the program within a derivation, in those cases, searching the wrapper derivation and other generated files and their contents is also acceptable.
-
-Example:
+The general structure is as follows:
 
 ```nix
 {
-  pkgs,
-  runCommand,
   self,
+  tlib,
+  ...
 }:
+
 let
-  gitWrapped = self.wrappers.git.wrap {
-    inherit pkgs;
-    settings = {
-      user = {
-        name = "Test User";
-        email = "test@example.com";
-      };
-    };
-  };
+  inherit (tlib)
+    runTest
+    runTests
+    ;
 in
-runCommand "git-test" { } ''
-  "${gitWrapped}/bin/git" config user.name | grep -q "Test User"
-  "${gitWrapped}/bin/git" config user.email | grep -q "test@example.com"
-  touch $out
-''
+runTests { wrapperModule = self.wrappers.<name>; } [
+  (runTest "description of test1" [ assertion1, ..., assertionN])
+  (runTest "description of test2" [ assertion1, ..., assertionN])
+  ...
+  (runTest "description of testN" [ assertion1, ..., assertionN])
+]
+
 ```
 
-If your module declares a list of valid platforms via its `meta.platforms` option, you should disable your test on the relevant platforms like so:
+Tests will only be run on the systems defined in `wrapperModule.meta.platforms`.
+
+Individual tests are then specified using `runTest`.
+Each test accepts a name as the first argument and a list of assertions 
+(if a single assertion is provided directly, it will be converted to a list).
+
+An assertion is a bash command in the form of a string.
+If the command is run successfully (exit code 0), the assertion passes. 
+Use `stderr` to log descriptive messages about the failed assertion.
+
+We provide a helper method `lib.createAssertion` for this:
 
 ```nix
-if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.waybar.meta.platforms then
-  pkgs.runCommand "waybar-test" { } ''
-    "${waybarWrapped}/bin/waybar" --version | grep -q "${waybarWrapped.version}"
-    touch $out
-  ''
-else
-  null
+isDirectory =
+  path:
+  createAssertion {
+    cond = ''[ -d "${path}" ]'';           # <-- the condition to be asserted
+    message = "No such directory ${path}"; # <-- the message to print to stderr if 
+  };                                       #     the assertion is violated
+
 ```
+
+Pre-defined assertions like `isDirectory` or `isFile` are already available in tlib. 
+Feel free to contribute more if you find new ones that other maintainers might benefit from.
+
+Instead of providing a list of assertions directly, you can also provide a function providing a wrapper:
+
+```nix
+runTest "my test description" (wrapper: [ 
+  (isDirectory wrapper.passthru.configuration.<some-option-holding-a-directory>)
+])
+```
+
+The provided wrapper is instantiated from the `wrapperModule` that was passed to `runTests`.
+
+This wrapper instance does not set any options apart from `pkgs`.
+In most cases, you want to test the wrapper by providing a specific configuration.
+
+You can do this by providing an `attrs` instead of a string to `runTest` and provide a config there:
+
+```nix
+(runTest
+  {
+    name = "if nix-direnv is enabled then lib/nix-direnv.sh should exists"; # <-- name of the test
+    config.nix-direnv.enable = true;                                        # <-- provide test-specific config
+  }
+  (wrapper: [  # <-- this wrapper has the above config applied
+  # ({ wrapper, config }: [  # <-- or like this, if you also want to access the wrapper config
+    (isDirectory (getDotdir wrapper))
+    (isFile "${getDotdir wrapper}/lib/nix-direnv.sh")
+  ])
+)
+```
+
+Of course, nothing keeps you from instantiating your wrappers from scratch. The above direnv example could 
+equivalently be written as:
+
+```nix
+(runTest "if nix-direnv is enabled then lib/nix-direnv.sh should exists" (
+  let
+    wrapper = self.wrappers.direnv.wrap {
+      inherit pkgs;
+      nix-direnv.enable = true; 
+    };
+  in
+  [
+    (isDirectory (getDotdir wrapper))
+    (isFile "${getDotdir wrapper}/lib/nix-direnv.sh")
+  ]
+))
+```
+
 
 If you are writing a helper module, or something very complex, you may wish to have multiple derivations. Simply return a set of them instead.
 

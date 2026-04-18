@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 
 pkgs.runCommand "formatting-check" { } ''

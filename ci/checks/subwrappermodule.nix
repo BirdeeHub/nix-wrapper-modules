@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   evaled = self.lib.evalModule [

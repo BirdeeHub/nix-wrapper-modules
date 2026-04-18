@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   emacsWrapped =

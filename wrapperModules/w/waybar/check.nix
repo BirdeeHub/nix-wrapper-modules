@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   waybarWrapped = self.wrappers.waybar.wrap {
