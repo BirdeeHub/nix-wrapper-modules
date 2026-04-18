@@ -59,12 +59,16 @@ in
       lib.trace "Skipping test..." null;
 
   runTest =
-    {
-      name,
-      config ? { },
-    }:
-    assertions: wrapper:
+    settings: assertions: wrapper:
     let
+      name =
+        if (lib.isAttrs settings) && (settings ? name) then
+          settings.name
+        else if lib.isString settings then
+          settings
+        else
+          throw "No name provided to `runTest`.";
+      config = if (lib.isAttrs settings) && (settings ? config) then settings.config else { };
       wrapperWithConfig = wrapper.wrap config;
     in
     ''
