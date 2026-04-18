@@ -23,7 +23,7 @@ let
     dotdir;
 in
 runTests { wrapperModule = self.wrappers.direnv; } [
-  (runTest { blubb = "wrapper should output correct version"; } (wrapper: ''
+  (runTest { name = "wrapper should output correct version"; } (wrapper: ''
     "${wrapper}/bin/direnv" --version | grep -q "${wrapper.version}"
   ''))
   (runTest
