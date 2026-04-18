@@ -12,9 +12,24 @@ let
     ''
       (${cond}) || (echo "${message}" >&2; return 1)
     '';
+  runTestWithConfig =
+    { name, config ? { } }: assertions: wrapper:
+    let
+      wrapperWithConfig = wrapper.wrap config;
+    in
+    ''
+      run() {
+        ${lib.concatMapStringsSep " && " (a: "(${a})") (lib.toList (assertions wrapperWithConfig))}
+      }
+
+      run || (echo 'test "${name}" failed' >&2 && exit 1)
+    '';
 in
 {
-  inherit createAssertion;
+  inherit 
+    createAssertion
+    runTestWithConfig
+    ;
   isDirectory =
     path:
     createAssertion {
@@ -57,25 +72,33 @@ in
       ''
     else
       lib.trace "Skipping test..." null;
-
   runTest =
-    settings: assertions: wrapper:
+    nameOrSettings: assertions: wrapper:
     let
-      name =
-        if (lib.isAttrs settings) && (settings ? name) then
-          settings.name
-        else if lib.isString settings then
-          settings
+      # name =
+      #   if (lib.isAttrs nameOrSettings) && (nameOrSettings ? name) then
+      #     nameOrSettings.name
+      #   else if lib.isString settings then
+      #     nameOrSettings
+      #   else
+      #     throw "No name provided to `runTest`.";
+      # wrapperWithConfig = wrapper.wrap config;
+      settings = 
+        if (lib.isAttrs nameOrSettings) && (nameOrSettings ? name) then
+          nameOrSettings
+        else if lib.isString nameOrSettings then
+          { 
+            name = nameOrSettings;
+          }
         else
-          throw "No name provided to `runTest`.";
-      config = if (lib.isAttrs settings) && (settings ? config) then settings.config else { };
-      wrapperWithConfig = wrapper.wrap config;
-    in
-    ''
-      run() {
-        ${lib.concatMapStringsSep " && " (a: "(${a})") (lib.toList (assertions wrapperWithConfig))}
-      }
+          throw ''
+            Invalid argument for `runTest`. 
+            The first argument must be a string (the test name) or an attrs 
+            { name: str, config: Optional[attrs]} but we got:
 
-      run || (echo 'test "${name}" failed' >&2 && exit 1)
-    '';
+            ${lib.toJSON nameOrSettings}
+          '';
+    in
+      runTestWithConfig settings assertions wrapper;
+
 }
