@@ -75,14 +75,6 @@ in
   runTest =
     nameOrSettings: assertions: wrapper:
     let
-      # name =
-      #   if (lib.isAttrs nameOrSettings) && (nameOrSettings ? name) then
-      #     nameOrSettings.name
-      #   else if lib.isString settings then
-      #     nameOrSettings
-      #   else
-      #     throw "No name provided to `runTest`.";
-      # wrapperWithConfig = wrapper.wrap config;
       settings = 
         if (lib.isAttrs nameOrSettings) && (nameOrSettings ? name) then
           nameOrSettings
@@ -92,9 +84,9 @@ in
           }
         else
           throw ''
-            Invalid argument for `runTest`. 
-            The first argument must be a string (the test name) or an attrs 
-            { name: str, config: Optional[attrs]} but we got:
+            Invalid argument for `runTest`.
+            The first argument must be either a string (the test name) or an attrs
+            matching { name, config ? { } }, but got:
 
             ${lib.toJSON nameOrSettings}
           '';
