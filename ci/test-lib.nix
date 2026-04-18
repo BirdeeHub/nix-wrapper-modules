@@ -30,11 +30,11 @@ let
   runTest =
     nameOrSettings: assertions: wrapper:
     let
-      settings = 
+      settings =
         if (lib.isAttrs nameOrSettings) && (nameOrSettings ? name) then
           nameOrSettings
         else if lib.isString nameOrSettings then
-          { 
+          {
             name = nameOrSettings;
           }
         else
@@ -46,23 +46,32 @@ let
             ${lib.toJSON nameOrSettings}
           '';
     in
-      runTestWithConfig settings assertions wrapper;
+    runTestWithConfig settings assertions wrapper;
 
   runTestWithConfig =
-    { name, config ? { } }: assertions: wrapper:
+    {
+      name,
+      config ? { },
+    }:
+    assertions: wrapper:
     let
       wrapperWithConfig = wrapper.wrap config;
+      assertions' = 
+        if lib.isFunction assertions then 
+          assertions wrapperWithConfig 
+        else 
+          assertions;
     in
     ''
       run() {
-        ${lib.concatMapStringsSep " && " (a: "(${a})") (lib.toList (assertions wrapperWithConfig))}
+        ${lib.concatMapStringsSep " && " (a: "(${a})") (lib.toList assertions')}
       }
 
       run || (echo 'test "${name}" failed' >&2 && exit 1)
     '';
 in
 {
-  inherit 
+  inherit
     createAssertion
     runTests
     runTest
@@ -95,6 +104,5 @@ in
       cond = ''grep -q '${pattern}' "${file}"'';
       message = "Pattern '${pattern}' not found in ${file}";
     };
-
 
 }

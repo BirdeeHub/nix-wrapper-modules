@@ -23,9 +23,22 @@ let
     dotdir;
 in
 runTests { wrapperModule = self.wrappers.direnv; } [
-  (runTest { name = "wrapper should output correct version"; } (wrapper: ''
-    "${wrapper}/bin/direnv" --version | grep -q "${wrapper.version}"
-  ''))
+  (runTest
+    {
+      name = "wrapper should output correct version";
+    }
+    (
+      let
+        wrapper = self.wrappers.direnv.wrap {
+          inherit pkgs;
+          nix-direnv.enable = false;
+        };
+      in
+      ''
+        "${wrapper}/bin/direnv" --version | grep -q "${wrapper.version}"
+      ''
+    )
+  )
   (runTest
     {
       name = "if nix-direnv is enabled then lib/nix-direnv.sh should exists";
