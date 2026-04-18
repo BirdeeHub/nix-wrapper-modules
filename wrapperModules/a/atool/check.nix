@@ -1,4 +1,4 @@
-{ pkgs, self }:
+{ pkgs, self, ... }:
 let
   atoolWrapped = self.wrappers.atool.wrap {
     inherit pkgs;

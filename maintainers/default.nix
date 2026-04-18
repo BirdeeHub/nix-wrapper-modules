@@ -61,6 +61,11 @@
     githubId = 8916363;
     name = "Nikita Wootten";
   };
+  zenoli = {
+    name = "Zenoli";
+    github = "zenoli";
+    githubId = 8073528;
+  };
   pengolord = {
     name = "pengo";
     email = "pbalternates@gmail.com";
