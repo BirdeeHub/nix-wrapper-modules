@@ -139,7 +139,7 @@ in
     "hyprlock.conf" = lib.mkOption {
       type = wlib.types.file {
         path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
-        content = lib.mkOptionDefault (
+        content = (
           lib.optionalString (config.settings != { }) (toHyprconf {
             inherit (config) importantPrefixes;
             attrs = config.settings;
