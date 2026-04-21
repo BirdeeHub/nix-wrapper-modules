@@ -607,6 +607,103 @@ in
       (builtins.attrNames attrs);
 
   /**
+    checks for an attribute set that is not string-like and returns true if it is
+  */
+  isNonDrvAttrs = v: builtins.isAttrs v && !lib.isStringLike v;
+
+  /**
+    A generalized recursive attribute set merge with user-defined stopping and
+    conflict resolution behavior.
+
+    This function is similar to `lib.recursiveUpdateUntil`, but extends it by
+    allowing a custom `merge` function to decide how values are merged when
+    recursion stops.
+
+    The merge walks both attribute sets (`lhs` and `rhs`) in parallel:
+
+    - If only one side defines a value at a given path, that value is used.
+    - If both sides define a value:
+      - `until path lhs rhs` is evaluated.
+        - If it returns `true`, recursion stops at this path and
+          `merge path lhs rhs` determines the result.
+        - If it returns `false`, recursion continues into the values (which are
+          expected to be attribute sets).
+
+    Default behavior:
+    - Recursion continues only while both values are attribute sets
+      (`builtins.isAttrs`).
+    - When recursion stops, the right-hand side (`rhs`) replaces the left-hand side.
+
+    Parameters:
+      - `until` :: `[string]` -> `any` -> `any` -> `bool`:
+        - Predicate that determines when to stop descending into values.
+        - Arguments:
+          - `path`: attribute path from the root (e.g. `[ "a" "b" "c" ]`)
+          - `lhs`: value from the left-hand side
+          - `rhs`: value from the right-hand side
+
+      - `merge` :: `[string]` -> `any` -> `any` -> `bool`:
+        - Function used to resolve a conflict when `until` returns true.
+          Receives the same arguments as `until`.
+
+    Arguments:
+      - `lhs` :: `attrset`:
+        Base attribute set.
+
+      - `rhs` :: `attrset`:
+        Overlay attribute set (takes precedence by default).
+
+    Returns:
+      - `attrset`:
+        The recursively merged result.
+
+    Notes:
+    - Merge is right-biased unless `merge` overrides that behavior.
+    - Non-attribute values are treated as leaves and resolved via `merge`.
+    - The `path` argument allows context-aware merging strategies.
+
+    Example (concatenate lists instead of replacing them):
+    ```nix
+      recursiveMergeUntil {
+        merge = path: l: r:
+          if builtins.isList l && builtins.isList r then l ++ r else r;
+      } { a = [1]; } { a = [2]; }
+
+      => { a = [1 2]; }
+    ```
+  */
+  recursiveMergeUntil =
+    # source: https://github.com/BirdeeHub/nixCats-nvim/blob/da76c45b33d589836946bb566bd91df4cd3cfb09/utils/lib.nix#L57
+    {
+      until ? (
+        path: lh: rh:
+        !(builtins.isAttrs lh) || !(builtins.isAttrs rh)
+      ),
+      merge ? (
+        path: l: r:
+        r
+      ),
+    }:
+    lhs: rhs:
+    let
+      f =
+        attrPath:
+        builtins.zipAttrsWith (
+          n: values:
+          let
+            here = attrPath ++ [ n ];
+          in
+          if builtins.length values == 1 then
+            builtins.head values
+          else if until here (builtins.elemAt values 1) (builtins.head values) then
+            merge here (builtins.elemAt values 1) (builtins.head values)
+          else
+            f here values
+        );
+    in
+    f [ ] [ rhs lhs ];
+
+  /**
     `genStr` :: `string` -> `int` -> `string`
 
     or

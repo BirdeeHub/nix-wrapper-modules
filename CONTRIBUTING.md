@@ -155,11 +155,7 @@ Sometimes it is not easily possible to run the program within a derivation, in t
 Example:
 
 ```nix
-{
-  pkgs,
-  runCommand,
-  self,
-}:
+{ pkgs, self, tlib, ... }:
 let
   gitWrapped = self.wrappers.git.wrap {
     inherit pkgs;
@@ -170,12 +166,18 @@ let
       };
     };
   };
+  inherit (tlib) it fileContains test enableBySystem ;
 in
-runCommand "git-test" { } ''
-  "${gitWrapped}/bin/git" config user.name | grep -q "Test User"
-  "${gitWrapped}/bin/git" config user.email | grep -q "test@example.com"
-  touch $out
-''
+# git uses meta.platforms = lib.platforms.all, so this will be enabled on all platforms
+enableBySystem self.wrappers.git (
+  # define a test derivation using the testing library!
+  test "git-test" [
+    # define tests for your test derivation using `it` and the other helpers
+    (it "has test user" ''"${gitWrapped}/bin/git" config user.name | grep -q "Test User"'')
+    (it "has test email" ''"${gitWrapped}/bin/git" config user.email | grep -q "test@example.com"'')
+    (fileContains (gitWrapped.configuration.constructFiles.gitconfig.outPath) "test@example\.com")
+  ]
+)
 ```
 
 If your module declares a list of valid platforms via its `meta.platforms` option, you should disable your test on the relevant platforms like so:
