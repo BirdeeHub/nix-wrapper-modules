@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   yaziWrapper = self.wrappers.yazi.wrap { inherit pkgs; };

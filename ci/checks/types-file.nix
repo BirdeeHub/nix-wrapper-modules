@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   lib = pkgs.lib;

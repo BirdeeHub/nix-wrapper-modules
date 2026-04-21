@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   xplr = self.wrappers.xplr.wrap (
