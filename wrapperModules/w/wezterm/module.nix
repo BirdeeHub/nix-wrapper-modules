@@ -26,9 +26,11 @@
     '';
   };
   options."wezterm.lua" = lib.mkOption {
-    type = wlib.types.file pkgs;
-    default.content = "return require('nix-info')";
-    default.path = config.constructFiles."wezterm.lua".path;
+    type = wlib.types.file {
+      path = lib.mkOptionDefault config.constructFiles."wezterm.lua".path;
+      content = lib.mkOptionDefault "return require('nix-info')";
+    };
+    default = { };
     description = "The wezterm config file. provide `.content`, or `.path`";
   };
   options.luaInfo = lib.mkOption {

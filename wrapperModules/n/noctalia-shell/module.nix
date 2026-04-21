@@ -101,7 +101,7 @@ in
       '';
     };
     settings = lib.mkOption {
-      type = lib.types.json;
+      type = lib.types.json or (pkgs.formats.json { }).type;
       default = { };
       example = lib.literalExpression ''
         {
@@ -127,7 +127,7 @@ in
     };
 
     colors = lib.mkOption {
-      type = lib.types.json;
+      type = lib.types.json or (pkgs.formats.json { }).type;
       default = { };
       example = lib.literalExpression ''
          {
@@ -175,7 +175,7 @@ in
     };
 
     plugins = lib.mkOption {
-      type = lib.types.json;
+      type = lib.types.json or (pkgs.formats.json { }).type;
       default = { };
       example = lib.literalExpression ''
         {
@@ -202,7 +202,7 @@ in
     };
 
     pluginSettings = lib.mkOption {
-      type = with lib.types; attrsOf json;
+      type = lib.types.attrsOf (lib.types.json or (pkgs.formats.json { }).type);
       default = { };
       example = lib.literalExpression ''
         {
@@ -275,7 +275,7 @@ in
               '';
             };
             settings = lib.mkOption {
-              type = lib.types.json;
+              type = lib.types.json or (pkgs.formats.json { }).type;
               default = { };
               description = ''
                 Settings to add to `$NOCTALIA_CONFIG_DIR/plugins/plugin-name/settings.json`

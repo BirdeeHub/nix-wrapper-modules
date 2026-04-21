@@ -34,9 +34,10 @@ in
       '';
     };
     configFile = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.path = config.constructFiles.generatedConfig.path;
-      default.content = "";
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+      };
+      default = { };
       description = ''
         Path or inline definition of the generated Notmuch configuration file.
 

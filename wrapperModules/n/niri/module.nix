@@ -288,9 +288,10 @@ in
       };
     };
     "config.kdl" = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.path = config.constructFiles.generatedConfig.path;
-      default.content = "";
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+      };
+      default = { };
       description = ''
         Configuration file for Niri.
         See <https://github.com/YaLTeR/niri/wiki/Configuration:-Introduction>

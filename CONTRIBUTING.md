@@ -45,13 +45,15 @@ You may optionally set the `meta.description` option to provide a short descript
 
 `pre` will be added after the title and before the content. `post` will be added after the content.
 
+Do not name an option `options` or `config` if there is a chance the module system will try to use them as if they were top level module declarations.
+
 ## Guidelines and Examples:
 
 When you provide an option to `enable` or `disable` something, you should call it `enable` regardless of its default value.
 
 This prevents people from needing to look it up to use it, and prevents contributors from having to think too hard about which to call it.
 
-- Placeholders
+- Placeholders and `config.constructFiles.<name>`
 
 When you generate a file, it is generally better to do so as a string, and create it using the `constructFiles` option.
 
@@ -66,17 +68,11 @@ It works by using `drv.passAsFile` and making a derivation attribute with the fi
 
 - `wlib.types.file`
 
-When you provide a `wlib.types.file` option, you should name it the actual filename, especially if there are multiple, but `configFile` is also OK, especially if it is unambiguous.
+When you provide a `wlib.types.file` option, you should name it the actual filename or something suggestive of it, especially if there are multiple, but `configFile` is also OK, especially if it is unambiguous.
 
 Keep in mind that even if you do not choose to use `wlib.types.file`, the user can usually still override the option that you set to provide the generated path if needed.
 
 So using something like `wlib.types.file` is only truly important when the file you are making an option for is passed to a list-style option, but may still be nice more generally.
-
-However:
-
-For the same reason that we use `constructFiles` to build files, using `wlib.types.file` without overriding its default `path` value is discouraged in modules to be submitted to this repository.
-
-It builds the file using `pkgs.writeText` by default, and because this creates an intermediate derivation, it means placeholders in that file will not point to the final wrapper derivation.
 
 Example:
 
@@ -100,13 +96,11 @@ Example:
       '';
     };
     configFile = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default = {
-        content = "";
-        # we should override the default path value for wlib.types.file if we can to make placeholders work
-        # to do that, we can refer to the placeholder of our constructed file!
-        path = config.constructFiles.gitconfig.path;
+      type = wlib.types.file {
+        # we can refer to the placeholder of our constructed file!
+        path = lib.mkOptionDefault config.constructFiles.gitconfig.path;
       };
+      default = { };
       description = "Generated git configuration file.";
     };
   };

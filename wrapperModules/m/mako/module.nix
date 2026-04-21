@@ -13,9 +13,10 @@ in
   imports = [ wlib.modules.default ];
   options = {
     "--config" = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.path = config.constructFiles.generatedConfig.path;
-      default.content = "";
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+      };
+      default = { };
       description = ''
         Path to the generated Mako configuration file.
 

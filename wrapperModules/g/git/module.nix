@@ -17,9 +17,10 @@
       '';
     };
     configFile = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.path = config.constructFiles.gitconfig.path;
-      default.content = "";
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.gitconfig.path;
+      };
+      default = { };
       description = "Generated git configuration file.";
     };
   };

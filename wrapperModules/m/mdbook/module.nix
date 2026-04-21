@@ -189,7 +189,7 @@ let
       linkCmds = builtins.concatStringsSep "\n" (map mkLink sortedBook);
     };
 
-  tomltype = lib.types.json // {
+  tomltype = (lib.types.json or (pkgs.formats.json { }).type) // {
     description = "nullable TOML value";
   };
 

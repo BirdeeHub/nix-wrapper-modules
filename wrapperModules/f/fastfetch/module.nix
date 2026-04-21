@@ -9,7 +9,7 @@
   imports = [ wlib.modules.default ];
   options = {
     settings = lib.mkOption {
-      type = lib.types.json;
+      type = lib.types.json or (pkgs.formats.json { }).type;
       default = { };
       description = ''
         Configuration passed to fastfetch using `--config` flag

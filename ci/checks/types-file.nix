@@ -54,7 +54,7 @@ let
   evaledModuleWithOptionDefault = lib.evalModules {
     modules = [
       module
-      { fileWithContent.content = lib.mkOptionDefault "test content5"; }
+      { fileWithContent.content = lib.mkDefault "test content5"; }
       # those two cause `content was accessed but no value defined` errors
       # { fileWithPathOverride.path = lib.mkOptionDefault "/etc/hosts5"; }
       # {
