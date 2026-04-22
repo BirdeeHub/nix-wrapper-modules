@@ -30,7 +30,7 @@ let
               toVal attrs;
         in
         if isList args then lib.concatMapStringsSep " " mkAttrsOrVal args else mkAttrsOrVal args;
-      indent = wlib.genStr indent_str;
+      indent = wlib.repeatStr indent_str;
       special = lib.isFunction val;
       res = if special then lib.fix val else val;
       v = if special then res.content or null else res;

@@ -607,11 +607,23 @@ in
       (builtins.attrNames attrs);
 
   /**
-    genStr :: string -> int -> string
+    `genStr` :: `string` -> `int` -> `string`
+
+    or
+
+    `genStr` :: (`int`: `string`) -> `int` -> `string`
+
+    Generates a string by repeating the input string the specified number of times,
+    or by calling the provided function with the index the specified number of times.
+  */
+  genStr = str: num: builtins.concatStringsSep "" (builtins.genList (lib.toFunction str) num);
+
+  /**
+    `repeatStr` :: `string` -> `int` -> `string`
 
     Generates a string by repeating the input string the specified number of times
   */
-  genStr = str: num: builtins.concatStringsSep "" (builtins.genList (_: str) num);
+  repeatStr = str: num: builtins.concatStringsSep "" (builtins.genList (_: str) num);
 
   /**
     Converts a Nix value to a KDL document string.

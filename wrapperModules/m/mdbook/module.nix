@@ -105,8 +105,7 @@ let
         assert
           (node.depth or null != null) || throw "Type error: node must have depth given by sortBook function";
         let
-          genStr = str: num: builtins.concatStringsSep "" (builtins.genList (_: str) num);
-          i = genStr "  " node.depth;
+          i = wlib.repeatStr "  " node.depth;
         in
         if node.data == "title" then
           assert (node.name != null) || throw "Type error: title node must have name";
