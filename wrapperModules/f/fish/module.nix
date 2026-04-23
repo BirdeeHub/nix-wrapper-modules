@@ -8,7 +8,9 @@
 let
   inherit (lib)
     attrValues
+    concatMapStringsSep
     concatStringsSep
+    escapeShellArg
     foldl'
     mapAttrsToList
     literalExpression
@@ -16,10 +18,13 @@ let
     mkOption
     optionalString
     partition
+    pipe
+    splitString
     types
     ;
 
   cfg = config;
+  split = wlib.makeWrapper.splitDal (wlib.makeWrapper.aggregateSingleOptionSet { inherit config; });
 
   abbreviationModule =
     { name, ... }:
@@ -107,7 +112,17 @@ let
   };
 in
 {
-  imports = [ wlib.modules.default ];
+  imports = [
+    wlib.modules.symlinkScript
+    wlib.modules.constructFiles
+    (
+      (import wlib.modules.makeWrapper)
+      // {
+        excluded_options.wrapperFunction = true;
+        excluded_options.wrapperImplementation = true;
+      }
+    )
+  ];
   options = {
     configFile = mkOption {
       type = wlib.types.file pkgs;
@@ -216,6 +231,145 @@ in
 
   config.constructFiles.generatedConfig = {
     relPath = "${config.binName}-config.fish";
+    builder =
+      let
+        startSection = ''
+          if set -q __wrapped_fish_sourced
+            return
+          end
+          set -gx __wrapped_fish_sourced 1
+        '';
+
+        wrapcmd = partial: "echo ${escapeShellArg partial} >> \"$2\"";
+        wrapperBuild = pipe split.other [
+          (wlib.dag.unwrapSort "makeWrapper")
+          (builtins.concatMap (
+            v:
+            let
+              esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
+            in
+            if v.type or null == "unsetVar" then
+              [ (wrapcmd "set -e ${esc-fn v.data}") ]
+            else if v.type or null == "env" then
+              [ (wrapcmd "wrapperSetEnv ${esc-fn v.attr-name} ${esc-fn v.data}") ]
+            else if v.type or null == "envDefault" then
+              [ (wrapcmd "wrapperSetEnvDefault ${esc-fn v.attr-name} ${esc-fn v.data}") ]
+            else if v.type or null == "prefixVar" then
+              let
+                env = builtins.elemAt v.data 0;
+                sep = builtins.elemAt v.data 1;
+                val = builtins.elemAt v.data 2;
+                vals = splitString sep val;
+              in
+              [
+                (wrapcmd "wrapperPrefixEnv ${
+                  concatMapStringsSep " " esc-fn (
+                    [
+                      env
+                    ]
+                    ++ vals
+                  )
+                }")
+              ]
+            else if v.type or null == "suffixVar" then
+              let
+                env = builtins.elemAt v.data 0;
+                sep = builtins.elemAt v.data 1;
+                val = builtins.elemAt v.data 2;
+                vals = splitString sep val;
+              in
+              [
+                (wrapcmd "wrapperSuffixEnv ${
+                  concatMapStringsSep " " esc-fn (
+                    [
+                      env
+                    ]
+                    ++ vals
+                  )
+                }")
+              ]
+            else if v.type or null == "prefixContent" then
+              let
+                env = builtins.elemAt v.data 0;
+                val = builtins.elemAt v.data 2;
+                cmd = "wrapperPrefixEnv ${esc-fn env} ";
+              in
+              [ ''echo ${escapeShellArg cmd}"$(cat ${esc-fn val})" >> "$2"'' ]
+            else if v.type or null == "suffixContent" then
+              let
+                env = builtins.elemAt v.data 0;
+                val = builtins.elemAt v.data 2;
+                cmd = "wrapperSuffixEnv ${esc-fn env} ";
+              in
+              [ ''echo ${escapeShellArg cmd}"$(cat ${esc-fn val})" >> "$2"'' ]
+            else if v.type or null == "chdir" then
+              [ (wrapcmd "cd ${esc-fn v.data}") ]
+            else if v.type or null == "runShell" then
+              [ (wrapcmd v.data) ]
+            else
+              [ ]
+          ))
+          (builtins.concatStringsSep "\n")
+        ];
+
+        wrapperInit =
+          let
+            setvarfunc = /* fish */ ''
+              function wrapperSetEnv -a env val
+                set -gx $env $val
+              end
+            '';
+            setvardefaultfunc = /* fish */ ''
+              function wrapperSetEnvDefault -a env val
+                if not set -q $env
+                  set -gx $env $val
+                end
+              end
+            '';
+            prefixvarfunc = /* fish */ ''
+              function wrapperPrefixEnv -a env
+                for val in $argv[2..-1]
+                  set -pgx $env $val
+                end
+              end
+            '';
+            suffixvarfunc = /* fish */ ''
+              function wrapperSuffixEnv -a env
+                for val in $argv[2..-1]
+                  set -agx $env $val
+                end
+              end
+            '';
+          in
+          builtins.concatStringsSep "\n" (
+            lib.optional (config.env or { } != { }) setvarfunc
+            ++ lib.optional (config.envDefault or { } != { }) setvardefaultfunc
+            ++ lib.optional (config.prefixVar or [ ] != [ ] || config.prefixContent or [ ] != [ ]) prefixvarfunc
+            ++ lib.optional (config.suffixVar or [ ] != [ ] || config.suffixContent or [ ] != [ ]) suffixvarfunc
+          );
+
+        # make the main bin/fish wrapper binary with the arg wrapper items
+        wrapperTeardown =
+          let
+            args =
+              lib.optional (config.env or { } != { }) "wrapperSetEnv"
+              ++ lib.optional (config.envDefault or { } != { }) "wrapperSetEnvDefault"
+              ++ lib.optional (
+                config.prefixVar or [ ] != [ ] || config.prefixContent or [ ] != [ ]
+              ) "wrapperPrefixEnv"
+              ++ lib.optional (
+                config.suffixVar or [ ] != [ ] || config.suffixContent or [ ] != [ ]
+              ) "wrapperSuffixEnv";
+          in
+          lib.optionalString (args != [ ]) "functions -e ${builtins.concatStringsSep " " args}";
+      in
+      builtins.concatStringsSep "\n" [
+        (wrapcmd startSection)
+        (wrapcmd wrapperInit)
+        wrapperBuild
+        (wrapcmd wrapperTeardown)
+        ''cat "$1" >> "$2"''
+      ];
     content =
       let
         # The plugins with the default config and completion directories will be sourced in a shell loop
@@ -326,6 +480,58 @@ in
         cfg.configFile.content
       ]);
   };
+
+  config.buildCommand.makeWrapper =
+    let
+      wrapperEntry =
+        let
+          baseArgs = map escapeShellArg [
+            config.wrapperPaths.input
+            config.wrapperPaths.placeholder
+          ];
+          cliArgs = pipe split.args [
+            (wlib.makeWrapper.fixArgs { sep = config.flagSeparator or null; })
+            (
+              { addFlag, appendFlag }:
+              let
+                mapArgs =
+                  name:
+                  lib.flip lib.pipe [
+                    (map (
+                      v:
+                      let
+                        esc-fn = if v.esc-fn or null != null then v.esc-fn else config.escapingFunction;
+                      in
+                      if builtins.isList (v.data or null) then
+                        map esc-fn v.data
+                      else if v ? data && v.data or null != null then
+                        esc-fn v.data
+                      else
+                        [ ]
+                    ))
+                    lib.flatten
+                    (builtins.concatMap (v: [
+                      "--${name}"
+                      v
+                    ]))
+                  ];
+              in
+              mapArgs "add-flag" addFlag ++ mapArgs "append-flag" appendFlag
+            )
+          ];
+          srcsetup = p: "source ${lib.escapeShellArg "${p}/nix-support/setup-hook"}";
+        in
+        ''
+          (
+            OLD_OPTS="$(set +o)"
+            ${srcsetup pkgs.dieHook}
+            ${srcsetup pkgs.makeBinaryWrapper}
+            eval "$OLD_OPTS"
+            makeWrapper ${builtins.concatStringsSep " " (baseArgs ++ cliArgs)}
+          )
+        '';
+    in
+    wrapperEntry + "\n" + wlib.makeWrapper.wrapVariants { inherit config pkgs; };
 
   config.meta.maintainers = [ wlib.maintainers.ormoyo ];
   config.meta.platforms = lib.platforms.linux;
