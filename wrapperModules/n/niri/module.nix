@@ -321,13 +321,25 @@ in
         }
       '';
     };
+    disableConfigValidation = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        When `true`, the wrapper will not run `niri validate` on the nix-provided config file.
+
+        This is useful for debugging the output of the generated config file.
+
+        It also allows you to pass an impure path via `config."config.kdl".path`,
+        as nix no longer needs to know about this path at build time.
+      '';
+    };
   };
   config.filesToPatch = [
     "share/applications/*.desktop"
     "share/systemd/user/niri.service"
   ];
   # NOTE: gives users a nice error message about invalid configs, with actual knowledge of niri's config format
-  config.drv.installPhase = ''
+  config.drv.installPhase = lib.mkIf (!config.disableConfigValidation) ''
     runHook preInstall
     ${lib.getExe config.package} validate -c ${config.constructFiles.generatedConfig.path}
     runHook postInstall
