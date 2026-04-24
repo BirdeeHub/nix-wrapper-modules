@@ -277,7 +277,7 @@ in
           };
           extraConfig = lib.mkOption {
             default = "";
-            type = lib.types.str;
+            type = lib.types.lines;
             description = ''
               Escape hatch string option added to the config file for
               options that might not be representable otherwise,
