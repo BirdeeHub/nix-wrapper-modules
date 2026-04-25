@@ -352,8 +352,9 @@ in
       if config."config.kdl".content or "" != "" then
         config."config.kdl".content
       else
-        wlib.toKdl (
-          builtins.concatLists [
+        wlib.toKdl (_: {
+          version = 1;
+          content = builtins.concatLists [
             (map (mkRule "window-rule") config.settings.window-rules)
             (map (mkRule "layer-rule") config.settings.layer-rules)
             (map (v: { spawn-at-startup = _: { props = v; }; }) config.settings.spawn-at-startup)
@@ -373,8 +374,8 @@ in
                 ]
               ))
             ]
-          ]
-        )
+          ];
+        })
         + "\n"
         + config.settings.extraConfig;
   };

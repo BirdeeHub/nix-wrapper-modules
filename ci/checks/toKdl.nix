@@ -20,7 +20,7 @@ let
     }
     {
       description = "list of primitives as multiple args";
-      expected = ''"c" "x" 2 true #null'';
+      expected = ''"c" "x" 2 #true #null'';
       actual = toKdl {
         c = [
           "x"
