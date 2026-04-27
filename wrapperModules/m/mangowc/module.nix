@@ -234,7 +234,15 @@
           + "\n"
           + extraConfig
           + "\n"
-          + lib.optionalString (config.autostart_sh != "") "\nexec-once=~/.config/mango/autostart.sh\n";
+          + lib.optionalString (
+            config.autostart_sh != ""
+          ) "\nexec-once=${config.constructFiles.autostart_sh.path}\n";
+    };
+
+    constructFiles.autostart_sh = {
+      relPath = "autostart_sh";
+      content = config.autostart_sh;
+      builder = ''mkdir -p "$(dirname "$2")" && cp "$1" "$2" && chmod +x "$2"'';
     };
 
     flags."-c" = config.configFile.path;

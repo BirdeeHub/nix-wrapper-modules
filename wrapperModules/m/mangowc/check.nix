@@ -59,6 +59,11 @@ let
       ./config.conf
     ];
 
+    autostart_sh = ''
+      # spawn terminal on startup
+      ${pkgs.lib.getExe pkgs.foot}
+    '';
+
     extraConfig = ''
       # menu and terminal
       bind=Alt,space,spawn,rofi -show drun
