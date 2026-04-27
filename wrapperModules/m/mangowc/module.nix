@@ -192,6 +192,7 @@
           Deprecated, please use 'extraConfig' instead
         '';
         default = "";
+        internal = true;
       };
     };
 
