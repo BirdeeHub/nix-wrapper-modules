@@ -233,6 +233,7 @@ in
             return
           end
           set -gx __wrapped_fish_sourced 1
+          fish_add_path --path ${dirOf config.wrapperPaths.placeholder}
         '';
 
         wrapcmd = partial: "echo ${escapeShellArg partial} >> \"$2\"";
