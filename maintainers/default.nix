@@ -85,4 +85,9 @@
     github = "jtrrll";
     githubId = 77407057;
   };
+  ormoyo = {
+    name = "Ormoyo";
+    github = "ormoyo";
+    githubId = 58147142;
+  };
 }
