@@ -4,70 +4,35 @@
   ...
 }:
 let
-  luaEnv = self.lib.makeCustomizable "withPackages" {
-    mergeArgs =
-      og: new: lp:
-      og lp ++ new lp;
-  } pkgs.luajit.withPackages (lp: [ lp.inspect ]);
+  testfunctor = self.lib.makeCustomizable "test" { } (v: { value = v; }) { some = "args"; };
 
-  # inspect + cjson
-  luaEnv2 = luaEnv.withPackages (lp: [ lp.cjson ]);
-  # inspect + cjson + luassert
-  luaEnv3 = luaEnv2.withPackages (lp: [ lp.luassert ]);
-  # inspect + cjson + luassert + luafilesystem
-  luaEnv4 = luaEnv3.withPackages (lp: [ lp.luafilesystem ]);
-
-  getPkgs = v: pkgs.lib.escapeShellArg v.drvAttrs.pkgs;
+  testfunctor2 = testfunctor.test (lp: {
+    more = lp.some;
+  });
+  testfunctor3 = testfunctor.test (lp: {
+    more = "with overriding";
+  });
+  testfunctor4 = testfunctor3.test { again = "testing"; };
 in
 pkgs.runCommand "makeCustomizable-test" { } ''
 
-  if ! echo ${getPkgs luaEnv} | grep -q "inspect"; then
-    echo "FAILURE: makeCustomizable test failed (inspect)"
+  if [ "${testfunctor.value.some}" != "args" ]; then
+    echo "FAILURE: makeCustomizable test failed (some = args)"
     exit 1
   fi
 
-  if ! echo ${getPkgs luaEnv2} | grep -q "inspect"; then
-    echo "FAILURE: makeCustomizable test 2 failed (inspect)"
+  if [ "${testfunctor2.value.some}" != "args" ] || [ "${testfunctor2.value.more}" != "args" ]; then
+    echo "FAILURE: makeCustomizable test 2 failed (some = args, more = args)"
     exit 1
   fi
 
-  if ! echo ${getPkgs luaEnv2} | grep -q "cjson"; then
-    echo "FAILURE: makeCustomizable test 2 failed (cjson)"
+  if [ "${testfunctor3.value.some}" != "args" ] || [ "${testfunctor3.value.more}" != "with overriding" ]; then
+    echo "FAILURE: makeCustomizable test 3 failed (some = args, more = with overriding)"
     exit 1
   fi
 
-  if ! echo ${getPkgs luaEnv3} | grep -q "inspect"; then
-    echo "FAILURE: makeCustomizable test 3 failed (inspect)"
-    exit 1
-  fi
-
-  if ! echo ${getPkgs luaEnv3} | grep -q "cjson"; then
-    echo "FAILURE: makeCustomizable test 3 failed (cjson)"
-    exit 1
-  fi
-
-  if ! echo ${getPkgs luaEnv3} | grep -q "luassert"; then
-    echo "FAILURE: makeCustomizable test 3 failed (luassert)"
-    exit 1
-  fi
-
-  if ! echo ${getPkgs luaEnv4} | grep -q "inspect"; then
-    echo "FAILURE: makeCustomizable test 4 failed (inspect)"
-    exit 1
-  fi
-
-  if ! echo ${getPkgs luaEnv4} | grep -q "cjson"; then
-    echo "FAILURE: makeCustomizable test 4 failed (cjson)"
-    exit 1
-  fi
-
-  if ! echo ${getPkgs luaEnv4} | grep -q "luassert"; then
-    echo "FAILURE: makeCustomizable test 4 failed (luassert)"
-    exit 1
-  fi
-
-  if ! echo ${getPkgs luaEnv4} | grep -q "luafilesystem"; then
-    echo "FAILURE: makeCustomizable test 4 failed (luafilesystem)"
+  if [ "${testfunctor4.value.some}" != "args" ] || [ "${testfunctor4.value.more}" != "with overriding" ] || [ "${testfunctor4.value.again}" != "testing" ]; then
+    echo "FAILURE: makeCustomizable test 4 failed (some = args, more = with overriding, again = testing)"
     exit 1
   fi
 
