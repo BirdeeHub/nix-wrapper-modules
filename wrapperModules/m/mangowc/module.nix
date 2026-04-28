@@ -244,7 +244,9 @@
     constructFiles.autostart_sh = {
       relPath = "autostart_sh";
       content = config.autostart_sh;
-      builder = ''mkdir -p "$(dirname "$2")" && cp "$1" "$2" && chmod +x "$2"'';
+      builder = ''
+        mkdir -p "$(dirname "$2")" && printf '%s\n' '#!/bin/bash' > "$2" && cat "$1" >> "$2" && chmod +x "$2"
+      '';
     };
 
     flags."-c" = config.configFile.path;
