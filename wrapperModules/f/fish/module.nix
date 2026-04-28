@@ -16,6 +16,7 @@ let
     literalExpression
     mkDefault
     mkOption
+    mkOptionDefault
     optionalString
     partition
     pipe
@@ -30,8 +31,8 @@ let
     { name, ... }:
     {
       options = {
-        word = lib.mkOption {
-          type = lib.types.str;
+        word = mkOption {
+          type = types.str;
           default = name;
           description = "The word to be replaced";
         };
@@ -78,7 +79,7 @@ let
   completionModule =
     { name, config, ... }:
     {
-      config.path = lib.mkOptionDefault (pkgs.writeText name config.content);
+      config.path = mkOptionDefault (pkgs.writeText name config.content);
       options.command = mkOption {
         type = types.str;
         default = name;
@@ -120,7 +121,7 @@ in
   options = {
     configFile = mkOption {
       type = wlib.types.file {
-        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+        path = mkOptionDefault config.constructFiles.generatedConfig.path;
       };
       default = {
         content = "";
@@ -358,7 +359,7 @@ in
                 config.suffixVar or [ ] != [ ] || config.suffixContent or [ ] != [ ]
               ) "wrapperSuffixEnv";
           in
-          lib.optionalString (args != [ ]) "functions -e ${builtins.concatStringsSep " " args}";
+          optionalString (args != [ ]) "functions -e ${builtins.concatStringsSep " " args}";
       in
       builtins.concatStringsSep "\n" [
         (wrapcmd startSection)
@@ -493,7 +494,7 @@ in
               let
                 mapArgs =
                   name:
-                  lib.flip lib.pipe [
+                  lib.flip pipe [
                     (map (
                       v:
                       let
@@ -516,7 +517,7 @@ in
               mapArgs "add-flag" addFlag ++ mapArgs "append-flag" appendFlag
             )
           ];
-          srcsetup = p: "source ${lib.escapeShellArg "${p}/nix-support/setup-hook"}";
+          srcsetup = p: "source ${escapeShellArg "${p}/nix-support/setup-hook"}";
         in
         ''
           (
