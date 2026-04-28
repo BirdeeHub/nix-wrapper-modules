@@ -390,10 +390,10 @@ in
                 map (plugin: map functor (dirList plugin)) plugins
               else
                 map functor dirList;
-            toString = plugins: builtins.toString (map (p: p.src) plugins);
+            pluginsToString = plugins: toString (map (p: p.src) plugins);
           in
           optionalString (plugins != [ ]) ''
-            set plugin${optionalString multiple "_list"} ${toString plugins}
+            set plugin${optionalString multiple "_list"} ${pluginsToString plugins}
             ${optionalString multiple "for plugin_dir in $plugin_list"}
               ${concatStringsSep "\n  " pluginLines}
             ${optionalString multiple "end"}
