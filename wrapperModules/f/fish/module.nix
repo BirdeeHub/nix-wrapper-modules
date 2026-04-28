@@ -75,23 +75,16 @@ let
         };
       };
     };
-  completionType = types.submoduleWith {
-    modules = [
-      # Getting the module inside the wlib.types.file type
-      # and merging it with my own module
-      (builtins.elemAt (wlib.types.file pkgs).getSubModules 0)
-      (
-        { name, ... }:
-        {
-          options.command = mkOption {
-            type = types.str;
-            default = name;
-            description = "The command to apply the completion for";
-          };
-        }
-      )
-    ];
-  };
+  completionModule =
+    { name, config, ... }:
+    {
+      config.path = lib.mkOptionDefault (pkgs.writeText name config.content);
+      options.command = mkOption {
+        type = types.str;
+        default = name;
+        description = "The command to apply the completion for";
+      };
+    };
   pluginModule = {
     options = {
       src = mkOption {
@@ -125,7 +118,9 @@ in
   ];
   options = {
     configFile = mkOption {
-      type = wlib.types.file pkgs;
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+      };
       default = {
         content = "";
         path = config.constructFiles.generatedConfig.path;
@@ -168,7 +163,7 @@ in
       };
     };
     completionFiles = mkOption {
-      type = types.attrsOf completionType;
+      type = types.attrsOf (wlib.types.file completionModule);
       default = { };
       description = "Completions to be included in the shell";
     };
