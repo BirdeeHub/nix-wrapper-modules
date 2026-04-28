@@ -151,38 +151,46 @@ in
             type = lib.types.attrs;
             description = "Bindings of niri";
             apply = convertAndWarn;
-            example = {
-              "Mod+T".spawn-sh = "alacritty";
-              "Mod+J".focus-column-or-monitor-left = _: { };
-              "Mod+N".spawn = [
-                "alacritty"
-                "msg"
-                "create-windown"
-              ];
-              "Mod+0".focus-workspace = 0;
-              "Mod+Escape" = _: {
-                props.allow-inhibiting = false;
-                content.toggle-keyboard-shortcuts-inhibit = _: { };
+            example = lib.literalMD ''
+              ```nix
+              binds = {
+                "Mod+T".spawn-sh = "alacritty";
+                "Mod+J".focus-column-or-monitor-left = _: { };
+                "Mod+N".spawn = [
+                  "alacritty"
+                  "msg"
+                  "create-windown"
+                ];
+                "Mod+0".focus-workspace = 0;
+                "Mod+Escape" = _: {
+                  props.allow-inhibiting = false;
+                  content.toggle-keyboard-shortcuts-inhibit = _: { };
+                };
               };
-            };
+              ```
+            '';
           };
           layout = lib.mkOption {
             default = { };
             type = lib.types.attrs;
             description = "Layout definitions";
             apply = convertAndWarn;
-            example = {
-              focus-ring.off = _: { };
-              border = {
-                width = 3;
-                active-color = "#f5c2e7";
-                inactive-color = "#313244";
+            example = lib.literalMD ''
+              ```nix
+              layout = {
+                focus-ring.off = _: { };
+                border = {
+                  width = 3;
+                  active-color = "#f5c2e7";
+                  inactive-color = "#313244";
+                };
+                preset-column-widths = [
+                  { proportion = 0.5; }
+                  { proportion = 0.666667; }
+                ];
               };
-              preset-column-widths = [
-                { proportion = 0.5; }
-                { proportion = 0.666667; }
-              ];
-            };
+              ```
+            '';
           };
           spawn-at-startup = lib.mkOption {
             default = [ ];
@@ -244,12 +252,16 @@ in
             type = lib.types.attrsOf (lib.types.nullOr lib.types.anything);
             description = "Named workspace definitions";
             apply = convertAndWarn;
-            example = {
-              "foo" = {
-                open-on-output = "DP-3";
+            example = lib.literalMD ''
+              ```nix
+              workspaces = {
+                "foo" = {
+                  open-on-output = "DP-3";
+                };
+                "bar" = _: { };
               };
-              "bar" = _: { };
-            };
+              ```
+            '';
           };
           outputs = lib.mkOption {
             default = { };
@@ -325,20 +337,23 @@ in
 
         You could use the include feature to include it.
       '';
-      example = ''
-        input {
-          keyboard {
-              numlock
+      example = lib.literalMD ''
+        ```nix
+        # Overwrite the generated config
+        config."config.kdl".content = /* kdl */ '''
+          input {
+            keyboard {
+                numlock
+            }
+            touchpad {
+                tap
+                natural-scroll
+            }
+            focus-follows-mouse "max-scroll-amount"="0%" {
+            }
           }
-
-          touchpad {
-              tap
-              natural-scroll
-          }
-
-          focus-follows-mouse "max-scroll-amount"="0%" {
-          }
-        }
+        ''';
+        ```
       '';
     };
     disableConfigValidation = lib.mkOption {
