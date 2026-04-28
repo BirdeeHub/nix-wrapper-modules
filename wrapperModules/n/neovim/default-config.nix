@@ -59,52 +59,18 @@
         '';
       };
     };
-  config.suffixVar =
-    let
-      autodeps = config.specCollect (
-        acc: v: acc ++ lib.optionals (v.runtimeDeps or false == "suffix") (v.data.runtimeDeps or [ ])
-      ) [ ];
-    in
-    lib.mkIf
-      (
-        autodeps != [ ]
-        || config.hosts.ruby.nvim-host.enable or false
-        || config.hosts.node.nvim-host.enable or false
-      )
-      (
-        lib.optional (autodeps != [ ]) {
-          name = "NIXPKGS_AUTODEPS_SUFFIX";
-          data = [
-            "PATH"
-            ":"
-            "${lib.makeBinPath autodeps}"
-          ];
-        }
-        ++ lib.optional (config.hosts.ruby.nvim-host.enable or false) {
-          name = "RUBY_HOST_PATH_ADDITIONS";
-          data = [
-            "PATH"
-            ":"
-            "${config.hosts.ruby.wrapper}/bin"
-          ];
-        }
-        ++ lib.optional (config.hosts.node.nvim-host.enable or false) {
-          name = "NODE_HOST_PATH_ADDITIONS";
-          data = [
-            "PATH"
-            ":"
-            "${pkgs.nodejs}/bin"
-          ];
-        }
-      );
   config.prefixVar =
     let
       autodeps = config.specCollect (
         acc: v: acc ++ lib.optionals (v.runtimeDeps or false == "prefix") (v.data.runtimeDeps or [ ])
       ) [ ];
+      isPrefixedRuby =
+        config.hosts.ruby.nvim-host.enable or false && config.hosts.ruby.nvim-host.prefixRuby or false;
+      isPrefixedNode =
+        config.hosts.node.nvim-host.enable or false && config.hosts.node.nvim-host.prefixNode or false;
     in
-    lib.mkIf (autodeps != [ ]) [
-      {
+    lib.mkIf (autodeps != [ ] || isPrefixedRuby || isPrefixedNode) (
+      lib.optional (autodeps != [ ]) {
         name = "NIXPKGS_AUTODEPS_PREFIX";
         data = [
           "PATH"
@@ -112,7 +78,59 @@
           "${lib.makeBinPath autodeps}"
         ];
       }
-    ];
+      ++ lib.optional isPrefixedRuby {
+        name = "RUBY_HOST_PATH_ADDITIONS";
+        data = [
+          "PATH"
+          ":"
+          "${config.hosts.ruby.wrapper}/bin"
+        ];
+      }
+      ++ lib.optional isPrefixedNode {
+        name = "NODE_HOST_PATH_ADDITIONS";
+        data = [
+          "PATH"
+          ":"
+          "${pkgs.nodejs}/bin"
+        ];
+      }
+    );
+  config.suffixVar =
+    let
+      autodeps = config.specCollect (
+        acc: v: acc ++ lib.optionals (v.runtimeDeps or false == "suffix") (v.data.runtimeDeps or [ ])
+      ) [ ];
+      isSuffixedRuby =
+        config.hosts.ruby.nvim-host.enable or false && !(config.hosts.ruby.nvim-host.prefixRuby or true);
+      isSuffixedNode =
+        config.hosts.node.nvim-host.enable or false && !(config.hosts.node.nvim-host.prefixNode or true);
+    in
+    lib.mkIf (autodeps != [ ] || isSuffixedRuby || isSuffixedNode) (
+      lib.optional (autodeps != [ ]) {
+        name = "NIXPKGS_AUTODEPS_PREFIX";
+        data = [
+          "PATH"
+          ":"
+          "${lib.makeBinPath autodeps}"
+        ];
+      }
+      ++ lib.optional isSuffixedRuby {
+        name = "RUBY_HOST_PATH_ADDITIONS";
+        data = [
+          "PATH"
+          ":"
+          "${config.hosts.ruby.wrapper}/bin"
+        ];
+      }
+      ++ lib.optional isSuffixedNode {
+        name = "NODE_HOST_PATH_ADDITIONS";
+        data = [
+          "PATH"
+          ":"
+          "${pkgs.nodejs}/bin"
+        ];
+      }
+    );
   config.specMaps = lib.mkOrder 490 [
     {
       name = "NIXPKGS_PLUGIN_DEPS";
@@ -359,6 +377,11 @@
     {
       imports = [ wlib.modules.default ];
       config.package = pkgs.neovim-node-client or pkgs.nodePackages.neovim;
+      options.nvim-host.prefixNode = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Prepend the pkgs.nodejs binary to neovim's PATH, rather than appending it";
+      };
       # NOTE: nvim runs the thing with `node vim.g.node_host_prog`, we can't wrap it
       # maybe we could replace the shebang with a wrapped node at some point?
       # You can wrap it for when it gets linked into ${placeholder "out"}/bin though
@@ -383,6 +406,11 @@
         type = wlib.types.stringable;
         default = "${pkgs.path}/pkgs/applications/editors/neovim/ruby_provider";
         description = "The path to the ruby gem directory with the neovim gem as required by `pkgs.bundlerEnv`";
+      };
+      options.nvim-host.prefixRuby = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Prepend the wrapped ruby binary to neovim's PATH, rather than appending it";
       };
       config.exePath = "bin/neovim-ruby-host";
       config.binName = "neovim-ruby-host";
