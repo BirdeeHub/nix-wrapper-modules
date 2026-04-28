@@ -10,7 +10,12 @@
 
   options =
     let
-      inherit (lib) mkOption types;
+      inherit (lib)
+        literalExpression
+        mkOption
+        mkOptionDefault
+        types
+        ;
     in
     {
       settings = mkOption {
@@ -38,16 +43,14 @@
           should be written as lists. Variables and colors names should be
           quoted. See <https://mangowc.vercel.app/docs> for more examples.
 
-          ::: {.note}
-          This option uses a structured format that is converted to Mango's
+          Note: This option uses a structured format that is converted to Mango's
           configuration syntax. Nested attributes are flattened with underscore separators.
           For example: `animation.duration_open = 400` becomes `animation_duration_open = 400`
 
           Keymodes (submaps) are supported via the special `keymode` attribute. Each keymode
           is a nested attribute set under `keymode` that contains its own bindings.
-          :::
         '';
-        example = lib.literalExpression ''
+        example = literalExpression ''
           {
             # Window effects
             blur = 1;
@@ -102,7 +105,7 @@
         type = types.lines;
         default = "";
         description = ''
-          Extra configuration lines to add to `~/.config/mango/config.conf`.
+          Extra configuration lines to add to the end of the generated config file.
           This is useful for advanced configurations that don't fit the structured
           settings format, or for options that aren't yet supported by the module.
         '';
@@ -113,7 +116,7 @@
       };
 
       topPrefixes = mkOption {
-        type = with lib.types; listOf str;
+        type = with types; listOf str;
         default = [ ];
         description = ''
           List of prefixes for attributes that should appear at the top of the config file.
@@ -123,7 +126,7 @@
       };
 
       bottomPrefixes = mkOption {
-        type = with lib.types; listOf str;
+        type = with types; listOf str;
         default = [ ];
         description = ''
           List of prefixes for attributes that should appear at the bottom of the config file.
@@ -154,7 +157,7 @@
           Paths to files that will be sourced at the top of the generated config file.
         '';
         default = [ ];
-        example = ''
+        example = literalExpression ''
           [
             ./config.conf
             ./binds.conf
@@ -165,23 +168,22 @@
 
       configFile = mkOption {
         type = wlib.types.file {
-          path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+          path = mkOptionDefault config.constructFiles.generatedConfig.path;
         };
         default = { };
         description = ''
-          Config file that mango will set as its config file.
+          The config file that mango will set as its primary config file.
+          By default, this file will be generated from whatever the other options are set to.
 
-          Note: If configFile.path or configFile.content is set, it will overwrite the effects of the `sourcedFiles` and `extraContent` options.
+          Note: If `configFile.path` is set, it will be used INSTEAD of the generated configuration. The generated file will still be created, however, and you can source it. Add your path to the `sourcedFiles` option if you want the generated config to still apply.
+
+          If `configFile.content` is set, it will replace the contents of the generated config file entirely. Use the `extraConfig` option if you want the generated config to still apply.
         '';
-        example = ''
+        example = literalExpression ''
           {
             path = ./config.conf;
             # or
-            content = ''''
-              # menu and terminal
-              bind=Alt,space,spawn,rofi -show drun
-              bind=Alt,Return,spawn,foot
-            '''';
+            content = "bind=Alt,space,spawn,rofi -show drun";
           }
         '';
       };
