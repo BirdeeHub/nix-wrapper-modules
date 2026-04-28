@@ -287,6 +287,26 @@ in
         };
       };
     };
+    extraSettings = lib.mkOption {
+      type = lib.types.listOf (lib.types.attrsOf wlib.types.attrsRecursive);
+      default = [ ];
+      description = ''
+        Allows for auto translated kdl values for options not included in `config.settings`,
+        but for which repeated definitions are significant.
+
+        Syntax for this option is the list form for the `wlib.toKdl` function
+
+        (If `include optional=true "~/some/impure/path"` is not valid in your version of niri, you may want to use their flake!)
+      '';
+      example = lib.literalMD ''
+        ```nix
+        config.extraSettings = [
+          { include = ./some/pure/path; }
+          { include = [ { optional = true; } "~/some/impure/path" ]; }
+        ];
+        ```
+      '';
+    };
     "config.kdl" = lib.mkOption {
       type = wlib.types.file {
         path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
@@ -374,6 +394,7 @@ in
                 ]
               ))
             ]
+            config.extraSettings
           ];
         })
         + "\n"
