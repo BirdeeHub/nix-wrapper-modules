@@ -108,6 +108,7 @@ in
   imports = [
     wlib.modules.symlinkScript
     wlib.modules.constructFiles
+    ./variants.nix
     (
       (import wlib.modules.makeWrapper)
       // {
