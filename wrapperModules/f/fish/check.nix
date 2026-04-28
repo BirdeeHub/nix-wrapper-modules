@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   fishWrapped = self.wrappers.fish.wrap {
