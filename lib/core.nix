@@ -298,7 +298,6 @@ in
                 };
               };
             }
-            config.overmods
           ];
         }
       );
@@ -917,63 +916,5 @@ in
         This may prove useful when dealing with subWrapperModules or packages, which otherwise would not have access to some of them.
       '';
     };
-    symlinkScript = lib.mkOption {
-      type = lib.types.nullOr (
-        lib.types.functionTo (
-          lib.types.either lib.types.str (lib.types.functionTo (lib.types.attrsOf lib.types.raw))
-        )
-      );
-      internal = true;
-      default = null;
-      description = "DEPRECATED";
-    };
-    overmods = lib.mkOption {
-      type = lib.types.nullOr lib.types.deferredModule;
-      default = null;
-      internal = true;
-      description = "DEPRECATED";
-      apply =
-        x:
-        let
-          msg = ''
-            Attention: config.overmods is deprecated!
-
-            Why? You could already do it like this!
-
-            ```nix
-            { config, lib, wlib, pkgs, ... }:{
-              options.overrides = lib.mkOption {
-                type = wlib.types.seriesOf (wlib.types.spec ({ config, ... }: {
-                  options = {}; # spec types support type merging!
-                  config = {};
-                }));
-              };
-            }
-            ```
-
-            Before the addition of `wlib.types.seriesOf`,
-            trying that with `listOf` would mess up the ordering.
-
-            You could reimplement this option yourself like the following example.
-            Don't forget to declare the option you want to use for it!
-
-            ```nix
-            { config, lib, wlib, ... }:{
-              options.overrides = lib.mkOption {
-                type = wlib.types.seriesOf (wlib.types.spec (config.<desired_option_name>));
-              };
-            }
-            ```
-          '';
-        in
-        if x != null then lib.warn msg x else { };
-    };
   };
-  config.builderFunction = lib.mkIf (config.symlinkScript != null) (
-    lib.warn ''
-      Renamed option in wrapper module for ${config.binName}!
-      `config.symlinkScript` -> `config.builderFunction`
-      Please update all usages of the option to the new name.
-    '' config.symlinkScript
-  );
 }

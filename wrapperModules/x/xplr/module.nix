@@ -9,28 +9,13 @@ let
   luaType = (pkgs.formats.lua { }).type;
   enabledDagOf = wlib.types.dagOf // {
     modules = [
-      (
-        { config, ... }:
-        {
-          options.enable = lib.mkOption {
-            type = lib.types.bool;
-            default = true;
-            description = "Enable the value";
-          };
-          options.disabled = lib.mkOption {
-            internal = true;
-            type = lib.types.nullOr lib.types.bool;
-            default = null;
-          };
-          config.enable = lib.mkIf (config.disabled != null) (
-            lib.warn ''
-              wrapperModules.xplr:
-              `plugins.<name>.disabled` is deprecated. Use `plugins.<name>.enable` instead
-              `luaInit.<name>.disabled` is deprecated. Use `luaInit.<name>.enable` instead
-            '' (!config.disabled)
-          );
-        }
-      )
+      {
+        options.enable = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Enable the value";
+        };
+      }
     ];
   };
   configDagOf = enabledDagOf // {
