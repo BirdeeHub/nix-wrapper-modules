@@ -422,41 +422,90 @@ in
   );
 
   /**
-    File type with content and path options
+    A simple template option for when you wish to offer options concerning generating a text file
+
+    ```nix
+    options.configFile = lib.mkOption {
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.gitconfig.path;
+      };
+      default = { };
+      description = "Generated git configuration file.";
+    };
+    config.constructFiles.gitconfig = {
+      relPath = "${config.binName}config";
+      content = lib.generators.toGitINI config.settings + "\n" + config.configFile.content;
+    };
+    ```
+
+    If instead of a module, you pass it nixpkgs, it will set defaults for `configFile.path` to `pkgs.writeText name content`
 
     Arguments:
-    - `pkgs`: nixpkgs instance
+    - `extra`: extra module(s) for the submodule option. Can instead be `pkgs` for a shorthanding effect.
 
     Fields:
-    - `content`: File contents as string
-    - `path`: Derived path using `pkgs.writeText`
+    - `content`: File contents as string, defaults to `""`
+    - `path`: Normally no default, you should provide one. But if the type is provided `pkgs` instead of modules, it contains a derived path using `pkgs.writeText`
   */
   file =
-    # we need to pass pkgs here, because writeText is in pkgs
-    pkgs:
-    lib.types.submodule (
-      { name, config, ... }:
-      {
-        options = {
-          content = lib.mkOption {
-            type = lib.types.lines;
-            description = ''
-              Content of the file. This can be a multi-line string that will be
-              written to the Nix store and made available via the path option.
-            '';
-          };
-          path = lib.mkOption {
-            type = wlib.types.stringable;
-            description = ''
-              The path to the file. By default, this is automatically
-              generated using pkgs.writeText with the attribute name and content.
-            '';
-            default = pkgs.writeText name config.content;
-            defaultText = lib.literalExpression "pkgs.writeText name <content>";
-          };
-        };
-      }
-    );
+    arg:
+    let
+      withDefaultPath =
+        pkgs:
+        lib.types.submodule (
+          {
+            name,
+            config,
+            _prefix,
+            ...
+          }:
+          {
+            options = {
+              content = lib.mkOption {
+                type = lib.types.lines;
+                default = "";
+                description = ''
+                  Content of the file specified by `${lib.options.showOption _prefix}`.
+                  This is a multi-line string that will be written to the Nix store.
+                '';
+              };
+              path = lib.mkOption {
+                type = wlib.types.stringable;
+                description = ''
+                  The path to the file specified by `${lib.options.showOption _prefix}`
+                '';
+                default = pkgs.writeText name config.content;
+                defaultText = lib.literalMD "```nix\npkgs.writeText ${name} <content>\n```";
+              };
+            };
+          }
+        );
+      textFile =
+        extra:
+        lib.types.submodule (
+          { _prefix, ... }:
+          {
+            imports = lib.toList extra;
+            options = {
+              content = lib.mkOption {
+                type = lib.types.lines;
+                default = "";
+                description = ''
+                  Content of the file specified by `${lib.options.showOption _prefix}`.
+                  This is a multi-line string that will be written to the Nix store.
+                '';
+              };
+              path = lib.mkOption {
+                type = wlib.types.stringable;
+                description = ''
+                  The path to the file specified by `${lib.options.showOption _prefix}`
+                '';
+              };
+            };
+          }
+        );
+    in
+    if lib.types.pkgs.check arg then withDefaultPath arg else textFile arg;
 
   /**
     Like `lib.types.anything`, but allows contained lists to also be merged

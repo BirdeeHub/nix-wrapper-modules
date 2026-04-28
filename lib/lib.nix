@@ -607,11 +607,23 @@ in
       (builtins.attrNames attrs);
 
   /**
-    genStr :: string -> int -> string
+    `genStr` :: `string` -> `int` -> `string`
+
+    or
+
+    `genStr` :: (`int`: `string`) -> `int` -> `string`
+
+    Generates a string by repeating the input string the specified number of times,
+    or by calling the provided function with the index the specified number of times.
+  */
+  genStr = str: num: builtins.concatStringsSep "" (builtins.genList (lib.toFunction str) num);
+
+  /**
+    `repeatStr` :: `string` -> `int` -> `string`
 
     Generates a string by repeating the input string the specified number of times
   */
-  genStr = str: num: builtins.concatStringsSep "" (builtins.genList (_: str) num);
+  repeatStr = str: num: builtins.concatStringsSep "" (builtins.genList (_: str) num);
 
   /**
     Converts a Nix value to a KDL document string.
@@ -647,11 +659,18 @@ in
     The top level argument to `wlib.toKdl` may also be a function, but it is slightly different
     than the function form you can provide to a normal node.
 
-    As a top-level argument, you may provide a function like
-    `_: { lvl = 0; indent = "  "; content = set_or_list_of_sets; }`
-    rather than passing the content directly as the argument.
+    As a top-level argument, rather than passing the content directly as the argument,
+    you may provide a function like:
 
-    This allows you to set the indentation level of the generated nodes, and indentation width/character.
+    ```nix
+    _: {
+      lvl = 0;
+      indent = "  ";
+      version = 2; # or 1 (default 2)
+      content = set_or_list_of_sets; # required
+    }
+    # This allows you to set the indentation level of the generated nodes, and indentation width/character.
+    ```
 
     Example:
 

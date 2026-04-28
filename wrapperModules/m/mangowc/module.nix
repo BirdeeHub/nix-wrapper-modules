@@ -25,14 +25,15 @@
     };
 
     configFile = lib.mkOption {
-      type = wlib.types.file pkgs;
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+      };
+      default = { };
       description = ''
         Config file that mango will set as its config file.
 
         Note: If configFile.path or configFile.content is set, it will overwrite the effects of the `sourcedFiles` and `extraContent` options.
       '';
-      default.path = config.constructFiles.generatedConfig.path;
-      default.content = "";
       example = ''
         {
           path = ./config.conf;

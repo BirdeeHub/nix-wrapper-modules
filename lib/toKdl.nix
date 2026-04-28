@@ -3,15 +3,17 @@ let
   inherit (builtins) isList isAttrs toJSON;
   listOfNodes = l: isList l && builtins.all isAttrs l;
   toKdlNode =
-    indent_str: i: n: val:
+    version: indent_str: i: n: val:
     let
       mkArgs =
         args:
         let
           toVal =
             v:
-            if v == null then
+            if version == 2 && v == null then
               "#null"
+            else if version == 2 && builtins.isBool v then
+              if v then "#true" else "#false"
             else if lib.isFunction v then
               let
                 res = lib.fix v;
@@ -29,8 +31,15 @@ let
             else
               toVal attrs;
         in
-        if isList args then lib.concatMapStringsSep " " mkAttrsOrVal args else mkAttrsOrVal args;
-      indent = wlib.genStr indent_str;
+        if isList args then
+          let
+            partitioned = lib.partition isAttrs args;
+            args' = if version == 2 then partitioned.wrong ++ partitioned.right else args;
+          in
+          lib.concatMapStringsSep " " mkAttrsOrVal args'
+        else
+          mkAttrsOrVal args;
+      indent = wlib.repeatStr indent_str;
       special = lib.isFunction val;
       res = if special then lib.fix val else val;
       v = if special then res.content or null else res;
@@ -46,23 +55,25 @@ let
     else if isAttrs v then
       ''
         ${indent i}${nodetype}${toJSON n} ${attrs} {
-        ${lib.concatMapAttrsStringSep "\n" (toKdlNode indent_str (i + 1)) v}
+        ${lib.concatMapAttrsStringSep "\n" (toKdlNode version indent_str (i + 1)) v}
         ${indent i}}''
     else if listOfNodes v then
       ''
         ${indent i}${nodetype}${toJSON n} ${attrs} {
-        ${lib.concatMapStringsSep "\n" (lib.concatMapAttrsStringSep "\n" (toKdlNode indent_str (i + 1))) v}
+        ${lib.concatMapStringsSep "\n" (lib.concatMapAttrsStringSep "\n" (
+          toKdlNode version indent_str (i + 1)
+        )) v}
         ${indent i}}''
     else if special then
       "${indent i}${nodetype}${toJSON n} ${attrs}"
     else
       "${indent i}${nodetype}${toJSON n} ${mkArgs v}";
   toKdl =
-    indent: i: value:
+    version: indent: i: value:
     if isAttrs value then
-      lib.concatMapAttrsStringSep "\n" (toKdlNode indent i) value
+      lib.concatMapAttrsStringSep "\n" (toKdlNode version indent i) value
     else if listOfNodes value then
-      lib.concatMapStringsSep "\n" (lib.concatMapAttrsStringSep "\n" (toKdlNode indent i)) value
+      lib.concatMapStringsSep "\n" (lib.concatMapAttrsStringSep "\n" (toKdlNode version indent i)) value
     else
       throw "ERROR wlib.toKdl: argument to wlib.toKdl is expected to be an attrset or a list of attrsets which represent the top level nodes of a kdl file!";
 in
@@ -71,6 +82,6 @@ if lib.isFunction value then
   let
     res = lib.fix value;
   in
-  toKdl (res.indent or "  ") (res.lvl or 0) res.content
+  toKdl (res.version or 2) (res.indent or "  ") (res.lvl or 0) res.content
 else
-  toKdl "  " 0 value
+  toKdl 2 "  " 0 value

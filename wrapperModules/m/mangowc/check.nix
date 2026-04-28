@@ -1,6 +1,7 @@
 {
   pkgs,
   self,
+  ...
 }:
 let
   mangowcWrapped = self.wrappers.mangowc.wrap {

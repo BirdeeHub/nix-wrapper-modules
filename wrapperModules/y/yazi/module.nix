@@ -487,6 +487,7 @@ in
         mkdir -p ${lib.escapeShellArg "${config.generatedConfig.placeholder}/flavors"}
       ''
       + lib.concatMapAttrsStringSep "\n" (toLink "plugins") config.plugins
+      + "\n"
       + lib.concatMapAttrsStringSep "\n" (toLink "flavors") config.flavors;
   };
 

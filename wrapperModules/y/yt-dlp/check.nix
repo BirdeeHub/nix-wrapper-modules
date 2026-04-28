@@ -1,4 +1,4 @@
-{ pkgs, self }:
+{ pkgs, self, ... }:
 let
   ytWrapped = self.wrappers.yt-dlp.wrap {
     inherit pkgs;

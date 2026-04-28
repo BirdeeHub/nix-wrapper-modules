@@ -277,7 +277,7 @@ in
           };
           extraConfig = lib.mkOption {
             default = "";
-            type = lib.types.str;
+            type = lib.types.lines;
             description = ''
               Escape hatch string option added to the config file for
               options that might not be representable otherwise,
@@ -288,9 +288,10 @@ in
       };
     };
     "config.kdl" = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.path = config.constructFiles.generatedConfig.path;
-      default.content = "";
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+      };
+      default = { };
       description = ''
         Configuration file for Niri.
         See <https://github.com/YaLTeR/niri/wiki/Configuration:-Introduction>
@@ -320,13 +321,25 @@ in
         }
       '';
     };
+    disableConfigValidation = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        When `true`, the wrapper will not run `niri validate` on the nix-provided config file.
+
+        This is useful for debugging the output of the generated config file.
+
+        It also allows you to pass an impure path via `config."config.kdl".path`,
+        as nix no longer needs to know about this path at build time.
+      '';
+    };
   };
   config.filesToPatch = [
     "share/applications/*.desktop"
     "share/systemd/user/niri.service"
   ];
   # NOTE: gives users a nice error message about invalid configs, with actual knowledge of niri's config format
-  config.drv.installPhase = ''
+  config.drv.installPhase = lib.mkIf (!config.disableConfigValidation) ''
     runHook preInstall
     ${lib.getExe config.package} validate -c ${config.constructFiles.generatedConfig.path}
     runHook postInstall
@@ -339,8 +352,9 @@ in
       if config."config.kdl".content or "" != "" then
         config."config.kdl".content
       else
-        wlib.toKdl (
-          builtins.concatLists [
+        wlib.toKdl (_: {
+          version = 1;
+          content = builtins.concatLists [
             (map (mkRule "window-rule") config.settings.window-rules)
             (map (mkRule "layer-rule") config.settings.layer-rules)
             (map (v: { spawn-at-startup = _: { props = v; }; }) config.settings.spawn-at-startup)
@@ -360,8 +374,8 @@ in
                 ]
               ))
             ]
-          ]
-        )
+          ];
+        })
         + "\n"
         + config.settings.extraConfig;
   };

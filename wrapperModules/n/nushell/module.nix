@@ -9,9 +9,10 @@
   imports = [ wlib.modules.default ];
   options = {
     "env.nu" = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.content = "";
-      default.path = config.constructFiles.generatedEnv.path;
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedEnv.path;
+      };
+      default = { };
       description = ''
         The Nushell environment configuration file.
 
@@ -21,9 +22,10 @@
       '';
     };
     "config.nu" = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.content = "";
-      default.path = config.constructFiles.generatedConfig.path;
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+      };
+      default = { };
       description = ''
         The main Nushell configuration file.
 

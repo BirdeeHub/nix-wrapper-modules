@@ -103,16 +103,18 @@ in
   imports = [ wlib.modules.default ];
   options = {
     "config.rasi" = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.path = config.constructFiles.generatedConfig.path;
-      default.content =
-        toRasi {
-          configuration = config.settings;
-        }
-        + (lib.optionalString (config.theme != null) (toRasi {
-          "@theme" =
-            if builtins.isAttrs config.theme then config.constructFiles.generatedTheme.path else config.theme;
-        }));
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+        content =
+          toRasi {
+            configuration = config.settings;
+          }
+          + (lib.optionalString (config.theme != null) (toRasi {
+            "@theme" =
+              if builtins.isAttrs config.theme then config.constructFiles.generatedTheme.path else config.theme;
+          }));
+      };
+      default = { };
       description = ''
         The main Rofi configuration file (`config.rasi`).
 

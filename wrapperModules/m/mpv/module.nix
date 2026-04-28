@@ -145,9 +145,10 @@ in
       '';
     };
     "mpv.input" = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.path = config.constructFiles.generatedInput.path;
-      default.content = "";
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedInput.path;
+      };
+      default = { };
       description = ''
         The MPV input configuration file.
 
@@ -157,9 +158,10 @@ in
       '';
     };
     "mpv.conf" = lib.mkOption {
-      type = wlib.types.file pkgs;
-      default.path = config.constructFiles.generatedConfig.path;
-      default.content = "";
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+      };
+      default = { };
       description = ''
         The main MPV configuration file.
 
