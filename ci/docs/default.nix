@@ -208,6 +208,23 @@ in
           src = "${placeholder "generated"}/wrapper_docs/${n}.md";
         }) (builtins.attrNames config.drv.wrapper_docs);
       }
+      {
+        name = "Contributing";
+        data = "numbered";
+        path = "md/CONTRIBUTING.md";
+        src = ../../CONTRIBUTING.md;
+        subchapters = [
+          {
+            name = "tlib";
+            data = "numbered";
+            path = "tlib.md";
+            src = "${placeholder "out"}/wrappers-lib/tlib.md";
+            build = ''
+              ${pkgs.nixdoc}/bin/nixdoc --category "" --description 'Testing library `tlib` documentation' --file '${../test-lib.nix}' --prefix "tlib" >> $out/wrappers-lib/tlib.md
+            '';
+          }
+        ];
+      }
     ];
   };
 }

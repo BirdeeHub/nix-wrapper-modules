@@ -1,4 +1,4 @@
-# Adding Modules!
+## Adding Modules!
 
 There are 2 kinds of modules in this repository. One kind which defines the `package` option, and one kind which does not.
 
@@ -121,15 +121,15 @@ Example:
 }
 ```
 
-# Formatting
+## Formatting
 
 `nix fmt`
 
-# Tests
+## Tests
 
 `nix flake check -Lv ./ci`
 
-# Run Site Generator Locally
+## Run Site Generator Locally
 
 `nix run ./ci`
 
@@ -137,62 +137,130 @@ or
 
 `nix run ./ci#docs`
 
-# Writing tests
+To run the tests for an individual wrapper only, run
+
+`nix build ./ci#checks.{system}.wrapperModule-{name}`
+
+Example (neovim on `x86_64-linux`):
+
+`nix build ./ci#checks.x86_64-linux.wrapperModule-neovim`
+
+## Writing Tests
 
 You may also include a `check.nix` file in your module's directory.
 
-It will be called via `pkgs.callPackage`, provided with the flake `self` value.
-(i.e. `pkgs.callPackage your_check.nix { inherit self; }`)
+It will be called via `pkgs.callPackage`, provided with the flake `self` value, as well as a test-library `tlib` value.
+(i.e. `pkgs.callPackage your_check.nix { inherit self tlib; }`)
 
-It should build a derivation which tests the wrapper derivation as best you can.
 
-If a command fails, it fails the test. If it builds the derivation successfully, it passes the test.
+We provide a testing library `tlib` that provides an easy-to-use interface to write tests.
 
-If the program gives options for running the program to check the generated configuration is correct, you should do that.
+### Writing Tests for Wrappers
 
-Sometimes it is not easily possible to run the program within a derivation, in those cases, searching the wrapper derivation and other generated files and their contents is also acceptable.
+If you are writing tests for a wrapper module, it is important to pass the name
+of the wrapper to the first argument of the `test` function like in the example 
+below (marked at `(*)`). By doing this, we can grab the specified `wrapper.meta.platforms` config
+of the wrapper (if any) and ensure that the tests are only run on the required platforms.
 
-Example:
 
 ```nix
 {
   pkgs,
-  runCommand,
   self,
+  tlib,
+  ...
 }:
+
 let
-  gitWrapped = self.wrappers.git.wrap {
-    inherit pkgs;
-    settings = {
-      user = {
-        name = "Test User";
-        email = "test@example.com";
-      };
-    };
-  };
+  inherit (tlib)
+    fileContains
+    isDirectory
+    isFile
+    notIsFile
+    areEqual
+    test
+    ;
 in
-runCommand "git-test" { } ''
-  "${gitWrapped}/bin/git" config user.name | grep -q "Test User"
-  "${gitWrapped}/bin/git" config user.email | grep -q "test@example.com"
-  touch $out
-''
+test { wrapper = "direnv"; } { # <-- Specify the name of the wrapper here (*)
+
+  "direnv wrapper should be created" =
+    let
+      wrapper = self.wrappers.direnv.wrap {
+        inherit pkgs;
+        nix-direnv.enable = true;
+      };
+    in
+    [
+      "[[ -d ${wrapper} ]]" # <-- a simple condition to be asserted
+      {                     
+        cond = "[[ -d ${wrapper} ]]";
+        msg = "No directory found for wrapper."; # <-- you can also specify a custom error message
+      }
+      (isDirectory wrapper) # <-- or use pre-defined helpers
+    ];
+
+  "wrapper should output correct version" =
+    let
+      wrapper = self.wrappers.direnv.wrap {
+        inherit pkgs;
+      };
+    in 
+    '' # <-- no need to provide a list if there is only one assertion
+      "${wrapper}/bin/direnv" --version |
+      grep -q "${wrapper.version}"
+    '';
+
+  "math-tests" = { # <-- tests can be arbitrarily grouped
+    addition = [
+      (areEqual 2 (1 + 1))
+      (areEqual 7 (5 + 2))
+    ];
+    multiplication = [
+      (areEqual 1 (1 * 1))
+      (areEqual 10 (5 * 2))
+    ];
+  };
+}
 ```
 
-If your module declares a list of valid platforms via its `meta.platforms` option, you should disable your test on the relevant platforms like so:
+
+Pre-defined assertions like `isDirectory` or `areEqual` are already available in tlib. 
+Feel free to contribute more if you find new ones that other maintainers might benefit from.
+
+### Writing Tests for Helper Modules or Library Functions
+
+The syntax is identical to [the example above](#writing-tests-for-wrappers), 
+except you don't provide a wrapper but a name:
 
 ```nix
-if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.waybar.meta.platforms then
-  pkgs.runCommand "waybar-test" { } ''
-    "${waybarWrapped}/bin/waybar" --version | grep -q "${waybarWrapped.version}"
-    touch $out
-  ''
-else
-  null
+{
+  pkgs,
+  self,
+  tlib,
+  ...
+}:
+
+let
+  inherit (tlib)
+    fileContains
+    isDirectory
+    isFile
+    notIsFile
+    areEqual
+    test
+    ;
+in
+test "my-test" { # <-- Specify an arbitrary name for your test
+# test { name = "my-test" } { # <-- This is equivalent
+
+  "my first test" = [ ... ]; # <-- nothing new here
+  "my second test" = [ ... ];
+}
 ```
 
 If you are writing a helper module, or something very complex, you may wish to have multiple derivations. Simply return a set of them instead.
 
-# Commit Messages
+## Commit Messages
 
 Changes to wrapper modules should be titled `<type>(wrapperModules.<name>): some description`.
 For new additions, the description should be `init`, with any further explanation on subsequent lines
@@ -212,6 +280,6 @@ For everything else, do the best you can to follow conventional commit message s
 
 Why specify this? I was having trouble figuring out what to title my commits. So now I know.
 
-# Questions?
+## Questions?
 
 The [github discussions board](https://github.com/BirdeeHub/nix-wrapper-modules/discussions) is open and a great place to find help!
