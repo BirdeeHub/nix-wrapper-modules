@@ -46,6 +46,35 @@ let
       lib.optionalString (config.settings.compile_generated_lua or false != "debug") ", true"
     }))' "
   }";
+  patchDesktop = input: output: ''
+    if [ -e "${package}/share/applications/${input}.desktop" ]; then
+      mkdir -p '${placeholder outputName}/share/applications'
+      rm -f '${placeholder outputName}/share/applications/${input}.desktop'
+      substitute ${
+        lib.escapeShellArgs [
+          "${package}/share/applications/${input}.desktop"
+          "${placeholder outputName}/share/applications/${output}.desktop"
+          "--replace-fail"
+          "Name=Neovim"
+          "Name=${binName}"
+          "--replace-fail"
+          "TryExec=nvim"
+          "TryExec=${wrapperPaths.placeholder}"
+          "--replace-fail"
+          "Icon=nvim"
+          "Icon=${package}/share/icons/hicolor/128x128/apps/nvim.png"
+        ]
+      }
+      sed ${
+        lib.escapeShellArgs [
+          ''
+            /^Exec=nvim/c\
+            Exec=${wrapperPaths.placeholder} %F''
+          "${placeholder outputName}/share/applications/${output}.desktop"
+        ]
+      } > ./tmp_desk && mv -f ./tmp_desk "${placeholder outputName}/share/applications/${output}.desktop"
+    fi
+  '';
 in
 finalDrv
 // {
@@ -81,32 +110,6 @@ finalDrv
     mkdir -p ${placeholder outputName}/nix-support && \
     cp -r ${package}/nix-support/* ${placeholder outputName}/nix-support
 
-  ''
-  + lib.optionalString stdenv.isLinux ''
-    mkdir -p '${placeholder outputName}/share/applications'
-    substitute ${
-      lib.escapeShellArgs [
-        "${package}/share/applications/nvim.desktop"
-        "${placeholder outputName}/share/applications/${binName}.desktop"
-        "--replace-fail"
-        "Name=Neovim"
-        "Name=${binName}"
-        "--replace-fail"
-        "TryExec=nvim"
-        "TryExec=${wrapperPaths.placeholder}"
-        "--replace-fail"
-        "Icon=nvim"
-        "Icon=${package}/share/icons/hicolor/128x128/apps/nvim.png"
-      ]
-    }
-    sed ${
-      lib.escapeShellArgs [
-        ''
-          /^Exec=nvim/c\
-          Exec=${wrapperPaths.placeholder} %F''
-        "${placeholder outputName}/share/applications/${binName}.desktop"
-      ]
-    } > ./tmp_desk && mv -f ./tmp_desk "${placeholder outputName}/share/applications/${binName}.desktop"
   ''
   + ''
 
@@ -164,5 +167,8 @@ finalDrv
         ""
     ) outputs}
 
-  '';
+  ''
+  + lib.optionalString stdenv.isLinux (
+    patchDesktop "nvim" binName + patchDesktop "org.neovim.nvim" "org.neovim.${binName}"
+  );
 }
