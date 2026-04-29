@@ -33,7 +33,6 @@ let
     isFunction
     types
     ;
-  inherit (lib.attrsets) filterAttrs;
   inherit (lib.lists) toposort;
   inherit (wlib.dag)
     isEntry
@@ -53,18 +52,6 @@ let
   mkDagEntryModule =
     settings: elemType:
     let
-      isStrict =
-        if isBool (settings.strict or null) then
-          lib.warn "dagWith `strict` setting deprecated, set freeformType from within a module passed to the modules argument instead" settings.strict
-        else
-          true;
-      extraOptions =
-        if settings ? extraOptions then
-          lib.warn
-            "Deprecated dagWith/dalWith setting: `extraOptions` set. Use `modules` list instead to provide extra options"
-            (if isAttrs (settings.extraOptions or null) then settings.extraOptions else { })
-        else
-          null;
       dataOptFn =
         if isFunction (settings.dataTypeFn or null) then
           args: { type = settings.dataTypeFn elemType args; }
@@ -77,19 +64,16 @@ let
       description = settings.description or null;
       mainField = settings.mainField or null;
       dontConvertFunctions = settings.dontConvertFunctions or null;
-      modules =
-        optionals (!isStrict) [ { freeformType = wlib.types.attrsRecursive; } ]
-        ++ [
-          (mkDagEntry {
-            dataOptFn = if isFunction (settings.dataOptFn or null) then settings.dataOptFn else dataOptFn;
-            defaultNameFn =
-              if isFunction (settings.defaultNameFn or null) then settings.defaultNameFn else null;
-            isDal = if isBool (settings.isDal or null) then settings.isDal else false;
-          })
-        ]
-        ++ optionals (elemType.name == "submodule" || elemType.name == "spec") [ dagNameModule ]
-        ++ optionals (extraOptions != null) [ { options = filterAttrs (_: v: !isBool v) extraOptions; } ]
-        ++ optionals (isList (settings.modules or null)) settings.modules;
+      modules = [
+        (mkDagEntry {
+          dataOptFn = if isFunction (settings.dataOptFn or null) then settings.dataOptFn else dataOptFn;
+          defaultNameFn =
+            if isFunction (settings.defaultNameFn or null) then settings.defaultNameFn else null;
+          isDal = if isBool (settings.isDal or null) then settings.isDal else false;
+        })
+      ]
+      ++ optionals (elemType.name == "submodule") [ dagNameModule ]
+      ++ optionals (isList (settings.modules or null)) settings.modules;
     };
 in
 {
@@ -200,7 +184,7 @@ in
     You would do this because the name argument of that submodule will receive the field it was in,
     not the one from the parent `attrsOf` type.
 
-    If you use `dagWith` or `dalWith`, this is done for you for `submodule` and `spec`.
+    If you use `dagWith` or `dalWith`, this is done for you for `submodule`
   */
   dagNameModule =
     { config, name, ... }:
@@ -665,7 +649,4 @@ in
       Payload values that will be converted into DAG entries.
   */
   entriesBefore = tag: before: entriesBetween tag before [ ];
-
-  dagOf = lib.warn "wlib.dag.dagOf deprecated. Use wlib.types.dagOf instead." wlib.types.dagOf;
-  dalOf = lib.warn "wlib.dag.dalOf deprecated. Use wlib.types.dalOf instead." wlib.types.dalOf;
 }
