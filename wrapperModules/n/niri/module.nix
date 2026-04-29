@@ -156,15 +156,11 @@ in
               binds = {
                 "Mod+T".spawn-sh = "alacritty";
                 "Mod+J".focus-column-or-monitor-left = _: { };
-                "Mod+N".spawn = [
-                  "alacritty"
-                  "msg"
-                  "create-windown"
-                ];
+                "Mod+N".spawn = [ "alacritty" "msg" "create-windown" ];
                 "Mod+0".focus-workspace = 0;
                 "Mod+Escape" = _: {
                   props.allow-inhibiting = false;
-                  content.toggle-keyboard-shortcuts-inhibit = _: { };
+                  content.toggle-keyboard-shortcuts-inhibit = _: { }; # <- _: { } is translated to nothing
                 };
               };
               ```
@@ -307,13 +303,12 @@ in
         but for which repeated definitions are significant.
 
         Syntax for this option is the list form for the `wlib.toKdl` function
-
-        (If `include optional=true "~/some/impure/path"` is not valid in your version of niri, you may want to use their flake!)
       '';
       example = lib.literalMD ''
         ```nix
         config.extraSettings = [
           { include = ./some/pure/path; }
+          # If `include optional=true "~/some/impure/path"` is not valid in your version of niri, you may want to use their flake!
           { include = [ { optional = true; } "~/some/impure/path" ]; }
         ];
         ```
@@ -328,7 +323,7 @@ in
         Configuration file for Niri.
         See <https://github.com/YaLTeR/niri/wiki/Configuration:-Introduction>
 
-        If `config."config.kdl".content is non-empty, its content will be used instead of the generated
+        If `config."config.kdl".content` is non-empty, its content will be used instead of the generated
         config from `config.settings` in the generated config file in the derivation.
 
         You may also set `config."config.kdl".path` to your own path.
