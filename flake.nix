@@ -6,6 +6,16 @@
     let
       lib = inputs.pkgs.lib or inputs.nixpkgs.lib or (import "${inputs.nixpkgs or <nixpkgs>}/lib");
       forAllSystems = lib.genAttrs lib.platforms.all;
+      getPkgs =
+        system:
+        if inputs.pkgs.stdenv.hostPlatform.system or null == system then
+          inputs.pkgs
+        else
+          import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) {
+            inherit system;
+            overlays = inputs.pkgs.overlays or [ ];
+            config = inputs.pkgs.config or { };
+          };
     in
     {
       templates = import ./templates;
@@ -20,27 +30,10 @@
         name: value: self.lib.getInstallModule { inherit name value; }
       ) self.lib.wrapperModules;
       homeModules = self.nixosModules;
-      devShells = forAllSystems (
-        system:
-        let
-          pkgs = import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) { inherit system; };
-        in
-        {
-          default = import ./shell.nix { inherit pkgs; };
-        }
-      );
-      formatter = forAllSystems (
-        system:
-        (
-          if inputs.pkgs.stdenv.hostPlatform.system or null == system then
-            inputs.pkgs
-          else
-            import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) {
-              inherit system;
-              overlays = inputs.pkgs.overlays or [ ];
-            }
-        ).nixfmt-tree
-      );
+      devShells = forAllSystems (system: {
+        default = import ./shell.nix { pkgs = getPkgs system; };
+      });
+      formatter = forAllSystems (system: (getPkgs system).nixfmt-tree);
       wrappedModules = lib.mapAttrs (
         _:
         lib.warn ''
