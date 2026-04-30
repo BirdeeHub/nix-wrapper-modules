@@ -153,7 +153,8 @@ in
 
     Test :: Assertion | [ Assertion ]
 
-    Assertion :: String | { cond :: String; msg :: String; }    ```
+    Assertion :: String | { cond :: String; msg :: String; }
+    ```
 
     # Arguments
 
