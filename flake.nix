@@ -1,6 +1,8 @@
 {
+  description = ''
+    A Nix library for wrapping programs with their configuration into a single derivation via the nixpkgs module system.
+  '';
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-
   outputs =
     { self, ... }@inputs:
     let
