@@ -125,9 +125,6 @@ Example:
 
 `nix fmt`
 
-## Tests
-
-`nix flake check -Lv ./ci`
 
 ## Run Site Generator Locally
 
@@ -137,6 +134,15 @@ or
 
 `nix run ./ci#docs`
 
+> [!NOTE]
+> We also provide a `shell.nix` with a `docs` command that does exactly this.
+> Start the devshell (`nix develop`) and type `docs --help` for more info on how to use it.
+
+## Tests
+
+
+`nix flake check -Lv ./ci`
+
 To run the tests for an individual wrapper only, run
 
 `nix build ./ci#checks.{system}.wrapperModule-{name}`
@@ -144,6 +150,10 @@ To run the tests for an individual wrapper only, run
 Example (neovim on `x86_64-linux`):
 
 `nix build ./ci#checks.x86_64-linux.wrapperModule-neovim`
+
+> [!NOTE]
+> We also provide a `shell.nix` with a `check` command that does exactly this.
+> Start the devshell (`nix develop`) and type `check --help` for more info on how to use it.
 
 ## Writing Tests
 

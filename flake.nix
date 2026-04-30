@@ -20,6 +20,15 @@
         name: value: self.lib.getInstallModule { inherit name value; }
       ) self.lib.wrapperModules;
       homeModules = self.nixosModules;
+      devShells = forAllSystems (
+        system:
+        let
+          pkgs = import (inputs.pkgs.path or inputs.nixpkgs or <nixpkgs>) { inherit system; };
+        in
+        {
+          default = import ./shell.nix { inherit pkgs; };
+        }
+      );
       formatter = forAllSystems (
         system:
         (
