@@ -32,6 +32,7 @@
         name: value: self.lib.getInstallModule { inherit name value; }
       ) self.lib.wrapperModules;
       homeModules = self.nixosModules;
+      hjemModules = self.nixosModules;
       devShells = forAllSystems (system: {
         default = import ./shell.nix { pkgs = getPkgs system; };
       });

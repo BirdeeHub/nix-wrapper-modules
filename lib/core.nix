@@ -184,6 +184,15 @@ in
           in
           lib.mkIf cfg.enable [ cfg.wrapper ];
       };
+    hjem =
+      { config, ... }:
+      {
+        config.packages =
+          let
+            cfg = args.config.install.getWrapperConfig config;
+          in
+          lib.mkIf cfg.enable [ cfg.wrapper ];
+      };
     nixos =
       { config, ... }:
       {
