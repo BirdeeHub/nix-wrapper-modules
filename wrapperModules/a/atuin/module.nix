@@ -30,7 +30,7 @@ in
 
   config = {
     package = lib.mkDefault pkgs.atuin;
-    env.ATUIN_CONFIG_DIR = "${placeholder "out"}/${config.binName}-config";
+    env.ATUIN_CONFIG_DIR = dirOf config.constructFiles.generatedConfig.path;
     passthru.ATUIN_CONFIG_DIR = "${config.wrapper.out}/${config.binName}-config";
     constructFiles = {
       generatedConfig = {
@@ -40,7 +40,8 @@ in
       };
       generatedServerConfig = {
         content = builtins.toJSON config.server-settings;
-        relPath = "${config.binName}-config/server.toml";
+        output = lib.mkOverride 0 config.constructFiles.generatedConfig.output;
+        relPath = lib.mkOverride 0 "${dirOf config.constructFiles.generatedConfig.relPath}/server.toml";
         builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
       };
     };
