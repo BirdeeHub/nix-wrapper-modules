@@ -31,6 +31,7 @@ in
   config = {
     package = lib.mkDefault pkgs.atuin;
     env.ATUIN_CONFIG_DIR = "${placeholder "out"}/${config.binName}-config";
+    passthru.ATUIN_CONFIG_DIR = "${config.wrapper.out}/${config.binName}-config";
     constructFiles = {
       generatedConfig = {
         content = builtins.toJSON config.settings;
