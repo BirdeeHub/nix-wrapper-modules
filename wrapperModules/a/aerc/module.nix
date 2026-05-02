@@ -91,5 +91,6 @@ in
         "--accounts-conf" = config.constructFiles.accountsConfig.path;
       };
       package = lib.mkDefault pkgs.aerc;
+      meta.maintainers = [ wlib.maintainers.appleptree ];
     };
 }
