@@ -25,7 +25,7 @@ in
       default = { };
       description = ''
         Aerc keybinds configuration file.
-        See {manpage}`aerc-config(5)`
+        See {manpage}`aerc-binds(5)`
       '';
     };
     accounts = lib.mkOption {
@@ -35,7 +35,7 @@ in
         Aerc accounts configuration file.
         Should not contain any plaintext secrets, as it's copied to nix store.
         Use `outgoing-cred-cmd` and `source-cred-cmd` instead.
-        See {manpage}`aerc-config(5)`
+        See {manpage}`aerc-accounts(5)`
       '';
     };
     stylesets = lib.mkOption {
