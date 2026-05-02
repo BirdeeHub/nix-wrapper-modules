@@ -95,4 +95,9 @@
     github = "ormoyo";
     githubId = 58147142;
   };
+  appleptree = {
+    name = "appleptree";
+    github = "appleptree";
+    githubId = 189892522;
+  };
 }
