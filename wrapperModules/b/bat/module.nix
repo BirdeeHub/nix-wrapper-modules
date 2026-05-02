@@ -1,0 +1,65 @@
+{
+  config,
+  wlib,
+  lib,
+  pkgs,
+  ...
+}:
+{
+  imports = [ wlib.modules.default ];
+
+  options = {
+    configFile = lib.mkOption {
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+      };
+      default.content = "";
+      description = ''
+        Bat flags to include via config file
+      '';
+    };
+    themes = lib.mkOption {
+      type = lib.types.attrsOf (wlib.types.file pkgs);
+      default = { };
+      description = ''
+        Bat themes to copy to `themes/` directory
+      '';
+    };
+    syntaxes = lib.mkOption {
+      type = lib.types.attrsOf lib.types.string;
+      default = { };
+      description = ''
+        Bat/Sublime syntaxes to copy to `syntaxes/` directory
+      '';
+    };
+  };
+
+  config =
+    let
+      themes-constructFiles = lib.concatMapAttrs (name: value: {
+        "themes-${name}" = {
+          content = builtins.readFile value.path;
+          relPath = "themes/${name}";
+        };
+      }) config.themes;
+      syntaxes-constructFiles = lib.concatMapAttrs (name: value: {
+        "syntaxes-${name}" = {
+          content = builtins.readFile value;
+          relPath = "syntaxes/${name}";
+        };
+      }) config.syntaxes;
+    in
+    {
+      package = lib.mkDefault pkgs.bat;
+      env.BAT_CONFIG_DIR = "${placeholder "out"}/${config.binName}-config";
+      constructFiles = {
+        generatedConfig = {
+          content = config.configFile.content;
+          relPath = "${config.binName}-config/config";
+        };
+      }
+      // themes-constructFiles
+      // syntaxes-constructFiles;
+      meta.maintainers = [ wlib.maintainers.appleptree ];
+    };
+}
