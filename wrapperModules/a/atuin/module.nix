@@ -29,9 +29,6 @@ in
       relPath = "${config.binName}-config/config.toml";
       builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     };
-    meta = {
-      maintainers = [ wlib.maintainers.appleptree ];
-      platforms = lib.platforms.linux;
-    };
+    meta.maintainers = [ wlib.maintainers.appleptree ];
   };
 }
