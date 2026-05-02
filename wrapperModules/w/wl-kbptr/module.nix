@@ -32,7 +32,7 @@ in
       relPath = "${config.binName}.ini";
     };
     meta = {
-      maintainers = [ wlib.maintainers.nouritsu ];
+      maintainers = [ wlib.maintainers.appleptree ];
       platforms = lib.platforms.linux;
     };
   };
