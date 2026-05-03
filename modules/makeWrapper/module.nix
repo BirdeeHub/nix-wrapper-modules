@@ -10,16 +10,77 @@ let
       mainOpts ? null,
       ...
     }@top:
+    let
+      runtimeExtrasType =
+        pathname:
+        (
+          wlib.types.dalOf
+          // {
+            modules = [
+              {
+                options.prefix = lib.mkOption {
+                  type = lib.types.bool;
+                  default = false;
+                  description = ''
+                    Place this value at the beginning of the `${pathname}` instead of the end.
+                  '';
+                };
+              }
+            ];
+            dontConvertFunctions = true;
+          }
+        )
+          wlib.types.stringable;
+      extraPath = lib.pipe (config.runtimePkgs or [ ]) [
+        (wlib.dag.unwrapSort "runtimePkgs")
+        (builtins.partition (v: v.prefix or false == true))
+        (
+          { right, wrong }:
+          {
+            pre = map (v: v.data) right;
+            post = map (v: v.data) wrong;
+          }
+        )
+      ];
+      extraLibs = lib.pipe (config.runtimeLibs or [ ]) [
+        (wlib.dag.unwrapSort "runtimeLibs")
+        (builtins.partition (v: v.prefix or false == true))
+        (
+          { right, wrong }:
+          {
+            pre = map (v: v.data) right;
+            post = map (v: v.data) wrong;
+          }
+        )
+      ];
+      optionalAttribute =
+        name:
+        let
+          isExcluded = v: builtins.isBool v && v;
+        in
+        if
+          isExcluded (excluded.${name} or false)
+          || (is_top && isExcluded (excluded.top.${name} or false))
+          || (!is_top && isExcluded (excluded.wrapperVariants.${name} or false))
+        then
+          null
+        else
+          name;
+    in
     {
       inherit _file;
-      options.${if !(excluded.argv0type or false) then "argv0type" else null} = lib.mkOption {
+      options.${optionalAttribute "argv0type"} = lib.mkOption {
         type =
           with lib.types;
           either (enum [
             "resolve"
             "inherit"
           ]) (functionTo str);
-        default = if mainConfig != null && config.mirror or false then mainConfig.argv0type else "inherit";
+        default =
+          if mainConfig != null && config.mirror or false then
+            mainConfig.argv0type or "inherit"
+          else
+            "inherit";
         description = ''
           `argv0` overrides this option if not null or unset
 
@@ -55,9 +116,9 @@ let
           but by default it is still last.
         '';
       };
-      options.${if !(excluded.argv0 or false) then "argv0" else null} = lib.mkOption {
+      options.${optionalAttribute "argv0"} = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
-        default = if mainConfig != null && config.mirror or false then mainConfig.argv0 else null;
+        default = if mainConfig != null && config.mirror or false then mainConfig.argv0 or null else null;
         description = ''
           --argv0 NAME
 
@@ -67,18 +128,18 @@ let
           overrides the setting from `argv0type` if set.
         '';
       };
-      options.${if !(excluded.unsetVar or false) then "unsetVar" else null} = lib.mkOption {
+      options.${optionalAttribute "unsetVar"} = lib.mkOption {
         type = wlib.types.dalWithEsc lib.types.str;
-        default = if mainConfig != null && config.mirror or false then mainConfig.unsetVar else [ ];
+        default = if mainConfig != null && config.mirror or false then mainConfig.unsetVar or [ ] else [ ];
         description = ''
           --unset VAR
 
           Remove VAR from the environment.
         '';
       };
-      options.${if !(excluded.runShell or false) then "runShell" else null} = lib.mkOption {
+      options.${optionalAttribute "runShell"} = lib.mkOption {
         type = wlib.types.dalWithEsc wlib.types.stringable;
-        default = if mainConfig != null && config.mirror or false then mainConfig.runShell else [ ];
+        default = if mainConfig != null && config.mirror or false then mainConfig.runShell or [ ] else [ ];
         description = ''
           --run COMMAND
 
@@ -93,9 +154,9 @@ let
           If no name is provided, it cannot be targeted.
         '';
       };
-      options.${if !(excluded.chdir or false) then "chdir" else null} = lib.mkOption {
+      options.${optionalAttribute "chdir"} = lib.mkOption {
         type = wlib.types.dalWithEsc wlib.types.stringable;
-        default = if mainConfig != null && config.mirror or false then mainConfig.chdir else [ ];
+        default = if mainConfig != null && config.mirror or false then mainConfig.chdir or [ ] else [ ];
         description = ''
           --chdir DIR
 
@@ -103,9 +164,9 @@ let
           Use instead of `--run "cd DIR"`.
         '';
       };
-      options.${if !(excluded.addFlag or false) then "addFlag" else null} = lib.mkOption {
+      options.${optionalAttribute "addFlag"} = lib.mkOption {
         type = wlib.types.wrapperFlag;
-        default = if mainConfig != null && config.mirror or false then mainConfig.addFlag else [ ];
+        default = if mainConfig != null && config.mirror or false then mainConfig.addFlag or [ ] else [ ];
         example = lib.literalMD ''
           ```nix
           [
@@ -140,9 +201,10 @@ let
           If no name is provided, it cannot be targeted.
         '';
       };
-      options.${if !(excluded.appendFlag or false) then "appendFlag" else null} = lib.mkOption {
+      options.${optionalAttribute "appendFlag"} = lib.mkOption {
         type = wlib.types.wrapperFlag;
-        default = if mainConfig != null && config.mirror or false then mainConfig.appendFlag else [ ];
+        default =
+          if mainConfig != null && config.mirror or false then mainConfig.appendFlag or [ ] else [ ];
         example = lib.literalMD ''
           ```nix
           [
@@ -175,9 +237,9 @@ let
           If no name is provided, it cannot be targeted.
         '';
       };
-      options.${if !(excluded.prefixVar or false) then "prefixVar" else null} = lib.mkOption {
+      options.${optionalAttribute "prefixVar"} = lib.mkOption {
         type = wlib.types.wrapperFlags 3;
-        default = if mainConfig != null && config.mirror or false then mainConfig.prefixVar else [ ];
+        default = if mainConfig != null && config.mirror or false then mainConfig.prefixVar or [ ] else [ ];
         example = lib.literalMD ''
           ```nix
           [
@@ -200,9 +262,9 @@ let
           Prefix ENV with VAL, separated by SEP.
         '';
       };
-      options.${if !(excluded.suffixVar or false) then "suffixVar" else null} = lib.mkOption {
+      options.${optionalAttribute "suffixVar"} = lib.mkOption {
         type = wlib.types.wrapperFlags 3;
-        default = if mainConfig != null && config.mirror or false then mainConfig.suffixVar else [ ];
+        default = if mainConfig != null && config.mirror or false then mainConfig.suffixVar or [ ] else [ ];
         example = lib.literalMD ''
           ```nix
           [
@@ -225,9 +287,10 @@ let
           Suffix ENV with VAL, separated by SEP.
         '';
       };
-      options.${if !(excluded.prefixContent or false) then "prefixContent" else null} = lib.mkOption {
+      options.${optionalAttribute "prefixContent"} = lib.mkOption {
         type = wlib.types.wrapperFlags 3;
-        default = if mainConfig != null && config.mirror or false then mainConfig.prefixContent else [ ];
+        default =
+          if mainConfig != null && config.mirror or false then mainConfig.prefixContent or [ ] else [ ];
         description = ''
           ```nix
           [
@@ -247,9 +310,10 @@ let
           ```
         '';
       };
-      options.${if !(excluded.suffixContent or false) then "suffixContent" else null} = lib.mkOption {
+      options.${optionalAttribute "suffixContent"} = lib.mkOption {
         type = wlib.types.wrapperFlags 3;
-        default = if mainConfig != null && config.mirror or false then mainConfig.suffixContent else [ ];
+        default =
+          if mainConfig != null && config.mirror or false then mainConfig.suffixContent or [ ] else [ ];
         description = ''
           ```nix
           [
@@ -269,7 +333,7 @@ let
           ```
         '';
       };
-      options.${if !(excluded.flags or false) then "flags" else null} = lib.mkOption {
+      options.${optionalAttribute "flags"} = lib.mkOption {
         type =
           with lib.types;
           (
@@ -319,7 +383,7 @@ let
                 (listOf wlib.types.stringable)
               ])
             );
-        default = if mainConfig != null && config.mirror or false then mainConfig.flags else { };
+        default = if mainConfig != null && config.mirror or false then mainConfig.flags or { } else { };
         example = lib.literalMD ''
           ```nix
           {
@@ -355,9 +419,10 @@ let
           `--myflag=a,b,c`
         '';
       };
-      options.${if !(excluded.flagSeparator or false) then "flagSeparator" else null} = lib.mkOption {
+      options.${optionalAttribute "flagSeparator"} = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
-        default = if mainConfig != null && config.mirror or false then mainConfig.flagSeparator else null;
+        default =
+          if mainConfig != null && config.mirror or false then mainConfig.flagSeparator or null else null;
         description = ''
           Separator between flag names and values when generating args from flags.
           `" "` for `--flag value` or `"="` for `--flag=value`
@@ -366,50 +431,115 @@ let
           even if not interpolated by a shell (such as with the `"binary"` implementation)
         '';
       };
-      options.${if !(excluded.extraPackages or false) then "extraPackages" else null} = lib.mkOption {
-        type = lib.types.listOf lib.types.package;
-        default = if mainConfig != null && config.mirror or false then mainConfig.extraPackages else [ ];
+      options.${optionalAttribute "runtimePkgs"} = lib.mkOption {
+        type = runtimeExtrasType "PATH";
+        default =
+          if mainConfig != null && config.mirror or false then mainConfig.runtimePkgs or [ ] else [ ];
         description = ''
           Additional packages to add to the wrapper's runtime PATH.
           This is useful if the wrapped program needs additional libraries or tools to function correctly.
 
-          Adds all its entries to the DAG under the name `NIX_PATH_ADDITIONS`
+          Accepts a list of either packages, or set of `{ data, prefix ? false, name ? null, before ? [], after ? [] }`
+          where the `data` field is the package.
+
+          Adds suffixed entries to the DAG under the name `NIX_PATH_ADDITIONS`
+          Adds prefixed entries to the DAG under the name `NIX_PATH_PREFIXES`
         '';
       };
-      options.${if !(excluded.runtimeLibraries or false) then "runtimeLibraries" else null} =
-        lib.mkOption
-          {
-            type = lib.types.listOf lib.types.package;
-            default = if mainConfig != null && config.mirror or false then mainConfig.runtimeLibraries else [ ];
-            description = ''
-              Additional libraries to add to the wrapper's runtime LD_LIBRARY_PATH.
-              This is useful if the wrapped program needs additional libraries or tools to function correctly.
+      options.${optionalAttribute "runtimeLibs"} = lib.mkOption {
+        type = runtimeExtrasType "LD_LIBRARY_PATH";
+        default =
+          if mainConfig != null && config.mirror or false then mainConfig.runtimeLibs or [ ] else [ ];
+        description = ''
+          Additional libraries to add to the wrapper's runtime LD_LIBRARY_PATH.
+          This is useful if the wrapped program needs additional libraries or tools to function correctly.
 
-              Adds all its entries to the DAG under the name `NIX_LIB_ADDITIONS`
-            '';
-          };
+          Accepts a list of either packages, or set of `{ data, prefix ? false, name ? null, before ? [], after ? [] }`
+          where the `data` field is the package.
+
+          Adds suffixed entries to the DAG under the name `NIX_LIB_ADDITIONS`
+          Adds prefixed entries to the DAG under the name `NIX_LIB_PREFIXES`
+        '';
+      };
+      options.${optionalAttribute "extraPackages"} = lib.mkOption {
+        type = lib.types.listOf lib.types.package;
+        default =
+          if mainConfig != null && config.mirror or false then mainConfig.extraPackages or [ ] else [ ];
+        internal = true;
+        apply =
+          val:
+          if val != [ ] then
+            (builtins.warn ''
+              `extraPackages` is deprecated, use `runtimePkgs` instead.
+              `extraPackages` will be removed on August 31, 2026.
+            '' val)
+          else
+            val;
+      };
+      options.${optionalAttribute "runtimeLibraries"} = lib.mkOption {
+        type = lib.types.listOf lib.types.package;
+        default =
+          if mainConfig != null && config.mirror or false then mainConfig.runtimeLibraries or [ ] else [ ];
+        internal = true;
+        apply =
+          val:
+          if val != [ ] then
+            (builtins.warn ''
+              `runtimeLibraries` is deprecated, use `runtimeLibs` instead.
+              `runtimeLibraries` will be removed on August 31, 2026.
+            '' val)
+          else
+            val;
+      };
       config.${
-        if excluded.extraPackages or false && excluded.runtimeLibraries or false then null else "suffixVar"
+        if
+          excluded.runtimePkgs or false
+          && excluded.runtimeLibs or false
+          && excluded.extraPackages or false
+          && excluded.runtimeLibraries or false
+        then
+          null
+        else
+          "suffixVar"
       } =
-        lib.optional (config.extraPackages or [ ] != [ ]) {
+        lib.optional (extraPath.post != [ ] || config.extraPackages or [ ] != [ ]) {
           name = "NIX_PATH_ADDITIONS";
           data = [
             "PATH"
             ":"
-            "${lib.makeBinPath config.extraPackages}"
+            "${lib.makeBinPath (extraPath.post ++ config.extraPackages or [ ])}"
           ];
         }
-        ++ lib.optional (config.runtimeLibraries or [ ] != [ ]) {
+        ++ lib.optional (extraLibs.post != [ ] || config.runtimeLibraries or [ ] != [ ]) {
           name = "NIX_LIB_ADDITIONS";
           data = [
             "LD_LIBRARY_PATH"
             ":"
-            "${lib.makeLibraryPath config.runtimeLibraries}"
+            "${lib.makeLibraryPath (extraLibs.post ++ config.runtimeLibraries or [ ])}"
           ];
         };
-      options.${if !(excluded.env or false) then "env" else null} = lib.mkOption {
+      config.${
+        if excluded.runtimePkgs or false && excluded.runtimeLibs or false then null else "prefixVar"
+      } =
+        lib.optional (extraPath.pre != [ ]) {
+          name = "NIX_PATH_PREFIXES";
+          data = [
+            "PATH"
+            ":"
+            "${lib.makeBinPath extraPath.pre}"
+          ];
+        }
+        ++ lib.optional (extraLibs.pre != [ ]) {
+          name = "NIX_LIB_PREFIXES";
+          data = [
+            "LD_LIBRARY_PATH"
+            ":"
+            "${lib.makeLibraryPath extraLibs.pre}"
+          ];
+        };
+      options.${optionalAttribute "env"} = lib.mkOption {
         type = wlib.types.dagWithEsc (lib.types.nullOr wlib.types.stringable);
-        default = if mainConfig != null && config.mirror or false then mainConfig.env else { };
+        default = if mainConfig != null && config.mirror or false then mainConfig.env or { } else { };
         example = {
           "XDG_DATA_HOME" = "/somewhere/on/your/machine";
         };
@@ -424,9 +554,10 @@ let
           which will cause the resulting wrapper argument to be sorted accordingly
         '';
       };
-      options.${if !(excluded.envDefault or false) then "envDefault" else null} = lib.mkOption {
+      options.${optionalAttribute "envDefault"} = lib.mkOption {
         type = wlib.types.dagWithEsc (lib.types.nullOr wlib.types.stringable);
-        default = if mainConfig != null && config.mirror or false then mainConfig.envDefault else { };
+        default =
+          if mainConfig != null && config.mirror or false then mainConfig.envDefault or { } else { };
         example = {
           "XDG_DATA_HOME" = "/only/if/not/set";
         };
@@ -443,192 +574,189 @@ let
           which will cause the resulting wrapper argument to be sorted accordingly
         '';
       };
-      options.${if !(excluded.escapingFunction or false) then "escapingFunction" else null} =
-        lib.mkOption
-          {
-            type = lib.types.functionTo lib.types.str;
-            default =
-              if mainConfig != null && config.mirror or false then
-                mainConfig.escapingFunction
-              else
-                lib.escapeShellArg;
-            defaultText = lib.literalExpression "lib.escapeShellArg";
-            description = ''
-              The function to use to escape shell values
+      options.${optionalAttribute "escapingFunction"} = lib.mkOption {
+        type = lib.types.functionTo lib.types.str;
+        default =
+          if mainConfig != null && config.mirror or false then
+            mainConfig.escapingFunction or lib.escapeShellArg
+          else
+            lib.escapeShellArg;
+        defaultText = lib.literalExpression "lib.escapeShellArg";
+        description = ''
+          The function to use to escape shell values
 
-              Caution: When using `shell` or `binary` implementations,
-              these will be expanded at BUILD time.
+          Caution: When using `shell` or `binary` implementations,
+          these will be expanded at BUILD time.
 
-              You should probably leave this as is when using either of those implementations.
+          You should probably leave this as is when using either of those implementations.
 
-              However, when using the `nix` implementation, they will expand at runtime!
-              Which means `wlib.escapeShellArgWithEnv` may prove to be a useful substitute!
-            '';
-          };
-      options.${if !(excluded.wrapperImplementation or false) then "wrapperImplementation" else null} =
-        lib.mkOption
-          {
-            type = lib.types.enum [
-              "nix"
-              "shell"
-              "binary"
-            ];
-            default =
-              if mainConfig != null && config.mirror or false then mainConfig.wrapperImplementation else "nix";
-            description = ''
-              the `nix` implementation is the default
+          However, when using the `nix` implementation, they will expand at runtime!
+          Which means `wlib.escapeShellArgWithEnv` may prove to be a useful substitute!
+        '';
+      };
+      options.${optionalAttribute "wrapperImplementation"} = lib.mkOption {
+        type = lib.types.enum [
+          "nix"
+          "shell"
+          "binary"
+        ];
+        default =
+          if mainConfig != null && config.mirror or false then
+            mainConfig.wrapperImplementation or "nix"
+          else
+            "nix";
+        description = ''
+          the `nix` implementation is the default
 
-              It makes the `escapingFunction` most relevant.
+          It makes the `escapingFunction` most relevant.
 
-              This is because the `shell` and `binary` implementations
-              use `pkgs.makeWrapper` or `pkgs.makeBinaryWrapper`,
-              and arguments to these functions are passed at BUILD time.
+          This is because the `shell` and `binary` implementations
+          use `pkgs.makeWrapper` or `pkgs.makeBinaryWrapper`,
+          and arguments to these functions are passed at BUILD time.
 
-              So, generally, when not using the nix implementation,
-              you should always prefer to have `escapingFunction`
-              set to `lib.escapeShellArg`.
+          So, generally, when not using the nix implementation,
+          you should always prefer to have `escapingFunction`
+          set to `lib.escapeShellArg`.
 
-              However, if you ARE using the `nix` implementation,
-              using `wlib.escapeShellArgWithEnv` will allow you
-              to use `$` expansions, which will expand at runtime.
+          However, if you ARE using the `nix` implementation,
+          using `wlib.escapeShellArgWithEnv` will allow you
+          to use `$` expansions, which will expand at runtime.
 
-              `binary` implementation is useful for programs
-              which are likely to be used in "shebangs",
-              as macos will not allow scripts to be used for these.
+          `binary` implementation is useful for programs
+          which are likely to be used in "shebangs",
+          as macos will not allow scripts to be used for these.
 
-              However, it is more limited. It does not have access to
-              `runShell`, `prefixContent`, and `suffixContent` options.
+          However, it is more limited. It does not have access to
+          `runShell`, `prefixContent`, and `suffixContent` options.
 
-              Chosing `binary` will thus cause values in those options to be ignored.
-            '';
-          };
+          Chosing `binary` will thus cause values in those options to be ignored.
+        '';
+      };
       config._module.args = {
         mainConfig = null;
         mainOpts = null;
       };
-      options.${if !(excluded.wrapperVariants or false) && is_top then "wrapperVariants" else null} =
-        lib.mkOption
-          {
-            default = { };
-            description = ''
-              Allows for you to apply the wrapper options to multiple binaries from config.package (or elsewhere)
+      options.${if is_top then optionalAttribute "wrapperVariants" else null} = lib.mkOption {
+        default = { };
+        description = ''
+          Allows for you to apply the wrapper options to multiple binaries from config.package (or elsewhere)
 
-              They are called variants because they are the same options as the top level makeWrapper options,
-              however, their defaults mirror the values of the top level options.
+          They are called variants because they are the same options as the top level makeWrapper options,
+          however, their defaults mirror the values of the top level options.
 
-              Meaning if you set `config.env.MYVAR = "HELLO"` at the top level,
-              then the following statement would be true by default:
+          Meaning if you set `config.env.MYVAR = "HELLO"` at the top level,
+          then the following statement would be true by default:
 
-              `config.wrapperVariants.foo.env.MYVAR.data == "HELLO"`
+          `config.wrapperVariants.foo.env.MYVAR.data == "HELLO"`
 
-              They achieve this by receiving `mainConfig` and `mainOpts` via `specialArgs`,
-              which contain `config` and `options` from the top level.
-            '';
-            type = lib.types.attrsOf (
-              lib.types.submoduleWith {
-                specialArgs = {
-                  mainConfig = config;
-                  mainOpts = options;
-                  inherit wlib;
-                };
-                modules = [
-                  (options_module _file excluded false)
-                  (
-                    { name, config, ... }:
-                    {
-                      inherit _file;
-                      options.enable = lib.mkOption {
-                        type = lib.types.bool;
-                        default = true;
-                        description = ''
-                          Enables the wrapping of this variant
-                        '';
-                      };
-                      options.mirror = lib.mkOption {
-                        type = lib.types.bool;
-                        default = true;
-                        description = ''
-                          Allows the variant to inherit defaults from the top level
-                        '';
-                      };
-                      options.exePath = lib.mkOption {
-                        type = lib.types.nullOr wlib.types.nonEmptyLine;
-                        default = "${top.config.binDir}/${name}";
-                        description = ''
-                          The location within the package of the thing to wrap.
-                        '';
-                      };
-                      options.binName = lib.mkOption {
-                        type = wlib.types.nonEmptyLine;
-                        default = name;
-                        description = ''
-                          The name of the file to output to `''${placeholder config.outputName}''${config.wrapperPaths.relDir}`
-                        '';
-                      };
-                      options.binDir = lib.mkOption {
-                        type = lib.types.nullOr wlib.types.nonEmptyLine;
-                        default = top.config.binDir or "bin";
-                        description = ''
-                          the directory the wrapped result will be placed into, with the name indicated by the `binName` option
+          They achieve this by receiving `mainConfig` and `mainOpts` via `specialArgs`,
+          which contain `config` and `options` from the top level.
+        '';
+        type = lib.types.attrsOf (
+          lib.types.submoduleWith {
+            specialArgs = {
+              mainConfig = config;
+              mainOpts = options;
+              inherit wlib;
+            };
+            modules = [
+              (options_module _file excluded false)
+              (
+                { name, config, ... }:
+                {
+                  inherit _file;
+                  options.enable = lib.mkOption {
+                    type = lib.types.bool;
+                    default = true;
+                    description = ''
+                      Enables the wrapping of this variant
+                    '';
+                  };
+                  options.mirror = lib.mkOption {
+                    type = lib.types.bool;
+                    default = true;
+                    description = ''
+                      Allows the variant to inherit defaults from the top level
+                    '';
+                  };
+                  options.exePath = lib.mkOption {
+                    type = lib.types.nullOr wlib.types.nonEmptyLine;
+                    default = "${top.config.binDir}/${name}";
+                    description = ''
+                      The location within the package of the thing to wrap.
+                    '';
+                  };
+                  options.binName = lib.mkOption {
+                    type = wlib.types.nonEmptyLine;
+                    default = name;
+                    description = ''
+                      The name of the file to output to `''${placeholder config.outputName}''${config.wrapperPaths.relDir}`
+                    '';
+                  };
+                  options.binDir = lib.mkOption {
+                    type = lib.types.nullOr wlib.types.nonEmptyLine;
+                    default = top.config.binDir or "bin";
+                    description = ''
+                      the directory the wrapped result will be placed into, with the name indicated by the `binName` option
 
-                          i.e. `"''${placeholder outputName}/<THIS_VALUE>/''${binName}"`
-                        '';
-                      };
-                      options.outputName = lib.mkOption {
-                        type = wlib.types.nonEmptyLine;
-                        default = top.config.outputName or "out";
-                        description = ''
-                          The derivation output the wrapped binary will be placed into.
-                        '';
-                      };
-                      options.wrapperPaths = {
-                        input = lib.mkOption {
-                          type = lib.types.str;
-                          readOnly = true;
-                          default = "${config.package}" + lib.optionalString (config.exePath != null) "/${config.exePath}";
-                          description = "
+                      i.e. `"''${placeholder outputName}/<THIS_VALUE>/''${binName}"`
+                    '';
+                  };
+                  options.outputName = lib.mkOption {
+                    type = wlib.types.nonEmptyLine;
+                    default = top.config.outputName or "out";
+                    description = ''
+                      The derivation output the wrapped binary will be placed into.
+                    '';
+                  };
+                  options.wrapperPaths = {
+                    input = lib.mkOption {
+                      type = lib.types.str;
+                      readOnly = true;
+                      default = "${config.package}" + lib.optionalString (config.exePath != null) "/${config.exePath}";
+                      description = "
                             The path which is to be wrapped by the wrapperFunction implementation
                           ";
-                        };
-                        placeholder = lib.mkOption {
-                          type = lib.types.str;
-                          readOnly = true;
-                          default = "${placeholder config.outputName or "out"}${config.wrapperPaths.relPath}";
-                          description = "
+                    };
+                    placeholder = lib.mkOption {
+                      type = lib.types.str;
+                      readOnly = true;
+                      default = "${placeholder config.outputName or "out"}${config.wrapperPaths.relPath}";
+                      description = "
                             The path which the wrapperFunction implementation is to output its result to.
                           ";
-                        };
-                        relPath = lib.mkOption {
-                          type = lib.types.str;
-                          readOnly = true;
-                          default =
-                            config.wrapperPaths.relDir + lib.optionalString (config.binName != "") "/${config.binName}";
-                          description = ''
-                            The binary will be output to `''${placeholder config.outputName}''${config.wrapperPaths.relPath}`
-                          '';
-                        };
-                        relDir = lib.mkOption {
-                          type = lib.types.str;
-                          readOnly = true;
-                          default = lib.optionalString (config.binDir != null) "/${config.binDir}";
-                          description = ''
-                            The binary will be output to `''${placeholder config.outputName}''${config.wrapperPaths.relDir}/''${config.binName}`
-                          '';
-                        };
-                      };
-                      options.package = lib.mkOption {
-                        type = wlib.types.stringable;
-                        default = top.config.package;
-                        description = ''
-                          The package to wrap with these options
-                        '';
-                      };
-                    }
-                  )
-                ];
-              }
-            );
-          };
+                    };
+                    relPath = lib.mkOption {
+                      type = lib.types.str;
+                      readOnly = true;
+                      default =
+                        config.wrapperPaths.relDir + lib.optionalString (config.binName != "") "/${config.binName}";
+                      description = ''
+                        The binary will be output to `''${placeholder config.outputName}''${config.wrapperPaths.relPath}`
+                      '';
+                    };
+                    relDir = lib.mkOption {
+                      type = lib.types.str;
+                      readOnly = true;
+                      default = lib.optionalString (config.binDir != null) "/${config.binDir}";
+                      description = ''
+                        The binary will be output to `''${placeholder config.outputName}''${config.wrapperPaths.relDir}/''${config.binName}`
+                      '';
+                    };
+                  };
+                  options.package = lib.mkOption {
+                    type = wlib.types.stringable;
+                    default = top.config.package;
+                    description = ''
+                      The package to wrap with these options
+                    '';
+                  };
+                }
+              )
+            ];
+          }
+        );
+      };
     };
   deprecationMessage =
     name:
@@ -682,6 +810,9 @@ in
     );
 
   wrapperFunction = null;
+  # excluded_options.argv0 = true;  # both top & variants
+  # excluded_options.top.argv0 = true;  # just top
+  # excluded_options.wrapperVariants.argv0 = true;  # just variants
   excluded_options = { };
   exclude_wrapper = false;
   exclude_meta = false;
@@ -825,6 +956,14 @@ in
 
             `excluded_options = { ... };` where you may include `optionname = true`
             in order to not define that option.
+
+            You may also scope exclusions to just the top level or just variants:
+
+            ```nix
+            excluded_options.top.argv0 = true;              # only top
+            excluded_options.wrapperVariants.argv0 = true;  # only variants
+            excluded_options.argv0 = true;                  # both
+            ```
 
             `_file` and `key`: `_file` changes the value set for the modules imported when you import this module. `key` is set on the main one if not `null`.
 

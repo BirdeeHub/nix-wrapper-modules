@@ -109,16 +109,31 @@ in
   imports = [
     wlib.modules.symlinkScript
     wlib.modules.constructFiles
-    ./variants.nix
     (
       (import wlib.modules.makeWrapper)
       // {
         excluded_options.wrapperFunction = true;
-        excluded_options.wrapperImplementation = true;
+        excluded_options.top.wrapperImplementation = true;
       }
     )
   ];
   options = {
+    wrapperVariants = lib.mkOption {
+      type = lib.types.attrsOf (
+        lib.types.submoduleWith {
+          modules = [
+            (
+              { name, ... }:
+              {
+                _file = wlib.modules.makeWrapper;
+                config.mirror = lib.mkOverride 1400 false;
+                config.package = lib.mkOverride 1400 (pkgs.${name} or pkgs.hello);
+              }
+            )
+          ];
+        }
+      );
+    };
     configFile = mkOption {
       type = wlib.types.file {
         path = mkOptionDefault config.constructFiles.generatedConfig.path;
