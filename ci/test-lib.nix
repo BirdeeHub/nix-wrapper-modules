@@ -10,7 +10,7 @@
 let
   wlib = self.lib;
 
-  errMsg = msg: "(echo ${renderMsg msg} >&2 && return 1)";
+  errMsg = msg: "(echo \"${renderMsg msg}\" >&2 && return 1)";
 
   indentBlock =
     str: num:
@@ -281,9 +281,26 @@ in
   };
 
   /**
+    Returns an `Assertion` that checks whether `path` does **not** exist as a directory.
+
+    # Type
+    ```
+    notIsFile :: String -> Assertion
+    ```
+
+    # Arguments
+    path
+    : The filesystem path that should be absent.
+  */
+  notIsDirectory = path: {
+    cond = ''[ ! -d "${path}" ]'';
+    msg = "Directory ${path} should not exist";
+  };
+
+  /**
     Returns an `Assertion` that checks whether `file` contains a line matching `pattern`.
 
-    The check is performed with `grep -q`, so `pattern` is treated as a basic regular expression.
+    The check is performed with `grep -Eq`, so `pattern` is treated as an extended regular expression.
 
     # Type
     ```
@@ -295,10 +312,10 @@ in
     : Path to the file to search.
 
     pattern
-    : Basic regular expression to search for.
+    : Extended regular expression to search for.
   */
   fileContains = file: pattern: {
-    cond = ''grep -q '${pattern}' "${file}"'';
+    cond = ''grep -Eq -- '${pattern}' "${file}"'';
     msg = "Pattern '${pattern}' not found in ${file}";
   };
 
