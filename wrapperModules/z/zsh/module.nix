@@ -81,14 +81,13 @@ in
       (import wlib.modules.makeWrapper)
       // {
         excluded_options.wrapperFunction = true;
-        excluded_options.wrapperImplementation = true;
+        excluded_options.top.wrapperImplementation = true;
       }
     )
     ./zlogin.nix
     ./zlogout.nix
     ./zshenv.nix
     ./zshrc.nix
-    ./variants.nix
   ];
   config.package = lib.mkDefault pkgs.zsh;
   # Allow use as a system/user shell
@@ -99,6 +98,25 @@ in
     wlib.maintainers.fluxza
     wlib.maintainers.birdee
   ];
+  # I decided not to repeat the same zsh wrapper for all of them
+  # rather, if someone wants to use this to wrap other programs in the context of their zsh they can
+  # this modifies wrapperVariants slightly with type merging
+  options.wrapperVariants = lib.mkOption {
+    type = lib.types.attrsOf (
+      lib.types.submoduleWith {
+        modules = [
+          (
+            { name, ... }:
+            {
+              _file = wlib.modules.makeWrapper;
+              config.mirror = lib.mkOverride 1400 false;
+              config.package = lib.mkOverride 1400 (pkgs.${name} or pkgs.hello);
+            }
+          )
+        ];
+      }
+    );
+  };
   options.generated_zdotdir = lib.mkOption {
     type = lib.types.str;
     readOnly = true;
