@@ -19,5 +19,7 @@
     env = {
       "NH_FLAKE" = "${config.flake}";
     };
+
+    meta.maintainers = [ wlib.maintainers.patwid ];
   };
 }
