@@ -78,6 +78,12 @@
     github = "clay53";
     githubId = 16981283;
   };
+  nakibrayane = {
+    email = "nakibrayane@proton.me";
+    github = "nakibrayane";
+    githubId = 126190943;
+    name = "Rayane Nakib (ريّان نقيب)";
+  };
   nouritsu = {
     email = "ab@nouritsu.com";
     github = "nouritsu";
