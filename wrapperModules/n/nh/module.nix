@@ -17,9 +17,12 @@
   config = {
     package = pkgs.nh;
     env = {
-      "NH_FLAKE" = "${config.flake}";
+      "NH_FLAKE" = {
+        data = "${config.flake}";
+        esc-fn = toString;
+      };
     };
 
-    meta.maintainers = [ wlib.maintainers.patwid ];
+    meta.maintainers = [ wlib.maintainers.nakibrayane ];
   };
 }
