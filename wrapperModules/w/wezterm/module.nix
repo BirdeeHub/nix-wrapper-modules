@@ -57,7 +57,7 @@
       The `defaultval` in this call will be returned if the item you specified does not exist in the luaInfo table.
       This allows you to use a config that works with and without the wrapper's setup.
 
-      To access config values form the final wrapper derivation you can use `''${placeholder config.outputName}` to point to it.
+      To access config values from the final wrapper derivation you can use `''${placeholder config.outputName}` to point to it.
 
       By default, the result of `require('nix-info')` is used as your wezterm config file, see the "wezterm.lua" option for details.
     '';
