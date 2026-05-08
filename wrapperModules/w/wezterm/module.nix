@@ -24,9 +24,10 @@
 
       Note that for this wrapper, the packages will be taken from `config.lua.pkgs`, so make sure that they are available from the derivation you set for the `lua` option.
     '';
-    example = ''
-      # String used to prevent function displaying as `<function>`
+    example = lib.literalMD ''
+      ```nix
       luaEnv = (lp: [ lp.luafilesystem ]);
+      ```
     '';
   };
   options."wezterm.lua" = lib.mkOption {
@@ -48,15 +49,31 @@
     inherit (pkgs.formats.lua { }) type;
     default = { };
     description = ''
-      Defines attributes which are converted to Lua. The converted values are made available to the wezterm config as the result of calling `require('nix-info')`.
-
+      Defines attributes which are converted to Lua.
+      The converted values are made available to the wezterm config as the result of calling `require('nix-info')`.
       The conversion to Lua uses `lib.generators.toLua` which accepts anything other than uncalled nix functions.
 
-      `''${placeholder config.outputName}` is usable here and will point to the final wrapper derivation
+      You can also access specific values from this option by calling `require('nix-info')(defaultval, "path", "to", "item")` in your config.
+      The `defaultval` in this call will be returned if the item you specified does not exist in the luaInfo table.
+      This allows you to use a config that works with and without the wrapper's setup.
 
-      You may also call `require('nix-info')(defaultval, "path", "to", "item")`. This will help prevent indexing errors when querying nested values which may not exist.
+      To access config values form the final wrapper derivation you can use `''${placeholder config.outputName}` to point to it.
 
       By default, the result of `require('nix-info')` is used as your wezterm config file, see the "wezterm.lua" option for details.
+    '';
+    example = lib.literalMD ''
+      ```nix
+      {
+        keys = [
+          {
+            key = "F12";
+            mods = "SUPER|CTRL|ALT|SHIFT";
+            # To get lua expressions, pass a string to lib.generators.mkLuaInline
+            action = lib.generators.mkLuaInline "wezterm.action.Nop";
+          }
+        ];
+      };
+      ```
     '';
   };
   config.constructFiles."wezterm.lua" = {
