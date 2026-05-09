@@ -292,8 +292,7 @@ in
           content = if builtins.isString (v.content or null) then v.content else "";
           output = lib.mkOverride 0 config.constructFiles.generatedConfig.output;
           relPath = lib.mkOverride 0 "${dirOf config.constructFiles.generatedConfig.relPath}/${name}";
-          ${if v.path or null != null then "builder" else null} =
-            ''mkdir -p "$(dirname "$2")" && ln -s "${v.path}" "$2"'';
+          ${if v.path or null != null then "builder" else null} = ''ln -s "${v.path}" "$2"'';
         }
       ))
     ]
@@ -305,8 +304,7 @@ in
           content = if builtins.isString (v.content or null) then v.content else "";
           output = lib.mkOverride 0 config.constructFiles.generatedConfig.output;
           relPath = lib.mkOverride 0 "${dirOf config.constructFiles.generatedConfig.relPath}/scripts/${name}";
-          ${if v.path or null != null then "builder" else null} =
-            ''mkdir -p "$(dirname "$2")" && ln -s "${v.path}" "$2"'';
+          ${if v.path or null != null then "builder" else null} = ''ln -s "${v.path}" "$2"'';
         }
       ))
     ]

@@ -68,9 +68,24 @@
                 relative output path within the named output to create the file (no leading slash)
               '';
             };
+            passAsContent = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = ''
+                This option controls the value passed as `$1` to the `.builder` command
+
+                If false, `$1` will contain the path to the input file
+
+                If true, `$1` will contain the content of the input file
+
+                It is recommended to use `true` when `config.drv.__structuredAttrs = true`
+                and `false` otherwise for performance,
+                unless you specifically need one or the other for your `.builder` command.
+              '';
+            };
             builder = lib.mkOption {
               type = lib.types.str;
-              default = ''mkdir -p "$(dirname "$2")" && cp "$1" "$2"'';
+              default = if config.passAsContent or false then ''echo "$1" > "$2"'' else ''cp "$1" "$2"'';
               description = ''
                 the command used to build the file.
 
@@ -129,12 +144,40 @@
     ];
     data =
       let
-        constructFile = name: path: builder: /* bash */ ''
+        constructFile = name: path: builder: asContent: /* bash */ ''
           constructFile() {
             ${builder}
           }
-          local sourceDrvVarToConstruct=${lib.escapeShellArg "${name}Path"}
-          constructFile "''${!sourceDrvVarToConstruct}" ${lib.escapeShellArg path}
+          mkdir -p "$(dirname ${lib.escapeShellArg path})"
+          if [ -n "$__structuredAttrs" ]; then
+            ${
+              if asContent then # bash
+                ''constructFile "''$${name}" ${lib.escapeShellArg path}''
+              # bash
+              else
+                ''
+                  local tempfile="$(mktemp)"
+                  echo "''$${name}" > "$tempfile"
+                  constructFile "$tempfile" ${lib.escapeShellArg path}
+                ''
+            }
+          else
+            ${
+              if asContent then
+                # If we just use $<name> directly, we will be subject to ARG_MAX limits
+                # bash
+                ''
+                  local sourceDrvVarToConstruct=${lib.escapeShellArg "${name}Path"}
+                  constructFile "$(cat "''${!sourceDrvVarToConstruct}")" ${lib.escapeShellArg path}
+                ''
+              # bash
+              else
+                ''
+                  local sourceDrvVarToConstruct=${lib.escapeShellArg "${name}Path"}
+                  constructFile "''${!sourceDrvVarToConstruct}" ${lib.escapeShellArg path}
+                ''
+            }
+          fi
         '';
       in
       ''
@@ -147,9 +190,10 @@
                 path,
                 builder,
                 key,
+                passAsContent,
                 ...
               }:
-              constructFile key path builder
+              constructFile key path builder passAsContent
             ))
             (
               v:

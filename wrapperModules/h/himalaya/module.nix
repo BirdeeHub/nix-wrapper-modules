@@ -26,7 +26,7 @@ in
       generatedConfig = {
         relPath = "${config.binName}-config.toml";
         content = builtins.toJSON config.settings;
-        builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+        builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
       };
     };
 

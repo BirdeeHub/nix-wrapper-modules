@@ -94,7 +94,7 @@ in
         content = builtins.toJSON config.settings;
         relPath = lib.mkOverride 0 "${config.binName}-config/halloy/config.toml";
         output = lib.mkOverride 0 config.generatedConfig.output;
-        builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+        builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
       };
     }
     // lib.pipe config.themes [
@@ -112,11 +112,11 @@ in
               "";
           builder =
             if builtins.isString theme then
-              ''mkdir -p "$(dirname "$2")" && cp "$1" "$2"''
+              ''cp "$1" "$2"''
             else if builtins.isPath theme || lib.isStorePath theme then
-              ''mkdir -p "$(dirname "$2")" && cp ${theme} "$2"''
+              ''cp ${theme} "$2"''
             else
-              ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+              ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
         }
       ))
     ];

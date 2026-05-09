@@ -138,8 +138,7 @@ in
     relPath = lib.mkOverride 0 "${config.binName}-themes/${n}.theme";
     output = lib.mkOverride 0 config.configDrvOutput;
     ${if builtins.isPath v || lib.isStorePath v then null else "content"} = v;
-    ${if builtins.isPath v || lib.isStorePath v then "builder" else null} =
-      ''mkdir -p "$(dirname "$2")" && cp ${v} "$2"'';
+    ${if builtins.isPath v || lib.isStorePath v then "builder" else null} = ''cp ${v} "$2"'';
   }) config.themes;
 
   meta.maintainers = [ wlib.maintainers.ameer ];

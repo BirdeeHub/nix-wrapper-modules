@@ -330,7 +330,7 @@ in
     dump-noctalia-shell = lib.mkIf config.enableDumpScript {
       key = "dumpNoctaliaShell";
       relPath = "bin/dump-noctalia-shell";
-      builder = ''mkdir -p "$(dirname "$2")" && cp "$1" "$2" && chmod +x "$2"'';
+      builder = ''cp "$1" "$2" && chmod +x "$2"'';
       content = ''
         #!${pkgs.bash}/bin/bash
         ${config.wrapperPaths.placeholder} ipc call state all > /tmp/noctalia.json && \
@@ -340,7 +340,7 @@ in
     copy-noctalia-shell-config = lib.mkIf (config.outOfStoreConfig != null) {
       key = "copyNoctaliaShellConfig";
       relPath = "bin/copy-noctalia-shell-config";
-      builder = ''mkdir -p "$(dirname "$2")" && cp "$1" "$2" && chmod +x "$2"'';
+      builder = ''cp "$1" "$2" && chmod +x "$2"'';
       content = ''
         #!${pkgs.bash}/bin/bash
         mkdir -p ${config.outOfStoreConfig} && \
@@ -376,7 +376,7 @@ in
       relPath = lib.mkOverride 0 "${config.generatedConfigDirname}/user-templates.toml";
       output = lib.mkOverride 0 config.configDrvOutput;
       content = builtins.toJSON config.user-templates;
-      builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+      builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     };
   }
   // lib.pipe config.preInstalledPlugins [
@@ -389,7 +389,7 @@ in
         relPath = lib.mkOverride 0 "${config.generatedConfigDirname}/plugins/${name}/settings.json";
         output = lib.mkOverride 0 config.configDrvOutput;
         content = builtins.toJSON value;
-        builder = ''mkdir -p "$(dirname "$2")" && cp -f "$1" "$2"'';
+        builder = ''cp -f "$1" "$2"'';
       }
     ))
   ];

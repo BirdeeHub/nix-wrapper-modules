@@ -89,7 +89,6 @@ in
         # Merges all specified presets TOML files and the TOML file generated
         # from nix settings using tomlq
         + ''
-          mkdir -p "$(dirname "$2")"
           ${pkgs.yq}/bin/tomlq -s -t 'reduce .[] as $item ({}; . * $item)' \
           ${lib.concatStringsSep " " orderedSettings} > "$2"
         '';

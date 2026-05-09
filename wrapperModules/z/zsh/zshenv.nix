@@ -197,7 +197,6 @@ in
       (config.zshenv.content or "")
     ];
     builder = ''
-      mkdir -p "$(dirname "$2")"
       echo ${lib.escapeShellArg baseZshenvP1} > "$2"
       ${wrapcmd wrapperInit}
       ${wrapperBuild}

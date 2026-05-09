@@ -273,71 +273,72 @@ in
     };
   };
   config = {
-    flags = {
-      "-f" = "${pkgs.writeText "tmux.conf" # tmux
-        ''
-          ${lib.optionalString config.sourceSensible ''
-            # ============================================= #
-            # Start with defaults from the Sensible plugin  #
-            # --------------------------------------------- #
-            run-shell ${pkgs.tmuxPlugins.sensible.rtp}
-            # ============================================= #
-          ''}
-          unbind C-b
-          set-option -g prefix ${config.prefix}
-          set -g prefix ${config.prefix}
-          bind -N "Send the prefix key through to the application" \
-            ${config.prefix} send-prefix
+    constructFiles.generatedConfig = {
+      relPath = "tmux.conf";
+      content = ''
+        ${lib.optionalString config.sourceSensible ''
+          # ============================================= #
+          # Start with defaults from the Sensible plugin  #
+          # --------------------------------------------- #
+          run-shell ${pkgs.tmuxPlugins.sensible.rtp}
+          # ============================================= #
+        ''}
+        unbind C-b
+        set-option -g prefix ${config.prefix}
+        set -g prefix ${config.prefix}
+        bind -N "Send the prefix key through to the application" \
+          ${config.prefix} send-prefix
 
-          set -g display-panes-colour ${config.displayPanesColour}
-          set -g default-terminal ${config.terminal}
-          ${lib.optionalString (config.shell != null) ''
-            set  -g default-shell "${config.shell}"
-          ''}
-          ${addPassthruVars config.updateEnvironment}
-          ${addGlobalVars config.setEnvironment}
-          ${lib.optionalString (config.terminalOverrides != null) ''
-            set -ga terminal-overrides "${config.terminalOverrides}"
-          ''}
+        set -g display-panes-colour ${config.displayPanesColour}
+        set -g default-terminal ${config.terminal}
+        ${lib.optionalString (config.shell != null) ''
+          set  -g default-shell "${config.shell}"
+        ''}
+        ${addPassthruVars config.updateEnvironment}
+        ${addGlobalVars config.setEnvironment}
+        ${lib.optionalString (config.terminalOverrides != null) ''
+          set -ga terminal-overrides "${config.terminalOverrides}"
+        ''}
 
-          set -g base-index ${toString config.baseIndex}
-          setw -g pane-base-index ${toString config.paneBaseIndex}
+        set -g base-index ${toString config.baseIndex}
+        setw -g pane-base-index ${toString config.paneBaseIndex}
 
-          set -g mouse ${tmux_bool_conv config.mouse}
-          setw -g aggressive-resize ${tmux_bool_conv config.aggressiveResize}
-          setw -g clock-mode-style ${if config.clock24 then "24" else "12"}
-          set -s escape-time ${toString config.escapeTime}
-          set -g history-limit ${toString config.historyLimit}
-          set -gq allow-passthrough ${tmux_bool_conv config.allowPassthrough}
-          set -g visual-activity ${tmux_bool_conv config.visualActivity}
+        set -g mouse ${tmux_bool_conv config.mouse}
+        setw -g aggressive-resize ${tmux_bool_conv config.aggressiveResize}
+        setw -g clock-mode-style ${if config.clock24 then "24" else "12"}
+        set -s escape-time ${toString config.escapeTime}
+        set -g history-limit ${toString config.historyLimit}
+        set -gq allow-passthrough ${tmux_bool_conv config.allowPassthrough}
+        set -g visual-activity ${tmux_bool_conv config.visualActivity}
 
-          set -g status-keys ${config.statusKeys}
-          set -g mode-keys   ${config.modeKeys}
+        set -g status-keys ${config.statusKeys}
+        set -g mode-keys   ${config.modeKeys}
 
-          ${lib.optionalString config.vimVisualKeys ''
-            bind-key -T copy-mode-vi 'v' send -X begin-selection
-            bind-key -T copy-mode-vi 'y' send -X copy-selection-and-cancel
-          ''}
+        ${lib.optionalString config.vimVisualKeys ''
+          bind-key -T copy-mode-vi 'v' send -X begin-selection
+          bind-key -T copy-mode-vi 'y' send -X copy-selection-and-cancel
+        ''}
 
-          ${lib.optionalString config.disableConfirmationPrompt ''
-            bind-key -N "Kill the current window" & kill-window
-            bind-key -N "Kill the current pane" x kill-pane
-          ''}
+        ${lib.optionalString config.disableConfirmationPrompt ''
+          bind-key -N "Kill the current window" & kill-window
+          bind-key -N "Kill the current pane" x kill-pane
+        ''}
 
-          # ============================================== #
+        # ============================================== #
 
-          ${config.configBefore}
+        ${config.configBefore}
 
-          # ============================================== #
+        # ============================================== #
 
-          ${configPlugins config.plugins}
+        ${configPlugins config.plugins}
 
-          # ============================================== #
+        # ============================================== #
 
-          ${config.configAfter}
-        ''
-      }";
+        ${config.configAfter}
+
+      '';
     };
+    flags."-f" = config.constructFiles.generatedConfig.path;
     runShell = lib.mkIf config.secureSocket [
       ''export TMUX_TMPDIR=''${TMUX_TMPDIR:-''${XDG_RUNTIME_DIR:-"/run/user/$(id -u)"}}''
     ];

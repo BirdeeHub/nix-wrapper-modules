@@ -92,7 +92,6 @@ in
       output = lib.mkOverride 0 config.generatedConfig.output;
       content = builtins.toJSON config.settings;
       builder = ''
-        mkdir -p "$(dirname "$2")" && \
         ${pkgs.remarshal}/bin/json2toml "$1" "$2" && \
         cat "$extraSettingsPath" >> "$2"
       '';
@@ -101,7 +100,7 @@ in
       relPath = lib.mkOverride 0 "${config.binName}-config/helix/languages.toml";
       output = lib.mkOverride 0 config.generatedConfig.output;
       content = builtins.toJSON config.languages;
-      builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+      builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     };
     ignore = lib.mkIf (config.ignores != [ ]) {
       relPath = lib.mkOverride 0 "${config.binName}-config/helix/ignore";
@@ -118,7 +117,7 @@ in
         output = lib.mkOverride 0 config.generatedConfig.output;
         content = if builtins.isString theme then theme else builtins.toJSON theme;
         ${if builtins.isString theme then null else "builder"} =
-          ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+          ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
       }
     ))
   ];

@@ -509,7 +509,7 @@ in
         # redefine builder to convert the result to toml.
         # This is how pkgs.format.toml works
         # https://github.com/NixOS/nixpkgs/blob/27298c9e6596851fe781e04e54704d705d91f38b/pkgs/pkgs-lib/formats.nix#L455-L477
-        builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+        builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
       })
       {
         yazi = config.settings.yazi;

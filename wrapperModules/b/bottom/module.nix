@@ -30,7 +30,7 @@ in
     constructFiles.generatedConfig = {
       content = builtins.toJSON config.settings;
       relPath = "${config.binName}-config.toml";
-      builder = ''mkdir -p "$(dirname "$2")" && ${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+      builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     };
     meta.maintainers = [ wlib.maintainers.rachitvrma ];
   };

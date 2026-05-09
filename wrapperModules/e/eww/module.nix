@@ -66,7 +66,7 @@
       output = lib.mkOverride 0 config.constructFiles.yuck.output;
       relPath = lib.mkOverride 0 "${dirOf config.constructFiles.yuck.relPath}/eww.${config.style.format}";
       ${if config.style.path or null != null then "builder" else null} =
-        ''mkdir -p "$(dirname "$2")" && ln -s "${config.style.path}" "$2"'';
+        ''ln -s "${config.style.path}" "$2"'';
     };
 
     flags."--config" = dirOf config.constructFiles.yuck.path;

@@ -221,7 +221,6 @@ in
           ${nixInit}
         '';
       builder = ''
-        mkdir -p "$(dirname "$2")"
         { [ -e "$1" ] && cat "$1" || echo "$nixLuaInit"; }${
           if hasFnl then " | ${pkgs.luajitPackages.fennel}/bin/fennel --compile - " else " "
         }> "$2"
