@@ -273,12 +273,12 @@ in
         lib.mkIf (scriptsData != [ ] && (config.configDir == { } || !builtins.isAttrs config.configDir))
           {
             sep = "=";
-            ifs = ":";
+            ifs = null;
             data = scriptsData;
           };
       "--script-opts-append" = lib.mkIf (scriptOptsData != [ ]) {
         sep = "=";
-        ifs = ",";
+        ifs = null;
         data = scriptOptsData;
       };
     }
