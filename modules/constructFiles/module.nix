@@ -164,14 +164,10 @@
           else
             ${
               if asContent then
-                # If we just use $<name> directly, we will be subject to ARG_MAX limits
                 # bash
-                ''
-                  local sourceDrvVarToConstruct=${lib.escapeShellArg "${name}Path"}
-                  constructFile "$(cat "''${!sourceDrvVarToConstruct}")" ${lib.escapeShellArg path}
-                ''
-              # bash
+                ''constructFile "''$${name}" ${lib.escapeShellArg path}''
               else
+                # bash
                 ''
                   local sourceDrvVarToConstruct=${lib.escapeShellArg "${name}Path"}
                   constructFile "''${!sourceDrvVarToConstruct}" ${lib.escapeShellArg path}
