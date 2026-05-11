@@ -516,4 +516,41 @@ in
     Like `wlib.types.attrsRecursive`, but uses `lib.types.lazyAttrsOf` instead.
   */
   lazyAttrsRecursive = attrsRecursive true;
+
+  /**
+    Creates a value type suitable for serialization formats.
+
+    Parameters:
+    - typeName: String describing the format (e.g. "JSON", "YAML", "XML")
+    - nullable: Whether the structured value type allows `null` values.
+    - extraValueTypes: List of extra value types to allow, e.g. "[ lib.types.luaInline ]"
+
+    Returns a type suitable for structured data formats that supports:
+    - Basic types: boolean, integer, float, string, path
+    - Complex types: attribute sets and lists
+    - Other user provided value types
+  */
+  structuredValueWith =
+    {
+      typeName,
+      nullable ? true,
+      extraValueTypes ? [ ],
+    }:
+    let
+      baseType = lib.types.oneOf (
+        (lib.toList extraValueTypes)
+        ++ [
+          lib.types.bool
+          lib.types.int
+          lib.types.float
+          wlib.types.stringable
+          (lib.types.attrsOf valueType)
+          (lib.types.listOf valueType)
+        ]
+      );
+      valueType = (if nullable then lib.types.nullOr baseType else baseType) // {
+        description = "${typeName} value";
+      };
+    in
+    valueType;
 }
