@@ -5,14 +5,11 @@
   pkgs,
   ...
 }:
-let
-  jsonFormat = pkgs.formats.json { };
-in
 {
   imports = [ wlib.modules.default ];
   options = {
     settings = lib.mkOption {
-      type = jsonFormat.type;
+      type = wlib.types.structuredValueWith { typeName = "JSON"; };
       default = { };
       description = "JSON config for HyFetch";
       example = lib.literalExpression ''

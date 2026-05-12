@@ -6,7 +6,10 @@
   ...
 }:
 let
-  tomlFmt = pkgs.formats.toml { };
+  tomlFmtType = wlib.types.structuredValueWith {
+    nullable = false;
+    typeName = "TOML";
+  };
   hasConfig =
     config.settings != { }
     || config.extraSettings != ""
@@ -18,7 +21,7 @@ in
   imports = [ wlib.modules.default ];
   options = {
     settings = lib.mkOption {
-      type = tomlFmt.type;
+      type = tomlFmtType;
       description = ''
         General settings
         See <https://docs.helix-editor.com/configuration.html> 
@@ -33,7 +36,7 @@ in
       '';
     };
     languages = lib.mkOption {
-      type = tomlFmt.type;
+      type = tomlFmtType;
       description = ''
         Language specific settings
         See <https://docs.helix-editor.com/languages.html>
@@ -43,7 +46,7 @@ in
     themes = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.oneOf [
-          tomlFmt.type
+          tomlFmtType
           lib.types.lines
         ]
       );

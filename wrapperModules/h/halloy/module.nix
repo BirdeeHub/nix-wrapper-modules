@@ -6,13 +6,16 @@
   ...
 }:
 let
-  tomlFmt = pkgs.formats.toml { };
+  tomlFmtType = wlib.types.structuredValueWith {
+    nullable = false;
+    typeName = "TOML";
+  };
 in
 {
   imports = [ wlib.modules.default ];
   options = {
     settings = lib.mkOption {
-      inherit (tomlFmt) type;
+      type = tomlFmtType;
       default = { };
       description = ''
         Configuration settings for halloy. All available options can be
@@ -31,7 +34,7 @@ in
     themes = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.oneOf [
-          tomlFmt.type
+          tomlFmtType
           lib.types.lines
           lib.types.path
         ]

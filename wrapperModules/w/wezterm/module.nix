@@ -46,7 +46,10 @@
     '';
   };
   options.luaInfo = lib.mkOption {
-    inherit (pkgs.formats.lua { }) type;
+    type = wlib.types.structuredValueWith {
+      typeName = "lua";
+      extraValueTypes = lib.types.luaInline;
+    };
     default = { };
     description = ''
       Defines attributes which are converted to Lua.

@@ -6,7 +6,10 @@
   ...
 }:
 let
-  tomlFmt = pkgs.formats.toml { };
+  tomlFmtType = wlib.types.structuredValueWith {
+    nullable = false;
+    typeName = "TOML";
+  };
 in
 {
   imports = [ wlib.modules.default ];
@@ -21,10 +24,10 @@ in
       '';
 
       type = lib.types.submodule {
-        freeformType = tomlFmt.type;
+        freeformType = tomlFmtType;
         options = {
           mgr = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Manager settings
               See <https://yazi-rs.github.io/docs/configuration/yazi#mgr>
@@ -33,7 +36,7 @@ in
           };
 
           preview = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Preview settings
               See <https://yazi-rs.github.io/docs/configuration/yazi#preview>
@@ -42,7 +45,7 @@ in
           };
 
           opener = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Opener settings
               See <https://yazi-rs.github.io/docs/configuration/yazi#opener>
@@ -51,7 +54,7 @@ in
           };
 
           open = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Open settings
               See <https://yazi-rs.github.io/docs/configuration/yazi#open>
@@ -60,7 +63,7 @@ in
           };
 
           plugin = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Plugin settings
               See <https://yazi-rs.github.io/docs/configuration/yazi#plugin>
@@ -69,7 +72,7 @@ in
           };
 
           input = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Input settings
               See <https://yazi-rs.github.io/docs/configuration/yazi#input>
@@ -78,7 +81,7 @@ in
           };
 
           confirm = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Confirm settings
               See <https://yazi-rs.github.io/docs/configuration/yazi#confirm>
@@ -87,7 +90,7 @@ in
           };
 
           pick = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Pick settings
               See <https://yazi-rs.github.io/docs/configuration/yazi#pick>
@@ -96,7 +99,7 @@ in
           };
 
           which = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Which settings
               See <https://yazi-rs.github.io/docs/configuration/yazi#which>
@@ -116,10 +119,10 @@ in
       '';
 
       type = lib.types.submodule {
-        freeformType = tomlFmt.type;
+        freeformType = tomlFmtType;
         options = {
           mgr = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Keymap mgr settings
               See <https://yazi-rs.github.io/docs/configuration/keymap#mgr>
@@ -129,7 +132,7 @@ in
           };
 
           tasks = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Keymap tasks settings
               See <https://yazi-rs.github.io/docs/configuration/keymap#tasks>
@@ -139,7 +142,7 @@ in
           };
 
           spot = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Keymap spot settings
               See <https://yazi-rs.github.io/docs/configuration/keymap#spot>
@@ -149,7 +152,7 @@ in
           };
 
           pick = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Keymap pick settings
               See <https://yazi-rs.github.io/docs/configuration/keymap#pick>
@@ -159,7 +162,7 @@ in
           };
 
           input = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
               Keymap input settings
               See <https://yazi-rs.github.io/docs/configuration/keymap#input>
@@ -169,7 +172,7 @@ in
           };
 
           confirm = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Keymap confirm settings
               See < https://yazi-rs.github.io/docs/configuration/keymap#confirm>
@@ -179,7 +182,7 @@ in
           };
 
           cmp = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Keymap cmp settings
               See < https://yazi-rs.github.io/docs/configuration/keymap#cmp>
@@ -189,7 +192,7 @@ in
           };
 
           help = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Keymap help settings
               See < https://yazi-rs.github.io/docs/configuration/keymap#help>
@@ -209,10 +212,10 @@ in
       '';
 
       type = lib.types.submodule {
-        freeformType = tomlFmt.type;
+        freeformType = tomlFmtType;
         options = {
           flavor = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme flawor settings
               See < https://yazi-rs.github.io/docs/configuration/theme#flavor>
@@ -221,7 +224,7 @@ in
           };
 
           app = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme app settings
               See < https://yazi-rs.github.io/docs/configuration/theme#app>
@@ -230,7 +233,7 @@ in
           };
 
           mgr = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme mgr settings
               See < https://yazi-rs.github.io/docs/configuration/theme#mgr>
@@ -240,7 +243,7 @@ in
           };
 
           indicator = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme indicator settings
               See < https://yazi-rs.github.io/docs/configuration/theme#indicator>
@@ -249,7 +252,7 @@ in
           };
 
           tabs = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme tabs settings
               See < https://yazi-rs.github.io/docs/configuration/theme#tabs>
@@ -258,7 +261,7 @@ in
           };
 
           mode = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme mode settings
               See < https://yazi-rs.github.io/docs/configuration/theme#mode>
@@ -267,7 +270,7 @@ in
           };
 
           status = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme status settings
               See < https://yazi-rs.github.io/docs/configuration/theme#status>
@@ -276,7 +279,7 @@ in
           };
 
           which = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme which settings
               See < https://yazi-rs.github.io/docs/configuration/theme#which>
@@ -285,7 +288,7 @@ in
           };
 
           confirm = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme confirm settings
               See < https://yazi-rs.github.io/docs/configuration/theme#confirm>
@@ -294,7 +297,7 @@ in
           };
 
           spot = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme spot settings
               See < https://yazi-rs.github.io/docs/configuration/theme#spot>
@@ -303,7 +306,7 @@ in
           };
 
           notify = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme notify settings
               See < https://yazi-rs.github.io/docs/configuration/theme#notify>
@@ -312,7 +315,7 @@ in
           };
 
           pick = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme pick settings
               See < https://yazi-rs.github.io/docs/configuration/theme#pick>
@@ -321,7 +324,7 @@ in
           };
 
           input = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme input settings
               See < https://yazi-rs.github.io/docs/configuration/theme#input>
@@ -331,7 +334,7 @@ in
           };
 
           cmp = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme cmp settings
               See < https://yazi-rs.github.io/docs/configuration/theme#cmp>
@@ -340,7 +343,7 @@ in
           };
 
           tasks = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme tasks settings
               See < https://yazi-rs.github.io/docs/configuration/theme#tasks>
@@ -349,7 +352,7 @@ in
           };
 
           help = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme help settings
               See < https://yazi-rs.github.io/docs/configuration/theme#help>
@@ -358,7 +361,7 @@ in
           };
 
           filetype = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme filetype settings
               See < https://yazi-rs.github.io/docs/configuration/theme#filetype>
@@ -367,7 +370,7 @@ in
           };
 
           icon = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Theme icon settings
               See < https://yazi-rs.github.io/docs/configuration/theme#icon>
@@ -385,10 +388,10 @@ in
         See configuration reference at <https://yazi-rs.github.io/docs/configuration/vfs>
       '';
       type = lib.types.submodule {
-        freeformType = tomlFmt.type;
+        freeformType = tomlFmtType;
         options = {
           services = lib.mkOption {
-            type = tomlFmt.type;
+            type = tomlFmtType;
             description = ''
                Vfs settings
               See < https://yazi-rs.github.io/docs/configuration/vfs>
@@ -407,7 +410,7 @@ in
       '';
 
       type = lib.types.submodule {
-        freeformType = tomlFmt.type;
+        freeformType = tomlFmtType;
         options = {
           plugin = lib.mkOption {
             description = ''
@@ -416,9 +419,9 @@ in
             '';
             default = { };
             type = lib.types.submodule {
-              freeformType = tomlFmt.type;
+              freeformType = tomlFmtType;
               options.deps = lib.mkOption {
-                type = lib.types.listOf tomlFmt.type;
+                type = lib.types.listOf tomlFmtType;
                 default = [ ];
                 description = ''
                   List of plugins and dependencies.

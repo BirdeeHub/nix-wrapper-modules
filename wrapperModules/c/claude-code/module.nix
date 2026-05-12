@@ -6,7 +6,7 @@
   ...
 }:
 let
-  jsonFmt = pkgs.formats.json { };
+  jsonFmtType = wlib.types.structuredValueWith { typeName = "JSON"; };
 in
 {
   imports = [ wlib.modules.default ];
@@ -14,7 +14,7 @@ in
   options = {
 
     agents = lib.mkOption {
-      type = jsonFmt.type;
+      type = jsonFmtType;
       default = { };
       description = ''
         Custom agents to add to Claude Code.
@@ -37,7 +37,7 @@ in
     };
 
     mcpConfig = lib.mkOption {
-      type = jsonFmt.type;
+      type = jsonFmtType;
       default = { };
       description = ''
         MCP Server configuration
@@ -71,7 +71,7 @@ in
     };
 
     settings = lib.mkOption {
-      type = jsonFmt.type;
+      type = jsonFmtType;
       default = { };
       description = ''
         Claude Code settings

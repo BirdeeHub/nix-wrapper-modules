@@ -6,21 +6,24 @@
   ...
 }:
 let
-  tomlFmt = pkgs.formats.toml { };
+  tomlFmtType = wlib.types.structuredValueWith {
+    nullable = false;
+    typeName = "TOML";
+  };
 in
 {
   imports = [ wlib.modules.default ];
 
   options = {
     settings = lib.mkOption {
-      type = tomlFmt.type;
+      type = tomlFmtType;
       default = { };
       description = ''
         Atuin configuration options.
       '';
     };
     server-settings = lib.mkOption {
-      type = tomlFmt.type;
+      type = tomlFmtType;
       default = { };
       description = ''
         Atuin server configuration options.

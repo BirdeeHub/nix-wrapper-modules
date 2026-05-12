@@ -101,7 +101,7 @@ in
       '';
     };
     settings = lib.mkOption {
-      type = lib.types.json or (pkgs.formats.json { }).type;
+      type = wlib.types.structuredValueWith { typeName = "JSON"; };
       default = { };
       example = lib.literalExpression ''
         {
@@ -127,7 +127,7 @@ in
     };
 
     colors = lib.mkOption {
-      type = lib.types.json or (pkgs.formats.json { }).type;
+      type = wlib.types.structuredValueWith { typeName = "JSON"; };
       default = { };
       example = lib.literalExpression ''
          {
@@ -155,7 +155,10 @@ in
 
     user-templates = lib.mkOption {
       default = { };
-      type = (pkgs.formats.toml { }).type;
+      type = wlib.types.structuredValueWith {
+        nullable = false;
+        typeName = "TOML";
+      };
       example = lib.literalExpression ''
         {
           templates = {
@@ -175,7 +178,7 @@ in
     };
 
     plugins = lib.mkOption {
-      type = lib.types.json or (pkgs.formats.json { }).type;
+      type = wlib.types.structuredValueWith { typeName = "JSON"; };
       default = { };
       example = lib.literalExpression ''
         {
@@ -202,7 +205,7 @@ in
     };
 
     pluginSettings = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.json or (pkgs.formats.json { }).type);
+      type = lib.types.attrsOf (wlib.types.structuredValueWith { typeName = "JSON"; });
       default = { };
       example = lib.literalExpression ''
         {
@@ -275,7 +278,7 @@ in
               '';
             };
             settings = lib.mkOption {
-              type = lib.types.json or (pkgs.formats.json { }).type;
+              type = wlib.types.structuredValueWith { typeName = "JSON"; };
               default = { };
               description = ''
                 Settings to add to `$NOCTALIA_CONFIG_DIR/plugins/plugin-name/settings.json`
