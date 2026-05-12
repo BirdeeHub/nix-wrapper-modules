@@ -6,7 +6,10 @@
   ...
 }:
 let
-  luaType = (pkgs.formats.lua { }).type;
+  luaType = wlib.types.structuredValueWith {
+    typeName = "lua";
+    extraValueTypes = lib.types.luaInline;
+  };
   enabledDagOf = wlib.types.dagOf // {
     modules = [
       {

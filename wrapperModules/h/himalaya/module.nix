@@ -5,15 +5,15 @@
   lib,
   ...
 }:
-let
-  tomlFmt = pkgs.formats.toml { };
-in
 {
   imports = [ wlib.modules.default ];
 
   options = {
     settings = lib.mkOption {
-      type = tomlFmt.type;
+      type = wlib.types.structuredValueWith {
+        nullable = false;
+        typeName = "TOML";
+      };
       default = { };
       description = ''
         Configuration for himalaya mail client CLI

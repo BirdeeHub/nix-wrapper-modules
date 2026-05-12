@@ -6,7 +6,6 @@
   ...
 }:
 let
-  yamlFmt = pkgs.formats.yaml { };
 in
 {
   imports = [ wlib.modules.default ];
@@ -19,7 +18,7 @@ in
     };
 
     settings = lib.mkOption {
-      type = yamlFmt.type;
+      type = wlib.types.structuredValueWith { typeName = "YAML 1.1"; };
       default = { };
       description = ''
         Configuration for wlr-which-key.

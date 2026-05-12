@@ -8,23 +8,10 @@
 let
   makeWrapper = import wlib.modules.makeWrapper;
   inherit (lib) types;
-  luaType =
-    types.nullOr (
-      types.oneOf [
-        types.bool
-        types.float
-        types.int
-        types.path
-        types.str
-        types.luaInline
-        (types.attrsOf luaType)
-        (types.listOf luaType)
-      ]
-    )
-    // {
-      description = "lua value";
-      descriptionClass = "noun";
-    };
+  luaType = wlib.types.structuredValueWith {
+    typeName = "lua";
+    extraValueTypes = lib.types.luaInline;
+  };
   hostPropagatedOptions =
     name: hostConfig:
     lib.types.submoduleWith {

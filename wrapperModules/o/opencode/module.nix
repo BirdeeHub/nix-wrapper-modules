@@ -8,7 +8,7 @@
 {
   imports = [ wlib.modules.default ];
   options.settings = lib.mkOption {
-    type = (pkgs.formats.json { }).type;
+    type = wlib.types.structuredValueWith { typeName = "JSON"; };
     default = { };
     description = "Sets OPENCODE_CONFIG for github:sst/opencode";
   };

@@ -6,8 +6,6 @@
   ...
 }:
 let
-  tomlFmt = pkgs.formats.toml { };
-
   presetKey = "preset";
   settingsKey = "settings";
 
@@ -21,7 +19,10 @@ in
 
   options = {
     settings = lib.mkOption {
-      inherit (tomlFmt) type;
+      type = wlib.types.structuredValueWith {
+        nullable = false;
+        typeName = "TOML";
+      };
       default = { };
       description = ''
         Pure nix configuration of starship.toml.

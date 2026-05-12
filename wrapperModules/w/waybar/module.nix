@@ -4,15 +4,12 @@
   lib,
   ...
 }:
-let
-  jsonFmt = config.pkgs.formats.json { };
-in
 {
   imports = [ wlib.modules.default ];
 
   options = {
     settings = lib.mkOption {
-      type = jsonFmt.type;
+      type = wlib.types.structuredValueWith { typeName = "JSON"; };
       default = { };
       description = ''
         Waybar configuration settings.

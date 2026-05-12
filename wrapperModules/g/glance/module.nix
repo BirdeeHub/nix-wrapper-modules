@@ -9,7 +9,7 @@
   imports = [ wlib.modules.default ];
   options = {
     settings = lib.mkOption {
-      inherit (pkgs.formats.yaml { }) type;
+      type = wlib.types.structuredValueWith { typeName = "YAML 1.1"; };
       default = { };
       description = ''
         Configuration for glance.

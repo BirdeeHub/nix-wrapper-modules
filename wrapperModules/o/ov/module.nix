@@ -5,14 +5,11 @@
   pkgs,
   ...
 }:
-let
-  yamlFmt = pkgs.formats.yaml { };
-in
 {
   imports = [ wlib.modules.default ];
   options = {
     settings = lib.mkOption {
-      type = yamlFmt.type;
+      type = wlib.types.structuredValueWith { typeName = "YAML 1.1"; };
       default = { };
       description = ''
         Configuration of ov.
