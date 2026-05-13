@@ -457,8 +457,7 @@ in
           (foldl' (
             acc: elem: acc + " " + (mkAbbrArg elem abbr)
           ) "abbr --add ${abbr.word} ${mkCursorArg abbr}" abbrArgs)
-          + " "
-          + "\"${abbr.expansion}\"";
+          + optionalString (abbr.function == null) " \"${abbr.expansion}\"";
 
         abbrs = concatStringsSep "\n" (map mkAbbrStr (attrValues cfg.abbreviations));
         aliases = concatStringsSep "\n" (
