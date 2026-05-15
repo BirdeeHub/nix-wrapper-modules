@@ -36,7 +36,7 @@ in
   options = {
     sourceSensible = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Start with defaults from tmuxPlugins.sensible";
     };
     secureSocket = lib.mkOption {
