@@ -106,4 +106,9 @@
     github = "appleptree";
     githubId = 189892522;
   };
+  allen-liaoo = {
+    name = "Allen Liao";
+    github = "allen-liaoo";
+    githubId = 16383622;
+  };
 }
