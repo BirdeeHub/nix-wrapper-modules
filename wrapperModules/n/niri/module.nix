@@ -144,11 +144,11 @@ in
       '';
       default = { };
       type = lib.types.submodule {
-        freeformType = lib.types.attrs;
+        freeformType = wlib.types.attrsRecursive;
         options = {
           binds = lib.mkOption {
             default = { };
-            type = lib.types.attrs;
+            type = wlib.types.attrsRecursive;
             description = "Bindings of niri";
             apply = convertAndWarn;
             example = lib.literalMD ''
@@ -168,7 +168,7 @@ in
           };
           layout = lib.mkOption {
             default = { };
-            type = lib.types.attrs;
+            type = wlib.types.attrsRecursive;
             description = "Layout definitions";
             apply = convertAndWarn;
             example = lib.literalMD ''
@@ -261,7 +261,7 @@ in
           };
           outputs = lib.mkOption {
             default = { };
-            type = lib.types.attrs;
+            type = wlib.types.attrsRecursive;
             description = "Output configuration";
             apply = convertAndWarn;
             example = lib.literalMD ''
