@@ -92,8 +92,8 @@
                         echo "Patching $file"
                         # Remove symlink and create a real file with patched content
                         rm "$file"
-                        # Use replace-literal which works for both text and binary files
-                        ${pkgs.replace}/bin/replace-literal "$oldPath" "$newPath" < "$target" > "$file"
+                        # Use gnused explicitly which works for both text and binary files
+                        ${pkgs.gnused}/bin/sed "s|$oldPath|$newPath|g" "$target" > "$file"
                         # Preserve permissions
                         chmod --reference="$target" "$file"
                       fi

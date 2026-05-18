@@ -65,7 +65,7 @@ test "filesToPatch-test" {
                   package = pkgs.hello;
                   wrapperImplementation = "binary";
                   wrapperVariants.fileToBePatched.exePath = "bin/hello"; # <- not the main one, the outer wrapper module will thus not wrap it automatically.
-                  flags."--greeting" = "Hello, ${placeholder "out"}";
+                  flags."--greeting" = "Hello,\0 ${placeholder "out"}";
                 }
               )
             ];
