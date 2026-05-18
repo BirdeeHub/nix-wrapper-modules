@@ -1,7 +1,29 @@
 ---
 version: 2
+
+multi-ecosystem-groups:
+  nix-all:
+    schedule:
+      interval: weekly
+
 updates:
+  - package-ecosystem: "nix"
+    directory: "/"
+    patterns:
+      - "*"
+    multi-ecosystem-group: "nix-all"
+
+  - package-ecosystem: "nix"
+    directory: "/ci"
+    patterns:
+      - "*"
+    multi-ecosystem-group: "nix-all"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
