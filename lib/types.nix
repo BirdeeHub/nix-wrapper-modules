@@ -367,6 +367,31 @@ in
   };
 
   /**
+    Allows values that are, or resolve to under interpolation, an absolute-path-like value.
+
+    A value is considered linkable if it matches any of the following:
+    - It is a Nix store path (e.g. `./.`, `"${./.}"` or a derivation)
+    - It is a plain string that starts with `"/"` and does not contain any newlines
+
+    This is useful when wrapping commands that accept file or directory paths,
+    where you need to distinguish path-like values from other strings.
+
+    For example, when you feel like you want `lib.types.either wlib.types.stringable lib.types.lines`
+
+    You should instead use `lib.types.either wlib.types.linkable lib.types.lines`
+  */
+  linkable = lib.mkOptionType {
+    name = "linkable";
+    descriptionClass = "noun";
+    description = "absolute path";
+    inherit (wlib.types.stringable) merge;
+    check =
+      x:
+      lib.isStringLike x
+      && (if builtins.isString x then builtins.substring 0 1 x == "/" && !lib.hasInfix "\n" x else true);
+  };
+
+  /**
     A single-line, non-empty string
   */
   nonEmptyLine = lib.mkOptionType {

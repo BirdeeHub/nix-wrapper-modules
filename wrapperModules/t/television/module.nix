@@ -11,12 +11,7 @@ let
     nullable = false;
     typeName = "TOML";
   };
-  isPathLike =
-    x:
-    builtins.isPath x
-    || (lib.isStringLike x && !builtins.isString x)
-    || (builtins.isString x && lib.hasPrefix "/" x)
-    || lib.isStorePath x;
+  isLinkable = wlib.types.linkable.check;
 in
 {
   imports = [ wlib.modules.default ];
@@ -27,7 +22,7 @@ in
       description = "Television configuration options.";
     };
     channels = lib.mkOption {
-      type = types.lazyAttrsOf (types.either wlib.types.stringable tomlFmtType);
+      type = types.lazyAttrsOf (types.either wlib.types.linkable tomlFmtType);
       default = { };
       description = "Television channels to install.";
     };
@@ -40,7 +35,7 @@ in
       '';
     };
     themes = lib.mkOption {
-      type = types.lazyAttrsOf (types.either wlib.types.stringable tomlFmtType);
+      type = types.lazyAttrsOf (types.either wlib.types.linkable tomlFmtType);
       default = { };
       description = "Themes of television to install.";
     };
@@ -84,17 +79,17 @@ in
       key = "channel_${n}";
       relPath = lib.mkOverride 0 "${config.binName}-channels/${n}.toml";
       output = lib.mkOverride 0 config.configDrvOutput;
-      ${if isPathLike v then null else "content"} = builtins.toJSON v;
+      ${if isLinkable v then null else "content"} = builtins.toJSON v;
       "builder" =
-        if isPathLike v then ''ln -s ${v} "$2"'' else ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+        if isLinkable v then ''ln -s ${v} "$2"'' else ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     }) config.channels
     // builtins.mapAttrs (n: v: {
       key = "theme_${n}";
       relPath = lib.mkOverride 0 "${config.binName}-themes/${n}.toml";
       output = lib.mkOverride 0 config.configDrvOutput;
-      ${if isPathLike v then null else "content"} = builtins.toJSON v;
+      ${if isLinkable v then null else "content"} = builtins.toJSON v;
       "builder" =
-        if isPathLike v then ''ln -s ${v} "$2"'' else ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
+        if isLinkable v then ''ln -s ${v} "$2"'' else ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     }) config.themes;
     meta.maintainers = [ wlib.maintainers.allen-liaoo ];
   };
