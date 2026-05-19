@@ -118,9 +118,9 @@ in
     )
   ];
   options = {
-    wrapperVariants = lib.mkOption {
-      type = lib.types.attrsOf (
-        lib.types.submoduleWith {
+    wrapperVariants = mkOption {
+      type = types.attrsOf (
+        types.submoduleWith {
           modules = [
             (
               { name, ... }:
