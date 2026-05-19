@@ -183,7 +183,7 @@ inputs: # <- get the lib somehow
     curlwrapped = inputs.wrappers.lib.wrapPackage ({ config, wlib, lib, ... }: {
       inherit pkgs; # you can only grab the final package if you supply pkgs!
       package = pkgs.curl;
-      extraPackages = [ pkgs.jq ];
+      runtimePkgs = [ pkgs.jq ];
       env = {
         CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
       };
