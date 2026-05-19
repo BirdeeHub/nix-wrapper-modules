@@ -33,19 +33,22 @@ let
     '';
   };
 in
-pkgs.runCommand "quickshell-test"
-  {
-    LANG = "C.utf8";
-    LC_ALL = "C.utf8";
-  }
-  ''
-    set +e
+if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.fish.meta.platforms then
+  pkgs.runCommand "quickshell-test"
+    {
+      LANG = "C.utf8";
+      LC_ALL = "C.utf8";
+    }
+    ''
+      set +e
 
-    export XDG_RUNTIME_DIR=$(${pkgs.coreutils}/bin/mktemp -d)
-    logs=$("${quickshellWrapped}/bin/quickshell" -v -v 2>&1)
+      export XDG_RUNTIME_DIR=$(${pkgs.coreutils}/bin/mktemp -d)
+      logs=$("${quickshellWrapped}/bin/quickshell" -v -v 2>&1)
 
-    echo "$logs" | grep -q "Scanning qml file "${quickshellWrapped}/shell.qml""
-    echo "$logs" | grep -q "Scanning qml file "${quickshellWrapped}/Bar.qml""
+      echo "$logs" | grep -q "Scanning qml file "${quickshellWrapped}/shell.qml""
+      echo "$logs" | grep -q "Scanning qml file "${quickshellWrapped}/Bar.qml""
 
-    touch $out
-  ''
+      touch $out
+    ''
+else
+  null
