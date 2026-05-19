@@ -7,7 +7,7 @@
 }:
 let
   inherit (lib)
-    mapAttrs
+    mapAttrs'
     mkDefault
     mkOption
     mkOptionDefault
@@ -28,7 +28,7 @@ in
         wlib.types.file (
           { name, ... }:
           {
-            path = mkOptionDefault config.constructFiles.${name}.path;
+            path = mkOptionDefault config.constructFiles."${name}Component".path;
           }
         )
       );
@@ -42,7 +42,7 @@ in
   };
 
   config.constructFiles =
-    mapAttrs (
+    mapAttrs' (
       name: val:
       let
         firstChar = builtins.substring 0 1 name;
@@ -50,8 +50,11 @@ in
         capitalizedName = (lib.toUpper firstChar) + rest;
       in
       {
-        content = val.content;
-        relPath = "config/${capitalizedName}.qml";
+        name = "${name}Component";
+        value = {
+          content = val.content;
+          relPath = "config/${capitalizedName}.qml";
+        };
       }
     ) config.components
     // {
