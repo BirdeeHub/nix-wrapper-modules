@@ -1,54 +1,78 @@
 {
   pkgs,
   self,
+  tlib,
   ...
 }:
 let
-  quickshellWrapped = self.wrappers.quickshell.wrap {
-    inherit pkgs;
-    configFile.content = ''
-      Scope {
-        Bar {}
-      }
-    '';
-
-    components.bar.content = ''
-      import Quickshell // for PanelWindow
-      import QtQuick // for Text
-
-      PanelWindow {
-        anchors {
-          top: true
-          left: true
-          right: true
-        }
-
-        implicitHeight: 30
-
-        Text {
-          anchors.centerIn: parent
-          text: "hello world"
-        }
-      }
-    '';
-  };
+  inherit (tlib)
+    isDirectory
+    isFile
+    test
+    ;
 in
-if builtins.elem pkgs.stdenv.hostPlatform.system self.wrappers.fish.meta.platforms then
-  pkgs.runCommand "quickshell-test"
-    {
-      LANG = "C.utf8";
-      LC_ALL = "C.utf8";
-    }
+test { wrapper = "quickshell"; } {
+  "wrapper should output correct version" =
+    let
+      wrapper = self.wrappers.quickshell.wrap {
+        inherit pkgs;
+      };
+    in
     ''
-      set +e
+      "${wrapper}/bin/quickshell" --version |
+      grep -q "${wrapper.version}"
+    '';
 
-      export XDG_RUNTIME_DIR=$(${pkgs.coreutils}/bin/mktemp -d)
-      logs=$("${quickshellWrapped}/bin/quickshell" -v -v 2>&1)
+  "wrapper should create config dir" =
+    let
+      wrapper = self.wrappers.quickshell.wrap {
+        inherit pkgs;
+      };
+    in
+    isDirectory "${wrapper}/config";
 
-      echo "$logs" | grep -q "Scanning qml file "${quickshellWrapped}/shell.qml""
-      echo "$logs" | grep -q "Scanning qml file "${quickshellWrapped}/Bar.qml""
+  "wrapper should load shell.qml and components" =
+    let
+      wrapper = self.wrappers.quickshell.wrap {
+        inherit pkgs;
 
-      touch $out
-    ''
-else
-  null
+        env.LANG = "C.utf8";
+        env.LC_ALL = "C.utf8";
+        env.XDG_RUNTIME_DIR = "/tmp";
+
+        configFile.content = ''
+          Scope {
+            Bar {}
+          }
+        '';
+
+        components.bar.content = ''
+          import Quickshell // for PanelWindow
+          import QtQuick // for Text
+
+          PanelWindow {
+            anchors {
+              top: true
+              left: true
+              right: true
+            }
+
+            implicitHeight: 30
+
+            Text {
+              anchors.centerIn: parent
+              text: "hello world"
+            }
+          }
+        '';
+      };
+    in
+    [
+      (isFile "${wrapper}/config/shell.qml")
+      (isFile "${wrapper}/config/Bar.qml")
+      ''
+        logs=$("${wrapper}/bin/quickshell" 2>&1)
+        echo "$logs" | grep -q "Launching config: \"${wrapper}/config/shell.qml\""
+      ''
+    ];
+}
