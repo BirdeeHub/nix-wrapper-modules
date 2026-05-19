@@ -111,4 +111,9 @@
     github = "allen-liaoo";
     githubId = 16383622;
   };
+  trustworthyadult = {
+    name = "Michael Ross";
+    github = "TrustworthyAdult";
+    githubId = 104172948;
+  };
 }
