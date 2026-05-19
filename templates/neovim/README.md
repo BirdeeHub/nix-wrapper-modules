@@ -78,7 +78,7 @@ If you wanted as simple as possible, you could use something more like the follo
       # plugins which are not loaded until you vim.cmd.packadd them ...
     ];
   };
-  extraPackages = with pkgs; [
+  runtimePkgs = with pkgs; [
     # lsps, formatters, etc...
   ];
   settings.config_directory = ./.; # or lib.generators.mkLuaInline "vim.fn.stdpath('config')";

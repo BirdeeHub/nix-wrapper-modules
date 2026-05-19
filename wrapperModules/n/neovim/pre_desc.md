@@ -51,7 +51,7 @@ A basic usage of this module might look something like this:
     values = "for lua";
     which = "will be placed in the generated info plugin for access";
   };
-  extraPackages = with pkgs; [
+  runtimePkgs = with pkgs; [
     # lsps, formatters, etc...
   ];
   settings.config_directory = ./.; # or lib.generators.mkLuaInline "vim.fn.stdpath('config')";

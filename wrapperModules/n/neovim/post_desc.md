@@ -201,15 +201,16 @@ It also receives the normal module arguments, like `config` from the current mod
 - You may want to move the installation of things like language servers into your specs. You can do that!
 
 ```nix
-{ config, lib, wlib, ... }: {
+{ config, lib, wlib, options, ... }: {
   config.specMods = {
-    options.extraPackages = lib.mkOption {
-      type = lib.types.listOf wlib.types.stringable;
-      default = [ ];
-      description = "a extraPackages spec field to put packages to suffix to the PATH";
+    options.runtimePkgs = options.runtimePkgs // {
+      description = ''
+        A runtimePkgs spec field to put packages on the PATH
+        If the spec is disabled, this value will not be included in the resulting neovim derivation
+      '';
     };
   };
-  config.extraPackages = config.specCollect (acc: v: acc ++ (v.extraPackages or [ ])) [ ];
+  config.runtimePkgs = config.specCollect (acc: v: acc ++ (v.runtimePkgs or [ ])) [ ];
 }
 ```
 
