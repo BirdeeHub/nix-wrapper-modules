@@ -38,7 +38,7 @@ in
 
   config.package = mkDefault pkgs.quickshell;
   config.flags = {
-    "--path" = "${builtins.placeholder config.outputName}/config";
+    "--path" = "${builtins.placeholder config.outputName}/${config.binName}-config";
   };
 
   config.constructFiles =
@@ -53,14 +53,14 @@ in
         name = "${name}Component";
         value = {
           content = val.content;
-          relPath = "config/${capitalizedName}.qml";
+          relPath = "${config.binName}-config/${capitalizedName}.qml";
         };
       }
     ) config.components
     // {
       generatedConfig = {
         content = config.configFile.content;
-        relPath = "config/shell.qml";
+        relPath = "${config.binName}-config/shell.qml";
       };
     };
 

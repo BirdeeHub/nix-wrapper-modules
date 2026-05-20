@@ -29,7 +29,7 @@ test { wrapper = "quickshell"; } {
         inherit pkgs;
       };
     in
-    isDirectory "${wrapper}/config";
+    isDirectory "${wrapper}/${wrapper.passthru.configuration.binName}-config";
 
   "wrapper should load shell.qml and components" =
     let
@@ -68,11 +68,11 @@ test { wrapper = "quickshell"; } {
       };
     in
     [
-      (isFile "${wrapper}/config/shell.qml")
-      (isFile "${wrapper}/config/Bar.qml")
+      (isFile "${wrapper}/${wrapper.passthru.configuration.binName}-config/shell.qml")
+      (isFile "${wrapper}/${wrapper.passthru.configuration.binName}-config/Bar.qml")
       ''
         logs=$("${wrapper}/bin/quickshell" 2>&1)
-        echo "$logs" | grep -q "Launching config: \"${wrapper}/config/shell.qml\""
+        echo "$logs" | grep -q "Launching config: \"${wrapper}/${wrapper.passthru.configuration.binName}-config/shell.qml\""
       ''
     ];
 }
