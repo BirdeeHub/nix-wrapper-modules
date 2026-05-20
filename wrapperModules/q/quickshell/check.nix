@@ -31,48 +31,75 @@ test { wrapper = "quickshell"; } {
     in
     isDirectory "${wrapper}/${wrapper.passthru.configuration.binName}-config";
 
-  "wrapper should load shell.qml and components" =
+  "file tests" =
     let
-      wrapper = self.wrappers.quickshell.wrap {
+      baseWrapper = self.wrappers.quickshell.apply {
         inherit pkgs;
 
         env.LANG = "C.utf8";
         env.LC_ALL = "C.utf8";
         env.XDG_RUNTIME_DIR = "/tmp";
-
-        configFile.content = ''
-          Scope {
-            Bar {}
-          }
-        '';
-
-        components.bar.content = ''
-          import Quickshell // for PanelWindow
-          import QtQuick // for Text
-
-          PanelWindow {
-            anchors {
-              top: true
-              left: true
-              right: true
-            }
-
-            implicitHeight: 30
-
-            Text {
-              anchors.centerIn: parent
-              text: "hello world"
-            }
-          }
-        '';
       };
-    in
-    [
-      (isFile "${wrapper}/${wrapper.passthru.configuration.binName}-config/shell.qml")
-      (isFile "${wrapper}/${wrapper.passthru.configuration.binName}-config/Bar.qml")
-      ''
+
+      shellContent = ''
+        Scope {
+          Bar {}
+        }
+      '';
+      barContent = ''
+        import Quickshell // for PanelWindow
+        import QtQuick // for Text
+
+        PanelWindow {
+          anchors {
+            top: true
+            left: true
+            right: true
+          }
+
+          implicitHeight: 30
+
+          Text {
+            anchors.centerIn: parent
+            text: "hello world"
+          }
+        }
+      '';
+
+      isShellPresent =
+        wrapper: isFile "${wrapper}/${wrapper.passthru.configuration.binName}-config/shell.qml";
+      isBarPresent =
+        wrapper: isFile "${wrapper}/${wrapper.passthru.configuration.binName}-config/Bar.qml";
+      isCorrectConfig = wrapper: ''
         logs=$("${wrapper}/bin/quickshell" 2>&1)
         echo "$logs" | grep -q "Launching config: \"${wrapper}/${wrapper.passthru.configuration.binName}-config/shell.qml\""
-      ''
-    ];
+      '';
+    in
+    {
+      "wrapper should load shell.qml and components" =
+        let
+          wrapper = baseWrapper.wrap {
+            configFile.content = shellContent;
+            components.bar = barContent;
+          };
+        in
+        [
+          (isShellPresent wrapper)
+          (isBarPresent wrapper)
+          (isCorrectConfig wrapper)
+        ];
+
+      "wrapper should load external files" =
+        let
+          wrapper = baseWrapper.wrap {
+            configFile.path = pkgs.writeText "quickshell-test-shell.qml" shellContent;
+            components.bar = pkgs.writeText "quickshell-test-bar.qml" barContent;
+          };
+        in
+        [
+          (isShellPresent wrapper)
+          (isBarPresent wrapper)
+          (isCorrectConfig wrapper)
+        ];
+    };
 }

@@ -9,10 +9,13 @@ let
   inherit (lib)
     mapAttrs'
     mkDefault
+    mkIf
     mkOption
     mkOptionDefault
     types
     ;
+
+  isLinkable = wlib.types.linkable.check;
 in
 {
   imports = [ wlib.modules.default ];
@@ -24,14 +27,7 @@ in
       default = { };
     };
     components = mkOption {
-      type = types.attrsOf (
-        wlib.types.file (
-          { name, ... }:
-          {
-            path = mkOptionDefault config.constructFiles."${name}Component".path;
-          }
-        )
-      );
+      type = types.attrsOf (types.either wlib.types.linkable types.lines);
       default = { };
     };
   };
@@ -48,11 +44,13 @@ in
         firstChar = builtins.substring 0 1 name;
         rest = builtins.substring 1 (-1) name;
         capitalizedName = (lib.toUpper firstChar) + rest;
+        linkable = isLinkable val;
       in
       {
         name = "${name}Component";
         value = {
-          content = val.content;
+          content = mkIf (!linkable) val;
+          builder = mkIf linkable ''ln -s ${val} "$2"'';
           relPath = "${config.binName}-config/${capitalizedName}.qml";
         };
       }
