@@ -5,8 +5,6 @@
 }:
 
 pkgs.runCommand "formatting-check" { } ''
-  ${
-    pkgs.lib.getExe self.formatter.${pkgs.stdenv.hostPlatform.system}
-  } --no-cache --fail-on-change ${../../.}
+  find ${../../.} -name "*.nix" -print0 | xargs -0 ${pkgs.lib.getExe pkgs.nixfmt} --check
   touch $out
 ''
