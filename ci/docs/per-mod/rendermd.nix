@@ -80,7 +80,7 @@ let
         (v: v)
     )
       ''
-        ## `${lib.options.showOption (opt.loc or [ ])}`
+        ### `${lib.options.showOption (opt.loc or [ ])}`
 
         ${mkOptField opt "description" ""}${mkOptField opt "relatedPackages" "Related packages:\n"}${
           mkOptField opt "type" "Type:${lib.optionalString (opt.readOnly or false == true) " (read-only)"}"
@@ -105,11 +105,19 @@ let
       moduleNotes = extraModuleNotes i mod;
     in
     lib.optionalString (mod.visible or [ ] != [ ]) ''
-      ## ${nameFromModule mod}
+      <details${if moduleStartsOpen i mod then " open" else ""}>
+      <summary markdown="block">
+
+      ## ${nameFromModule mod} {.foldable-heading}
+
+      </summary>
+      <div class="module-content">
+
       ${lib.optionalString (builtins.isString moduleNotes && moduleNotes != "") "\n${moduleNotes}\n"}
       ${lib.optionalString (mod.description.pre or "" != "" && descriptionIncluded "pre" i mod) ''
-        <details${if descriptionStartsOpen "pre" i mod then " open" else ""}>
-          <summary></summary>
+        <details${if descriptionStartsOpen "pre" i mod then " open" else ""} markdown="1">
+        <summary><h3>Pre</h3></summary>
+
 
         ${mod.description.pre}
 
@@ -118,7 +126,7 @@ let
       ''}
       ${lib.optionalString (mod.visible or [ ] != [ ]) ''
         <details${if moduleStartsOpen i mod then " open" else ""}>
-          <summary></summary>
+          <summary><h3>Options</h3></summary>
 
         ${lib.pipe mod.visible [
           (map renderOption)
@@ -130,12 +138,14 @@ let
       ${lib.optionalString (mod.description.post or "" != "" && descriptionIncluded "post" i mod) ''
 
         <details${if descriptionStartsOpen "post" i mod then " open" else ""}>
-          <summary></summary>
+          <summary><h3>Post</h3></summary>
 
         ${mod.description.post}
 
         </details>
       ''}
+      </div>
+      </details>
     '';
 in
 builtins.unsafeDiscardStringContext (

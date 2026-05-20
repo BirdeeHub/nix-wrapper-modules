@@ -89,6 +89,62 @@ in
     inherit (config) warningsAreErrors;
     title = "Core (builtin) Options set";
   } "core" { };
+  config.constructFiles."custom.css" = {
+    relPath = "${config.books.nix-wrapper-modules.generated-book-subdir}/custom.css";
+    passAsContent = true;
+    content = /* css */ ''
+      summary > h1, summary > h2, summary > h3 {
+        display: inline;
+      }
+      .module-content {
+        padding-left: 20px;
+      }
+    '';
+  };
+  config.constructFiles."sidebar_fold.js" = {
+    relPath = "${config.books.nix-wrapper-modules.generated-book-subdir}/sidebar_fold.js";
+    passAsContent = true;
+    content = /* js */ ''
+
+      (function () {
+
+        function updateSidebarFromDetails() {
+
+            const closed_modules = document.querySelectorAll("details:not([open]) .foldable-heading");
+            const open_modules = document.querySelectorAll("details[open] .foldable-heading");
+            if (closed_modules.length === 0 && open_modules === 0) { return; }
+
+            closed_modules.forEach(module_heading => {
+                const module_sidebar = document.querySelector(`a[href='#''${module_heading.id}']`);
+                module_sidebar.closest("li").classList.remove("expanded");
+            });
+
+            open_modules.forEach(module_heading => {
+                const module_sidebar = document.querySelector(`a[href='#''${module_heading.id}']`);
+                module_sidebar.closest("li").classList.add("expanded");
+            });
+        }
+
+        const foldable_details = document.querySelectorAll("details:has(.foldable-heading)");
+        foldable_details.forEach(details => {
+            details.addEventListener("toggle", () => { updateSidebarFromDetails(); });
+        });
+
+        // mdbook js loads toc elements on DOMContentLoaded so we have to use window 'load' here
+        window.addEventListener("load", function () {
+            updateSidebarFromDetails();
+
+            const foldable_sidebar = document.querySelectorAll("span:has(+ ol)");
+            foldable_sidebar.forEach(header => {
+              header.insertAdjacentHTML('beforeend', '<a class="chapter-fold-toggle header-toggle"><div>❱</div></a>');
+              header.querySelector("a.header-toggle").addEventListener("click", () => {
+                header.closest("li").classList.toggle("expanded");
+                });
+            });
+        });
+      })();
+    '';
+  };
   config.books.nix-wrapper-modules = {
     book = {
       book = {
@@ -98,7 +154,11 @@ in
         title = "nix-wrapper-modules";
         description = "Make wrapper derivations with the module system! Use the existing modules, or write your own!";
       };
-      output.html.git-repository-url = "https://github.com/BirdeeHub/nix-wrapper-modules";
+      output.html = {
+        git-repository-url = "https://github.com/BirdeeHub/nix-wrapper-modules";
+        additional-css = [ "custom.css" ];
+        additional-js = [ "sidebar_fold.js" ];
+      };
     };
     summary = [
       {
