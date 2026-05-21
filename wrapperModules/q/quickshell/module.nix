@@ -28,12 +28,19 @@ in
       type = types.attrsOf (types.either wlib.types.linkable types.lines);
       default = { };
     };
+    generated.output = mkOption {
+      type = types.str;
+      default = config.outputName;
+    };
+    generated.placeholder = mkOption {
+      type = types.str;
+      readOnly = true;
+      default = "${placeholder config.generated.output}/${config.binName}-config";
+    };
   };
 
   config.package = mkDefault pkgs.quickshell;
-  config.flags = {
-    "--path" = "${builtins.placeholder config.outputName}/${config.binName}-config";
-  };
+  config.flags."--path" = config.generated.placeholder;
 
   config.constructFiles =
     mapAttrs' (
@@ -49,6 +56,7 @@ in
         value = {
           content = mkIf (!linkable) val;
           builder = mkIf linkable ''ln -s ${val} "$2"'';
+          output = config.generated.output;
           relPath = "${config.binName}-config/${capitalizedName}.qml";
         };
       }
@@ -57,6 +65,7 @@ in
       generatedConfig = {
         content = mkIf (!isLinkable config.configFile) config.configFile;
         builder = mkIf (isLinkable config.configFile) ''ln -s ${config.configFile} "$2"'';
+        output = config.generated.output;
         relPath = "${config.binName}-config/shell.qml";
       };
     };
