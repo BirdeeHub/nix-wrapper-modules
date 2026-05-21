@@ -11,20 +11,18 @@ let
     mkDefault
     mkIf
     mkOption
-    mkOptionDefault
     types
     ;
 
   isLinkable = wlib.types.linkable.check;
+
 in
 {
   imports = [ wlib.modules.default ];
   options = {
     configFile = mkOption {
-      type = wlib.types.file {
-        path = mkOptionDefault config.constructFiles.generatedConfig.path;
-      };
-      default = { };
+      type = types.either wlib.types.linkable types.lines;
+      default = "";
     };
     components = mkOption {
       type = types.attrsOf (types.either wlib.types.linkable types.lines);
@@ -57,7 +55,8 @@ in
     ) config.components
     // {
       generatedConfig = {
-        content = config.configFile.content;
+        content = mkIf (!isLinkable config.configFile) config.configFile;
+        builder = mkIf (isLinkable config.configFile) ''ln -s ${config.configFile} "$2"'';
         relPath = "${config.binName}-config/shell.qml";
       };
     };

@@ -79,7 +79,7 @@ test { wrapper = "quickshell"; } {
       "wrapper should load shell.qml and components" =
         let
           wrapper = baseWrapper.wrap {
-            configFile.content = shellContent;
+            configFile = shellContent;
             components.bar = barContent;
           };
         in
@@ -92,7 +92,7 @@ test { wrapper = "quickshell"; } {
       "wrapper should load external files" =
         let
           wrapper = baseWrapper.wrap {
-            configFile.path = pkgs.writeText "quickshell-test-shell.qml" shellContent;
+            configFile = pkgs.writeText "quickshell-test-shell.qml" shellContent;
             components.bar = pkgs.writeText "quickshell-test-bar.qml" barContent;
           };
         in
