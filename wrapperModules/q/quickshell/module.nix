@@ -23,19 +23,28 @@ in
     configFile = mkOption {
       type = types.either wlib.types.linkable types.lines;
       default = "";
+      description = ''
+        The quickshell shell.qml configuration file.
+
+        Provide either inlined configuration or reference an external file.
+        It is used by quickshell using `--path`.
+      '';
     };
     components = mkOption {
       type = types.attrsOf (types.either wlib.types.linkable types.lines);
       default = { };
+      description = "Quickshell components to include in the configuration";
     };
     generated.output = mkOption {
       type = types.str;
       default = config.outputName;
+      description = "The constructed file's output";
     };
     generated.placeholder = mkOption {
       type = types.str;
       readOnly = true;
       default = "${placeholder config.generated.output}/${config.binName}-config";
+      description = "A placeholder for the generated config dir";
     };
   };
 
