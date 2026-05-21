@@ -15,7 +15,7 @@ let
     ;
 
   isLinkable = wlib.types.linkable.check;
-
+  makeForce = lib.mkOverride 0;
 in
 {
   imports = [ wlib.modules.default ];
@@ -42,6 +42,10 @@ in
   config.package = mkDefault pkgs.quickshell;
   config.flags."--path" = config.generated.placeholder;
 
+  config.passthru.generatedConfigDir = "${
+    config.wrapper.${config.generated.output}
+  }/${config.binName}-config";
+
   config.constructFiles =
     mapAttrs' (
       name: val:
@@ -56,8 +60,8 @@ in
         value = {
           content = mkIf (!linkable) val;
           builder = mkIf linkable ''ln -s ${val} "$2"'';
-          output = config.generated.output;
-          relPath = "${config.binName}-config/${capitalizedName}.qml";
+          output = makeForce config.generated.output;
+          relPath = makeForce "${config.binName}-config/${capitalizedName}.qml";
         };
       }
     ) config.components
@@ -65,8 +69,8 @@ in
       generatedConfig = {
         content = mkIf (!isLinkable config.configFile) config.configFile;
         builder = mkIf (isLinkable config.configFile) ''ln -s ${config.configFile} "$2"'';
-        output = config.generated.output;
-        relPath = "${config.binName}-config/shell.qml";
+        output = makeForce config.generated.output;
+        relPath = makeForce "${config.binName}-config/shell.qml";
       };
     };
 
