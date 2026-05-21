@@ -96,7 +96,7 @@ in
       summary > h1, summary > h2, summary > h3 {
         display: inline;
       }
-      .module-content {
+      details > details{
         padding-left: 20px;
       }
     '';
@@ -110,8 +110,9 @@ in
 
         function updateSidebarFromDetails() {
 
-            const closed_modules = document.querySelectorAll("details:not([open]) .foldable-heading");
-            const open_modules = document.querySelectorAll("details[open] .foldable-heading");
+            // relies on the fact that module headings are the only level 2 headings
+            const closed_modules = document.querySelectorAll("details:not([open]) h2");
+            const open_modules = document.querySelectorAll("details[open] h2");
             if (closed_modules.length === 0 && open_modules === 0) { return; }
 
             closed_modules.forEach(module_heading => {
@@ -125,7 +126,7 @@ in
             });
         }
 
-        const foldable_details = document.querySelectorAll("details:has(.foldable-heading)");
+        const foldable_details = document.querySelectorAll("details:has(h2)");
         foldable_details.forEach(details => {
             details.addEventListener("toggle", () => { updateSidebarFromDetails(); });
         });

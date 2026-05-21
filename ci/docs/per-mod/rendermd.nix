@@ -106,17 +106,20 @@ let
     in
     lib.optionalString (mod.visible or [ ] != [ ]) ''
       <details${if moduleStartsOpen i mod then " open" else ""}>
-      <summary markdown="block">
+      <summary>
 
-      ## ${nameFromModule mod} {.foldable-heading}
+      ## ${nameFromModule mod}
 
       </summary>
-      <div class="module-content">
 
       ${lib.optionalString (builtins.isString moduleNotes && moduleNotes != "") "\n${moduleNotes}\n"}
       ${lib.optionalString (mod.description.pre or "" != "" && descriptionIncluded "pre" i mod) ''
-        <details${if descriptionStartsOpen "pre" i mod then " open" else ""} markdown="1">
-        <summary><h3>Pre</h3></summary>
+        <details${if descriptionStartsOpen "pre" i mod then " open" else ""}>
+        <summary>
+
+        ### Overview
+
+        </summary>
 
 
         ${mod.description.pre}
@@ -126,7 +129,11 @@ let
       ''}
       ${lib.optionalString (mod.visible or [ ] != [ ]) ''
         <details${if moduleStartsOpen i mod then " open" else ""}>
-          <summary><h3>Options</h3></summary>
+          <summary>
+
+          ### Options
+
+          </summary>
 
         ${lib.pipe mod.visible [
           (map renderOption)
@@ -138,13 +145,16 @@ let
       ${lib.optionalString (mod.description.post or "" != "" && descriptionIncluded "post" i mod) ''
 
         <details${if descriptionStartsOpen "post" i mod then " open" else ""}>
-          <summary><h3>Post</h3></summary>
+          <summary>
+
+          ### Notes
+
+          </summary>
 
         ${mod.description.post}
 
         </details>
       ''}
-      </div>
       </details>
     '';
 in
