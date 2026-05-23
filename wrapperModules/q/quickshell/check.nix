@@ -69,7 +69,10 @@ test { wrapper = "quickshell"; } {
       isShellPresent =
         wrapper: isFile "${wrapper}/${wrapper.passthru.configuration.binName}-config/shell.qml";
       isBarPresent =
-        wrapper: isFile "${wrapper}/${wrapper.passthru.configuration.binName}-config/Bar.qml";
+        wrapper: mod:
+        isFile "${wrapper}/${wrapper.passthru.configuration.binName}-config/${
+          if mod != null then "${mod}/" else ""
+        }Bar.qml";
       isCorrectConfig = wrapper: ''
         logs=$("${wrapper}/bin/quickshell" 2>&1)
         echo "$logs" | grep -q "Launching config: \"${wrapper}/${wrapper.passthru.configuration.binName}-config/shell.qml\""
@@ -85,7 +88,7 @@ test { wrapper = "quickshell"; } {
         in
         [
           (isShellPresent wrapper)
-          (isBarPresent wrapper)
+          (isBarPresent wrapper null)
           (isCorrectConfig wrapper)
         ];
 
@@ -93,12 +96,29 @@ test { wrapper = "quickshell"; } {
         let
           wrapper = baseWrapper.wrap {
             configFile = pkgs.writeText "quickshell-test-shell.qml" shellContent;
-            components.bar = pkgs.writeText "quickshell-test-bar.qml" barContent;
+            components.bar.data = pkgs.writeText "quickshell-test-bar.qml" barContent;
+            components.bar.name = "Bar.qml";
           };
         in
         [
           (isShellPresent wrapper)
-          (isBarPresent wrapper)
+          (isBarPresent wrapper null)
+          (isCorrectConfig wrapper)
+        ];
+
+      "wrapper should keep correct hierachy with component modules" =
+        let
+          wrapper = baseWrapper.wrap {
+            configFile = "import qs.foo.boo\n" + shellContent;
+            components.bar = {
+              data = barContent;
+              module = "foo.boo";
+            };
+          };
+        in
+        [
+          (isShellPresent wrapper)
+          (isBarPresent wrapper "foo/boo")
           (isCorrectConfig wrapper)
         ];
     };
