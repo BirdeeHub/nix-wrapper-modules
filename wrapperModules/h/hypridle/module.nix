@@ -15,52 +15,45 @@
       example = lib.literalExpression ''
         {
           general = {
-            grace = 5;
-            hide_cursor = true;
-            ignore_empty_input = true;
+            after_sleep_cmd = "hyprctl dispatch dpms on";
+            ignore_dbus_inhibit = false;
+            lock_cmd = "hyprlock";
           };
 
-          background = [
+          listener = [
             {
-              path = "screenshot";
-              blur_passes = 3;
-              blur_size = 8;
+              timeout = 900;
+              on-timeout = "hyprlock";
             }
-          ];
-
-          input-field = [
             {
-              size = "200, 50";
-              position = "0, -80";
-              monitor = "";
-              dots_center = true;
-              fade_on_empty = false;
+              timeout = 1200;
+              on-timeout = "hyprctl dispatch dpms off";
+              on-resume = "hyprctl dispatch dpms on";
             }
           ];
         }
       '';
       description = ''
-        Configuration for Hyprlock.
-        See <https://wiki.hypr.land/Hypr-Ecosystem/hyprlock>
+        Configuration for Hypridle.
+        See <https://wiki.hypr.land/Hypr-Ecosystem/hypridle>
       '';
     };
 
-    "hyprlock.conf" = lib.mkOption {
+    "hypridle.conf" = lib.mkOption {
       type = wlib.types.file {
         path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
-        content = (
+        content =
           lib.optionalString (config.settings != { }) (
             wlib.toHyprconf {
               inherit (config) importantPrefixes;
               attrs = config.settings;
             }
           )
-          + lib.optionalString (config.extraConfig != "") config.extraConfig
-        );
+          + lib.optionalString (config.extraConfig != "") config.extraConfig;
       };
       default = { };
       description = ''
-        Hyprlock configuration file.
+        Hypridle configuration file.
       '';
     };
 
@@ -72,7 +65,7 @@
       '';
       description = ''
         Extra configuration lines appended to the end of
-        the Hyprlock configuration file.
+        the Hypridle configuration file.
       '';
     };
 
@@ -80,13 +73,9 @@
       type = lib.types.listOf lib.types.str;
       default = [
         "$"
-        "bezier"
-        "monitor"
-        "size"
       ];
       example = [
         "$"
-        "bezier"
       ];
       description = ''
         List of prefix strings whose matching configuration entries
@@ -95,16 +84,16 @@
     };
   };
 
-  config.package = lib.mkDefault pkgs.hyprlock;
-  config.flags."--config" = config."hyprlock.conf".path;
+  config.package = lib.mkDefault pkgs.hypridle;
+  config.flags."--config" = config."hypridle.conf".path;
 
   config.constructFiles.generatedConfig = {
-    content = config."hyprlock.conf".content;
+    content = config."hypridle.conf".content;
     relPath = "${config.binName}.conf";
   };
 
   config.meta = {
-    maintainers = [ wlib.maintainers.nouritsu ];
+    maintainers = [ wlib.maintainers.jonas-elhs ];
     platforms = lib.platforms.linux;
   };
 }
