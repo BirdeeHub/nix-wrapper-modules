@@ -96,8 +96,7 @@ test { wrapper = "quickshell"; } {
         let
           wrapper = baseWrapper.wrap {
             configFile = pkgs.writeText "quickshell-test-shell.qml" shellContent;
-            components.bar.data = pkgs.writeText "quickshell-test-bar.qml" barContent;
-            components.bar.name = "Bar.qml";
+            components.bar = pkgs.writeText "quickshell-test-bar.qml" barContent;
           };
         in
         [
@@ -110,10 +109,7 @@ test { wrapper = "quickshell"; } {
         let
           wrapper = baseWrapper.wrap {
             configFile = "import qs.foo.boo\n" + shellContent;
-            components.bar = {
-              data = barContent;
-              module = "foo.boo";
-            };
+            components.foo.boo.bar = barContent;
           };
         in
         [

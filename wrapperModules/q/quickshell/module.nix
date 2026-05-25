@@ -7,7 +7,8 @@
 }:
 let
   inherit (lib)
-    mapAttrs'
+    isStringLike
+    mapAttrs
     mkDefault
     mkIf
     mkOption
@@ -17,34 +18,15 @@ let
   isLinkable = wlib.types.linkable.check;
   makeForce = lib.mkOverride 0;
 
-  componentModule =
-    { name, config, ... }:
-    {
-      options = {
-        name = mkOption {
-          type = types.str;
-          default =
-            let
-              firstChar = builtins.substring 0 1 name;
-              rest = builtins.substring 1 (-1) name;
-            in
-            if (isLinkable config.data) then
-              (builtins.baseNameOf config.data)
-            else
-              (lib.toUpper firstChar) + rest + ".qml";
-          description = "The name of this component (either filename or directory name)";
-        };
-        data = mkOption {
-          type = types.either wlib.types.linkable types.lines;
-          description = "The component's inlined text or path";
-        };
-        module = mkOption {
-          type = types.nullOr types.str;
-          default = null;
-          description = "The component's module, to be imported by `import qs.<module>`";
-        };
-      };
-    };
+  componentType = types.submodule {
+    freeformType = types.lazyAttrsOf (
+      types.oneOf [
+        wlib.types.linkable
+        types.lines
+        (componentType // { description = "nested components"; })
+      ]
+    );
+  };
 in
 {
   imports = [ wlib.modules.default ];
@@ -60,9 +42,30 @@ in
       '';
     };
     components = mkOption {
-      type = types.attrsOf (wlib.types.spec componentModule);
+      type = componentType;
       default = { };
       description = "Quickshell components to include in the configuration";
+      example = lib.literalExpression ''
+        {
+          some.path."Bar.qml" = ./some-widget.qml;
+          light.clock = '''
+            Text {
+              text: "hello world"
+            }
+          ''';
+          dark.clock = "/etc/quickshell/Clock.qml";
+          lockscreensDir =
+            let
+              repo = pkgs.fetchFromGitHub {
+                owner = "Darkkal44";
+                repo = "qylock";
+                rev = "cde4d11e9e3d385620becdc877a0521e40a55e47";
+                hash = "sha256-17kRwrkdfe+hJdChMxove73zNCKcSi0nmSrO8Fh8hz0=";
+              };
+            in
+            "''${repo}/quickshell-lockscreen";
+        }
+      '';
     };
     generated.output = mkOption {
       type = types.str;
@@ -85,17 +88,34 @@ in
   }/${config.binName}-config";
 
   config.constructFiles =
-    mapAttrs' (name: val: {
-      name = "${name}Component";
-      value = {
-        content = mkIf (!isLinkable val.data) val.data;
-        builder = mkIf (isLinkable val.data) ''ln -s ${val.data} "$2"'';
-        output = makeForce config.generated.output;
-        relPath = makeForce "${config.binName}-config/${
-          if val.module != null then "${lib.replaceString "." "/" val.module}/" else ""
-        }${val.name}";
-      };
-    }) config.components
+    let
+      getComponents' =
+        prefix: val:
+        if builtins.isAttrs val then
+          lib.foldlAttrs (
+            acc: name: v:
+            let
+              value = if isStringLike v then builtins.toString v else v;
+
+              # Auto capitalization for qml files or inlined text
+              attrIsFile = builtins.isString v || (isStringLike v && lib.hasSuffix ".qml" value);
+
+              firstChar = builtins.substring 0 1 name;
+              restChars = builtins.substring 1 (-1) name;
+              finalName = if !attrIsFile then name else (lib.toUpper firstChar) + restChars + ".qml";
+            in
+            acc // getComponents' (prefix + "/" + finalName) value
+          ) { } val
+        else
+          { ${prefix} = val; };
+      getComponents = getComponents' "";
+    in
+    (mapAttrs (name: value: {
+      content = mkIf (!isLinkable value) value;
+      builder = mkIf (isLinkable value) ''ln -s ${value} "$2"'';
+      output = makeForce config.generated.output;
+      relPath = makeForce "${config.binName}-config${name}";
+    }) (getComponents config.components))
     // {
       generatedConfig = {
         content = mkIf (!isLinkable config.configFile) config.configFile;
