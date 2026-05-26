@@ -111,4 +111,9 @@
     github = "allen-liaoo";
     githubId = 16383622;
   };
+  aliaslion = {
+    name = "aliaslion";
+    github = "aliaslion";
+    githubId = "122117018";
+  };
 }
