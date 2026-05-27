@@ -59,5 +59,3 @@ A basic usage of this module might look something like this:
 ```
 
 Please also check out the [Tips and Tricks](#tips-and-tricks) section for more information!
-
-## Options:
