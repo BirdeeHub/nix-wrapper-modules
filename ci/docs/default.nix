@@ -93,9 +93,11 @@ in
     relPath = "${config.books.nix-wrapper-modules.generated-book-subdir}/custom.css";
     passAsContent = true;
     content = /* css */ ''
+      /* Set headings to display next to the details element dropdown */
       summary > h1, summary > h2, summary > h3 {
         display: inline;
       }
+      /* Indent module subsections (they are details elements in the module's details element) */
       details > details{
         padding-left: 20px;
       }
@@ -108,9 +110,10 @@ in
 
       (function () {
 
+        // Sets the sidebar sections open/closed status to match the open/closed state of the relevant details element
         function updateSidebarFromDetails() {
 
-            // relies on the fact that module headings are the only level 2 headings
+            // Relies on the fact that module headings are the only level 2 headings in details elements
             const closed_modules = document.querySelectorAll("details:not([open]) h2");
             const open_modules = document.querySelectorAll("details[open] h2");
             if (closed_modules.length === 0 && open_modules === 0) { return; }
@@ -135,6 +138,7 @@ in
         window.addEventListener("load", function () {
             updateSidebarFromDetails();
 
+            // Add dropdown arrows to the sidebar, using the existing functionality from mdbook's toc.js
             const foldable_sidebar = document.querySelectorAll("span:has(+ ol)");
             foldable_sidebar.forEach(header => {
               header.insertAdjacentHTML('beforeend', '<a class="chapter-fold-toggle header-toggle"><div>❱</div></a>');
