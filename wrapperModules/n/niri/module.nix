@@ -61,7 +61,10 @@ let
     );
 in
 {
-  imports = [ wlib.modules.default ];
+  imports = [
+    wlib.modules.default
+    wlib.modules.systemd
+  ];
 
   options = {
     v2-settings = lib.mkOption {
@@ -311,7 +314,7 @@ in
   };
   config.filesToPatch = [
     "share/applications/*.desktop"
-    "share/systemd/user/niri.service"
+    "lib/systemd/user/niri.service"
   ];
   # NOTE: gives users a nice error message about invalid configs, with actual knowledge of niri's config format
   config.drv.installPhase = lib.mkIf (!config.disableConfigValidation) ''
@@ -353,20 +356,14 @@ in
         + "\n"
         + config.settings.extraConfig;
   };
-  config.buildCommand.niriReloadConfig =
+  config.systemd.user.service.niri =
     lib.mkIf (!config.disableConfigHotReload && lib.versionAtLeast config.package.version "26.04")
       {
-        after = [ "symlinkScript" ];
-        data = ''
-          chmod +w ${placeholder config.outputName}/share/systemd/user/niri.service
-          cat >> ${placeholder config.outputName}/share/systemd/user/niri.service<<EOF
-          [Unit]
-          X-Reload-Triggers=${config.constructFiles.generatedConfig.path}
-          [Service]
-          ExecReload=${lib.getExe config.package} msg action load-config-file --path ${config.constructFiles.generatedConfig.path}
-          X-ReloadIfChanged=true
-          EOF
-        '';
+        Unit.X-Reload-Triggers = [ "${config.constructFiles.generatedConfig.path}" ];
+        Service = {
+          ExecReload = "${lib.getExe config.package} msg action load-config-file --path ${config.constructFiles.generatedConfig.path}";
+          X-ReloadIfChanged = true;
+        };
       };
   config.meta.maintainers = [
     wlib.maintainers.patwid
