@@ -17,8 +17,9 @@
         The Nushell environment configuration file.
 
         Provide either `.content` to inline the file contents or `.path` to reference an existing file.
-        This file is passed to Nushell using `--env-config`, and is typically used to define
-        environment variables or startup commands that apply to all shells.
+
+        The configuration directory of Nushell is set to a directory containing this file via
+        the XDG_CONFIG_HOME environment variable.
       '';
     };
     "config.nu" = lib.mkOption {
@@ -30,24 +31,24 @@
         The main Nushell configuration file.
 
         Provide either `.content` to inline the file contents or `.path` to reference an existing file.
-        This file is passed to Nushell using `--config`, and controls general shell behavior,
-        key bindings, and built-in command settings.
+
+        The configuration directory of Nushell is set to a directory containing this file via
+        the XDG_CONFIG_HOME environment variable.
+
+        You probably want to set $env.config.history.path here to prevent Nushell from trying to write
+        the history file to the Nix store.
       '';
     };
   };
 
-  config.flagSeparator = "=";
-  config.flags = {
-    "--config" = config."config.nu".path;
-    "--env-config" = config."env.nu".path;
-  };
+  config.env.XDG_CONFIG_HOME = "${placeholder config.outputName}/${config.binName}-config";
   config.constructFiles.generatedConfig = {
     content = config."config.nu".content;
-    relPath = "${config.binName}-config/config.nu";
+    relPath = "${config.binName}-config/nushell/config.nu";
   };
   config.constructFiles.generatedEnv = {
     content = config."env.nu".content;
-    relPath = "${config.binName}-config/env.nu";
+    relPath = "${config.binName}-config/nushell/env.nu";
   };
   config.passthru.shellPath = "/bin/nu";
 
