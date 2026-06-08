@@ -18,8 +18,7 @@ let
 
   jsonFormat = pkgs.formats.json { };
 
-  isPathLike = value:
-    builtins.isPath value || lib.isStorePath value;
+  isPathLike = value: builtins.isPath value || lib.isStorePath value;
 
   generatedSettings =
     config.userSettings
@@ -27,11 +26,9 @@ let
       auto_install_extensions = lib.genAttrs config.extensions (_: true);
     };
 
-  pathThemes =
-    lib.filterAttrs (_name: value: isPathLike value) config.themes;
+  pathThemes = lib.filterAttrs (_name: value: isPathLike value) config.themes;
 
-  generatedThemes =
-    lib.filterAttrs (_name: value: !(isPathLike value)) config.themes;
+  generatedThemes = lib.filterAttrs (_name: value: !(isPathLike value)) config.themes;
 
   hasGeneratedConfig =
     generatedSettings != { }
@@ -40,8 +37,7 @@ let
     || config.userDebug != [ ]
     || config.themes != { };
 
-  generatedZedConfigDir =
-    "${config.generatedConfig.path}/zed";
+  generatedZedConfigDir = "${config.generatedConfig.path}/zed";
 
   mkJsonFile = relPath: value: {
     inherit relPath;
@@ -50,11 +46,7 @@ let
 
   mkThemeFile = name: value: {
     relPath = "${config.generatedConfig.relPath}/zed/themes/${name}.json";
-    content =
-      if builtins.isString value then
-        value
-      else
-        builtins.toJSON value;
+    content = if builtins.isString value then value else builtins.toJSON value;
   };
 
 in
@@ -251,34 +243,25 @@ in
       '';
 
       maintainers = [
-        wlib.maintainers.YOUR_HANDLE
+        wlib.maintainers.sibaldh
       ];
     };
 
     constructFiles =
       optionalAttrs (generatedSettings != { }) {
-        zedSettings = mkJsonFile
-          "${config.generatedConfig.relPath}/zed/settings.json"
-          generatedSettings;
+        zedSettings = mkJsonFile "${config.generatedConfig.relPath}/zed/settings.json" generatedSettings;
       }
       // optionalAttrs (config.userKeymaps != [ ]) {
-        zedKeymaps = mkJsonFile
-          "${config.generatedConfig.relPath}/zed/keymap.json"
-          config.userKeymaps;
+        zedKeymaps = mkJsonFile "${config.generatedConfig.relPath}/zed/keymap.json" config.userKeymaps;
       }
       // optionalAttrs (config.userTasks != [ ]) {
-        zedTasks = mkJsonFile
-          "${config.generatedConfig.relPath}/zed/tasks.json"
-          config.userTasks;
+        zedTasks = mkJsonFile "${config.generatedConfig.relPath}/zed/tasks.json" config.userTasks;
       }
       // optionalAttrs (config.userDebug != [ ]) {
-        zedDebug = mkJsonFile
-          "${config.generatedConfig.relPath}/zed/debug.json"
-          config.userDebug;
+        zedDebug = mkJsonFile "${config.generatedConfig.relPath}/zed/debug.json" config.userDebug;
       }
       // lib.mapAttrs' (
-        name: value:
-        lib.nameValuePair "zedTheme-${name}" (mkThemeFile name value)
+        name: value: lib.nameValuePair "zedTheme-${name}" (mkThemeFile name value)
       ) generatedThemes;
 
     buildCommand.zedPathThemes = mkIf (pathThemes != { }) {
@@ -288,16 +271,12 @@ in
         "symlinkScript"
       ];
 
-      data =
-        ''
-          mkdir -p ${lib.escapeShellArg "${generatedZedConfigDir}/themes"}
-        ''
-        + lib.concatMapAttrsStringSep "\n" (
-          name: value:
-          ''
-            ln -sfn ${lib.escapeShellArg value} ${lib.escapeShellArg "${generatedZedConfigDir}/themes/${name}.json"}
-          ''
-        ) pathThemes;
+      data = ''
+        mkdir -p ${lib.escapeShellArg "${generatedZedConfigDir}/themes"}
+      ''
+      + lib.concatMapAttrsStringSep "\n" (name: value: ''
+        ln -sfn ${lib.escapeShellArg value} ${lib.escapeShellArg "${generatedZedConfigDir}/themes/${name}.json"}
+      '') pathThemes;
     };
 
     runShell = mkIf (hasGeneratedConfig && config.linkConfig) [
