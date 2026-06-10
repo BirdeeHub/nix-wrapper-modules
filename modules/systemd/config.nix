@@ -65,11 +65,13 @@ let
             nix-wrapper-modules: Systemd `.${ext}` file contains invalid sections: ${builtins.concatStringsSep " " invalidSections}
           '';
     in
-    lib.generators.toINI {
+    value.prefixedContent or ""
+    + lib.generators.toINI {
       listsAsDuplicateKeys = true;
       mkKeyValue =
         k: v: if v == null then "# ${k} is unset" else "${k}=${lib.generators.mkValueStringDefault { } v}";
-    } checked;
+    } checked
+    + value.suffixedContent or "";
   mapped = lib.pipe config.systemd [
     (lib.mapAttrsToList (
       type:
@@ -88,7 +90,7 @@ let
                   name
                   opts
                   ;
-                inherit (opts) install overwrite;
+                inherit (opts) doInstall overwrite;
               }
             ))
           ]
@@ -107,17 +109,17 @@ let
           let
             val = v.opts.Install.WantedBy or null;
           in
-          if builtins.isList val then val else [ ];
+          if builtins.isList val && v.doInstall then val else [ ];
         requiredBy =
           let
             val = v.opts.Install.RequiredBy or null;
           in
-          if builtins.isList val then val else [ ];
+          if builtins.isList val && v.doInstall then val else [ ];
         upheldBy =
           let
             val = v.opts.Install.upheldBy or null;
           in
-          if builtins.isList val then val else [ ];
+          if builtins.isList val && v.doInstall then val else [ ];
         drvKey = wlib.sanitizeEnvVarName ("systemd_" + v.type + "_" + v.ext + "_" + v.name);
         content = toSystemdFile v.ext v.opts;
       }
@@ -200,6 +202,21 @@ in
               fi
             '') v.links
           )}
+          ${builtins.concatStringsSep "\n" (
+            let
+              mkInstall = variant: target: ''
+                mkdir -p ${lib.escapeShellArg "${placeholder config.outputName}/lib/systemd/${v.type}/${target}.${variant}"}
+                ln -sf ${lib.escapeShellArg v.path} \
+                  ${lib.escapeShellArg "${placeholder config.outputName}/lib/systemd/${v.type}/${target}.${variant}/${v.name}.${v.ext}"}
+                mkdir -p ${lib.escapeShellArg "${placeholder config.outputName}/share/systemd/${v.type}/${target}.${variant}"}
+                ln -sf ${lib.escapeShellArg v.path} \
+                  ${lib.escapeShellArg "${placeholder config.outputName}/share/systemd/${v.type}/${target}.${variant}/${v.name}.${v.ext}"}
+              '';
+            in
+            map (mkInstall "wants") v.wantedBy
+            ++ map (mkInstall "requires") v.requiredBy
+            ++ map (mkInstall "upholds") v.upheldBy
+          )}
         '') mapped;
       in
       builtins.concatStringsSep "\n" commands;
@@ -208,88 +225,34 @@ in
   # NIXOS: $out/lib/systemd/system $out/lib/systemd/user
   # HM: $out/share/systemd/user
   # HJEM: $out/lib/systemd/user $out/etc/systemd/user (use $out/lib/systemd/user because its the same as nixos)
-  # for the relevant install modules, they will place the value in the systemd.?.packages list
-  # then, if enableServices is true, they will mirror the wantedBy and requiredBy fields to the nixos/hm/hjem module equivalent
-  # this is because nixos/hm/hjem map those things themselves
-  # rather than relying on systemd enable <name> to make these links at runtime
   config.install.modules.nixos =
     { config, ... }:
     let
       cfg = top.config.install.getWrapperConfig config;
-      user = {
-        user =
-          lib.optionalAttrs (cfg.systemd.user.enable && builtins.elem "nixos" cfg.systemd.user.install)
-            (
-              lib.pipe mapped [
-                (builtins.filter (v: v.type == "user" && builtins.elem "nixos" v.install))
-                (map (v: {
-                  ${v.ext or null + "s"}.${v.name or null} = { inherit (v) wantedBy requiredBy upheldBy; };
-                }))
-                (builtins.foldl' lib.recursiveUpdate { })
-              ]
-            );
-      };
-      system =
-        lib.optionalAttrs (cfg.systemd.system.enable && builtins.elem "nixos" cfg.systemd.system.install)
-          (
-            lib.pipe mapped [
-              (builtins.filter (v: v.type == "system" && builtins.elem "nixos" v.install))
-              (map (v: {
-                ${v.ext or null + "s"}.${v.name or null} = { inherit (v) wantedBy requiredBy upheldBy; };
-              }))
-              (builtins.foldl' lib.recursiveUpdate { })
-            ]
-          );
     in
     {
-      systemd = lib.mkIf cfg.enable (system // user // { packages = [ cfg.wrapper ]; });
+      systemd.packages = lib.mkIf (cfg.enable && builtins.elem "nixos" cfg.install.systemd) [
+        cfg.wrapper
+      ];
     };
   config.install.modules.homeManager =
     { config, ... }:
     let
       cfg = top.config.install.getWrapperConfig config;
-      user =
-        lib.optionalAttrs (cfg.systemd.user.enable && builtins.elem "homeManager" cfg.systemd.user.install)
-          (
-            lib.pipe mapped [
-              (builtins.filter (v: v.type == "user" && builtins.elem "homeManager" v.install))
-              (map (v: {
-                ${v.ext or null + "s"}.${v.name or null}.Install = { inherit (v) wantedBy requiredBy upheldBy; };
-              }))
-              (builtins.foldl' lib.recursiveUpdate { })
-            ]
-          );
     in
     {
-      systemd.user = lib.mkIf cfg.enable (
-        user
-        // {
-          packages = [ cfg.wrapper ];
-        }
-      );
+      systemd.user.packages = lib.mkIf (cfg.enable && builtins.elem "homeManager" cfg.install.systemd) [
+        cfg.wrapper
+      ];
     };
   config.install.modules.hjem =
     { config, ... }:
     let
       cfg = top.config.install.getWrapperConfig config;
-      user =
-        lib.optionalAttrs (cfg.systemd.system.enable && builtins.elem "hjem" cfg.systemd.user.install)
-          (
-            lib.pipe mapped [
-              (builtins.filter (v: v.type == "user" && builtins.elem "hjem" v.install))
-              (map (v: {
-                ${v.ext or null + "s"}.${v.name or null} = { inherit (v) wantedBy requiredBy upheldBy; };
-              }))
-              (builtins.foldl' lib.recursiveUpdate { })
-            ]
-          );
     in
     {
-      systemd = lib.mkIf cfg.enable (
-        user
-        // {
-          packages = [ cfg.wrapper ];
-        }
-      );
+      systemd.packages = lib.mkIf (cfg.enable && builtins.elem "hjem" cfg.install.systemd) [
+        cfg.wrapper
+      ];
     };
 }

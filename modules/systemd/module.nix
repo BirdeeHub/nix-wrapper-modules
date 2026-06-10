@@ -504,32 +504,32 @@ let
             freeformType = sectionType;
             options = {
               OnActiveSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
-                default = null;
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
                 description = "Timer relative to when this timer unit was activated.";
               };
               OnBootSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
-                default = null;
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
                 description = "Timer relative to boot time.";
               };
               OnStartupSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
-                default = null;
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
                 description = "Timer relative to when the service manager started.";
               };
               OnUnitActiveSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
-                default = null;
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
                 description = "Timer relative to when the triggered unit was last activated.";
               };
               OnUnitInactiveSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
-                default = null;
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
                 description = "Timer relative to when the triggered unit was last deactivated.";
               };
               OnCalendar = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.listOf lib.types.str;
                 default = [ ];
                 description = "Realtime (wallclock) calendar event expression.";
               };
@@ -656,25 +656,25 @@ let
                 default = true;
                 description = "Enable ${id} unit.";
               };
-              install = lib.mkOption {
-                type = lib.types.listOf (
-                  lib.types.enum [
-                    "nixos"
-                    "homeManager"
-                    "hjem"
-                  ]
-                );
-                default = [
-                  "nixos"
-                  "homeManager"
-                  "hjem"
-                ];
-                description = "Create installation logic for other nix module systems for ${id} unit. If a list, only for the named module system classes.";
+              doInstall = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+                description = "Create .wants .requires and .upholds links for ${id} unit.";
               };
               overwrite = lib.mkOption {
                 type = lib.types.bool;
                 default = false;
                 description = "Overwrite existing unit file instead of appending generated content to it if present.";
+              };
+              prefixedContent = lib.mkOption {
+                type = lib.types.lines;
+                default = "";
+                description = "Content to prepend to the beginning of the generated ${id} unit file.";
+              };
+              suffixedContent = lib.mkOption {
+                type = lib.types.lines;
+                default = "";
+                description = "Content to append to the end of the generated ${id} unit file.";
               };
             };
         };
@@ -684,21 +684,6 @@ let
           type = lib.types.bool;
           default = true;
           description = "Enable generation of systemd ${name} units.";
-        };
-        install = lib.mkOption {
-          type = lib.types.listOf (
-            lib.types.enum [
-              "nixos"
-              "homeManager"
-              "hjem"
-            ]
-          );
-          default = [
-            "nixos"
-            "homeManager"
-            "hjem"
-          ];
-          description = "Create installation logic for other nix module systems for ${name} units. If a list, only for the named module system classes.";
         };
         service = lib.mkOption {
           type = lib.types.attrsOf (
@@ -905,8 +890,22 @@ in
     ./config.nix
   ];
   config.meta.maintainers = [ wlib.maintainers.birdee ];
+  options.install.systemd = lib.mkOption {
+    type = lib.types.listOf (
+      lib.types.enum [
+        "nixos"
+        "homeManager"
+        "hjem"
+      ]
+    );
+    default = [
+      "nixos"
+      "homeManager"
+      "hjem"
+    ];
+    description = "Add the service files in the derivation to the specified module systems via the install module";
+  };
   # systemd.<name>.{user, system}.{target, path, timer, service, socket, scope, device, mount, automount, swap, path, slice}.{ relevant filemod + enable, install fields }
-  # enable is a bool option, and install is a list of strings for which classnames to reflect the values to that module system or not, or a bool true for all or false for none
   options.systemd = lib.mkOption {
     type = lib.types.submodule {
       options = {
