@@ -1,0 +1,93 @@
+{
+  config,
+  wlib,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  isLinkable = wlib.types.linkable.check;
+in
+{
+  imports = [ wlib.modules.default ];
+
+  options = {
+    configFile = lib.mkOption {
+      type = lib.types.either wlib.types.linkable lib.types.lines;
+      default = "";
+      description = ''
+        The Hyprland configuration file.
+
+        Provide either inlined configuration or reference an external file.
+      '';
+    };
+
+    "hyprland.lua" = lib.mkOption {
+      type = wlib.types.file {
+        path = lib.mkOptionDefault config.constructFiles.generatedConfig.path;
+        content =
+          let
+            getPluginPath =
+              plugin: if lib.types.package.check plugin then "${plugin}/lib/lib${plugin.pname}.so" else plugin;
+
+            pluginLoading =
+              if config.plugins != [ ] then
+                ''
+                  hl.on("hyprland.start", function()
+                  ${lib.concatMapStringsSep "\n" (
+                    plugin: "  hl.exec_cmd(\"hyprctl plugin load ${getPluginPath plugin}\")"
+                  ) config.plugins}
+                  end)
+
+                ''
+              else
+                "";
+
+            userConfigLoading = "dofile(\"${config.constructFiles.userConfig.path}\")";
+          in
+          pluginLoading + userConfigLoading;
+      };
+      default = { };
+      description = ''
+        Hyprland configuration file.
+      '';
+    };
+
+    plugins = lib.mkOption {
+      type = lib.types.listOf (lib.types.either lib.types.package lib.types.path);
+      default = [ ];
+      description = ''
+        Plugins to install and load alongside Hyprland.
+
+        Make sure to guard your plugin configuration behind
+        a check whether the plugin is loaded!
+      '';
+    };
+  };
+
+  config.package = lib.mkDefault pkgs.hyprland;
+  config.passthru = config.package.passthru;
+
+  config.flags."--config" = config."hyprland.lua".path;
+
+  config.constructFiles = {
+    userConfig =
+      let
+        linkable = isLinkable config.configFile;
+      in
+      {
+        content = lib.mkIf (!linkable) config.configFile;
+        builder = lib.mkIf linkable ''ln -s ${config.configFile} "$2"'';
+        relPath = "${config.binName}-user.lua";
+      };
+    generatedConfig = {
+      content = config."hyprland.lua".content;
+      relPath = "${config.binName}.lua";
+    };
+  };
+
+  config.meta = {
+    maintainers = [ wlib.maintainers.jonas-elhs ];
+    platforms = lib.platforms.linux;
+  };
+}
