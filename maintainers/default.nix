@@ -23,7 +23,7 @@
   };
   jomarm = {
     name = "Jomar Milan";
-    email = "jomarm@jomarm.com";
+    email = "jomarm@pyrodax.com";
     github = "MacaylaMarvelous81";
     githubId = 29156241;
     keys = [ { fingerprint = "F954 C5C9 5AE7 A312 183D  A76C 6AC4 6A6F 9A56 18D8"; } ];
