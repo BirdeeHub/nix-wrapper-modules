@@ -4,9 +4,8 @@
   config,
   pkgs,
   ...
-}:
-{
-  imports = [ wlib.modules.default ];
+}: {
+  imports = [wlib.modules.default];
 
   options = {
     customStyle = lib.mkOption {
@@ -14,7 +13,7 @@
         nullable = false;
         typeName = "TOML";
       };
-      default = { };
+      default = {};
       description = ''
         nix configuration for the stylua.
 
