@@ -94,7 +94,7 @@
         fi
       '';
     };
-    flags."--config-path" = config.constructFiles."stylua.toml".path;
+    flags."--config-path" = lib.mkIf (config.customStyle != {}) config.constructFiles.generatedConfig.path;
     meta = {
       maintainers = with wlib.maintainers; [
         kuppo
