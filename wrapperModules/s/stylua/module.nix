@@ -32,15 +32,35 @@
         };
       '';
     };
-    generateCpScript = lib.mkEnableOption ''
-      generate a copy script.
+    generateCpScript = lib.mkOption {
+      default = {};
+      description = ''
+        Options for copy script which help you quickly copy your
+        settings into `$CWD` for further customization.
 
-      The script `cp_stylua_toml` copys the generated `stylua.toml` file into the $CWD
-      in case you want to include it in the repo.
-      With the `-d|--default` option, will copy the default configuration file
-      (named `stylua.default.toml`).
-      Both files include all available options.
-    '';
+        The script `cp_stylua_toml` (name is customizable) copys the generated
+        `stylua.toml` file into '$CWD' in case you want to include it in the
+        repo or customize it.
+
+        With the `-i|--add-doc` option, it will add the configuraiton
+        documentation to the end of the copied file.
+      '';
+      type = lib.types.submodule {
+        options = {
+          enable = lib.mkEnableOption ''
+            generating a copy script.
+          '';
+          name = lib.mkOption {
+            type = lib.types.str;
+            default = "cp_stylua_toml";
+            description = ''
+              Customize the name of the copy script. If the name has `/` in it,
+              the wrapper will only take the file's base name.
+            '';
+          };
+        };
+      };
+    };
   };
   config = {
     package = lib.mkDefault pkgs.stylua;
@@ -50,21 +70,29 @@
       relPath = "styles/stylua.toml";
       builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     };
-    constructFiles."cp_stylua_toml" = lib.mkIf config.generateCpScript {
-      relPath = "bin/cp_stylua_toml";
+    constructFiles."${baseNameOf config.generateCpScript.name}" = lib.mkIf config.generateCpScript.enable {
+      relPath = "bin/${baseNameOf config.generateCpScript.name}";
       builder = "cp $1 $2 && chmod +x $2";
       content = ''
         #!${pkgs.bash}/bin/sh
-        help=$'cp_stylua_toml [-h|--help|-d|--default]\nCopy stylua files.\nOptions:\n\t-h|--help\tPrint this help\n\t-d|--default\tCopy the default style file'
+        help=$'cp_stylua_toml [-h|--help|-i|--add-doc]\nCopy stylua files.\nOptions:\n\t-h|--help\tPrint this help\n\t-i|--add-doc\tAdd the configuration doccumentation to the end of the stylua.toml'
+
+        target=$(pwd)/stylua.toml
+
+        doc=$(${placeholder config.outputName}/bin/stylua --help \
+        | ${pkgs.gnused}/bin/sed -n \
+        '/^FORMATTING OPTIONS:$/,$ {1d;s/^[[:space:]]*/   /;s/^[[:space:]]*--/** /;s/^/# /;p}')
+
         if [ "$#" -ne 1 ]; then
-          source=${placeholder config.outputName}/styles/stylua.toml
+          cp -f ${placeholder config.outputName}/styles/stylua.toml $(pwd)/ \
+          && chmod u+w "$target"
         elif [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
           echo "$help"
           exit 0
-        elif [ "$1" == "-d" ] || [ "$1" == "--default" ]; then
-          source=${placeholder config.outputName}/styles/stylua.default.toml
+        elif [ "$1" == "-i" ] || [ "$1" == "--add-doc" ]; then
+          cp -f ${placeholder config.outputName}/styles/stylua.toml $(pwd)/ \
+          && chmod u+w "$target" && echo >> "$target" && echo "$doc" >> "$target"
         fi
-        cp $source $(pwd)/
       '';
     };
     flags."--config-path" = config.constructFiles."stylua.toml".path;
