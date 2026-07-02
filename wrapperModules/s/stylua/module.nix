@@ -103,12 +103,12 @@
       description = ''
         Wrapper Module for [Stylua](https://github.com/JohnnyMorganz/StyLua).
 
-        The wrapper is used to customize the `stylua.toml` file. 
+        The wrapper is used to customize the `stylua.toml` file.
         You can add you options into `config.customStyle` with pure nix expressions.
 
-        The wrapper also provides a script which copys the generated `stylua.toml` or
-        the default style file into the CWD,
-        in case you want to include the confitugation into the repo.
+        The wrapper also provides a script which copys the generated `stylua.toml`
+        into `$CWD`, in case you want to include the confitugation into the repo or
+        customize it somehow.
       '';
     };
   };
