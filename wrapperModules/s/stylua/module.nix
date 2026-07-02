@@ -9,28 +9,6 @@
   imports = [ wlib.modules.default ];
 
   options = {
-    defaultStyle = lib.mkOption {
-      type = lib.types.attrs;
-      readOnly = true;
-      description = ''
-        Default settings for the `stylua.toml` (read only).
-      '';
-      default = {
-        syntax = "All";
-        column_width = 120;
-        line_endings = "Unix";
-        indent_type = "Tabs";
-        indent_width = 4;
-        quote_style = "AutoPreferDouble";
-        call_parentheses = "Always";
-        collapse_simple_statement = "Never";
-        space_after_function_names = "Never";
-        block_newline_gaps = "Never";
-        sort_requires = {
-          enabled = false;
-        };
-      };
-    };
     customStyle = lib.mkOption {
       type = wlib.types.structuredValueWith {
         nullable = false;
@@ -66,13 +44,9 @@
   };
   config = {
     package = lib.mkDefault pkgs.stylua;
-    constructFiles."stylua.default.toml" = {
-      content = builtins.toJSON config.defaultStyle;
-      relPath = "styles/stylua.default.toml";
-      builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
-    };
-    constructFiles."stylua.toml" = {
-      content = builtins.toJSON (lib.recursiveUpdate config.defaultStyle config.customStyle);
+    constructFiles.generatedConfig = lib.mkIf (config.customStyle
+      != {}) {
+      content = builtins.toJSON config.customStyle;
       relPath = "styles/stylua.toml";
       builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     };
