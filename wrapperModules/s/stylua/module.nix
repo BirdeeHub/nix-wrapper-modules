@@ -4,8 +4,9 @@
   config,
   pkgs,
   ...
-}: {
-  imports = [wlib.modules.default];
+}:
+{
+  imports = [ wlib.modules.default ];
 
   options = {
     customStyle = lib.mkOption {
@@ -13,7 +14,7 @@
         nullable = false;
         typeName = "TOML";
       };
-      default = {};
+      default = { };
       description = ''
         nix configuration for the stylua.
 
@@ -32,7 +33,7 @@
       '';
     };
     generateCpScript = lib.mkOption {
-      default = {};
+      default = { };
       description = ''
         Options for copy script which help you quickly copy your
         settings into `$CWD` for further customization.
@@ -63,38 +64,41 @@
   };
   config = {
     package = lib.mkDefault pkgs.stylua;
-    constructFiles.generatedConfig = lib.mkIf (config.customStyle
-      != {}) {
+    constructFiles.generatedConfig = lib.mkIf (config.customStyle != { }) {
       content = builtins.toJSON config.customStyle;
       relPath = "styles/stylua.toml";
       builder = ''${pkgs.remarshal}/bin/json2toml "$1" "$2"'';
     };
-    constructFiles."${baseNameOf config.generateCpScript.name}" = lib.mkIf config.generateCpScript.enable {
-      relPath = "bin/${baseNameOf config.generateCpScript.name}";
-      builder = "cp $1 $2 && chmod +x $2";
-      content = ''
-        #!${pkgs.bash}/bin/sh
-        help=$'cp_stylua_toml [-h|--help|-i|--add-doc]\nCopy stylua files.\nOptions:\n\t-h|--help\tPrint this help\n\t-i|--add-doc\tAdd the configuration doccumentation to the end of the stylua.toml'
+    constructFiles."${baseNameOf config.generateCpScript.name}" =
+      lib.mkIf config.generateCpScript.enable
+        {
+          relPath = "bin/${baseNameOf config.generateCpScript.name}";
+          builder = "cp $1 $2 && chmod +x $2";
+          content = ''
+            #!${pkgs.bash}/bin/sh
+            help=$'cp_stylua_toml [-h|--help|-i|--add-doc]\nCopy stylua files.\nOptions:\n\t-h|--help\tPrint this help\n\t-i|--add-doc\tAdd the configuration doccumentation to the end of the stylua.toml'
 
-        target=$(pwd)/stylua.toml
+            target=$(pwd)/stylua.toml
 
-        doc=$(${placeholder config.outputName}/bin/stylua --help \
-        | ${pkgs.gnused}/bin/sed -n \
-        '/^FORMATTING OPTIONS:$/,$ {1d;s/^[[:space:]]*/   /;s/^[[:space:]]*--/** /;s/^/# /;p}')
+            doc=$(${placeholder config.outputName}/bin/stylua --help \
+            | ${pkgs.gnused}/bin/sed -n \
+            '/^FORMATTING OPTIONS:$/,$ {1d;s/^[[:space:]]*/   /;s/^[[:space:]]*--/** /;s/^/# /;p}')
 
-        if [ "$#" -ne 1 ]; then
-          cp -f ${placeholder config.outputName}/styles/stylua.toml $(pwd)/ \
-          && chmod u+w "$target"
-        elif [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-          echo "$help"
-          exit 0
-        elif [ "$1" == "-i" ] || [ "$1" == "--add-doc" ]; then
-          cp -f ${placeholder config.outputName}/styles/stylua.toml $(pwd)/ \
-          && chmod u+w "$target" && echo >> "$target" && echo "$doc" >> "$target"
-        fi
-      '';
-    };
-    flags."--config-path" = lib.mkIf (config.customStyle != {}) config.constructFiles.generatedConfig.path;
+            if [ "$#" -ne 1 ]; then
+              cp -f ${placeholder config.outputName}/styles/stylua.toml $(pwd)/ \
+              && chmod u+w "$target"
+            elif [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+              echo "$help"
+              exit 0
+            elif [ "$1" == "-i" ] || [ "$1" == "--add-doc" ]; then
+              cp -f ${placeholder config.outputName}/styles/stylua.toml $(pwd)/ \
+              && chmod u+w "$target" && echo >> "$target" && echo "$doc" >> "$target"
+            fi
+          '';
+        };
+    flags."--config-path" = lib.mkIf (
+      config.customStyle != { }
+    ) config.constructFiles.generatedConfig.path;
     meta = {
       maintainers = with wlib.maintainers; [
         kuppo

@@ -3,9 +3,9 @@
   self,
   tlib,
   ...
-}: let
-  inherit
-    (tlib)
+}:
+let
+  inherit (tlib)
     fileContains
     isDirectory
     isFile
@@ -14,8 +14,9 @@
     test
     ;
 in
-  test {wrapper = "stylua";} {
-    "stylua wrapper test" = let
+test { wrapper = "stylua"; } {
+  "stylua wrapper test" =
+    let
       default = self.wrappers.stylua.wrap {
         inherit pkgs;
       };
@@ -39,31 +40,26 @@ in
         call_parentheses = "Always"
         column_width = 100
       '';
-    in [
+    in
+    [
       (isDirectory default)
       (notIsFile "${default}/styles/stylua.toml")
       (notIsFile "${default}/bin/cp_stylua_toml")
 
       (isDirectory styluaWrapper)
       (isFile "${styluaWrapper}/styles/stylua.toml")
-      (
-        fileContains "${styluaWrapper}/styles/stylua.toml" "${styluaTomlContent}"
-      )
+      (fileContains "${styluaWrapper}/styles/stylua.toml" "${styluaTomlContent}")
       (notIsFile "${styluaWrapper}/bin/cp_stylua_toml")
 
       (isDirectory cpScriptWrapper)
       (isFile "${cpScriptWrapper}/styles/stylua.toml")
-      (
-        fileContains "${cpScriptWrapper}/styles/stylua.toml" "${styluaTomlContent}"
-      )
+      (fileContains "${cpScriptWrapper}/styles/stylua.toml" "${styluaTomlContent}")
       (isFile "${cpScriptWrapper}/bin/cp_stylua_toml")
       (fileContains "${cpScriptWrapper}/bin/cp_stylua_toml" "bin/sh")
 
       (isDirectory cpScriptNameWrapper)
       (isFile "${cpScriptNameWrapper}/styles/stylua.toml")
-      (
-        fileContains "${cpScriptNameWrapper}/styles/stylua.toml" "${styluaTomlContent}"
-      )
+      (fileContains "${cpScriptNameWrapper}/styles/stylua.toml" "${styluaTomlContent}")
       (isFile "${cpScriptNameWrapper}/bin/test_script")
       (fileContains "${cpScriptNameWrapper}/bin/test_script" "bin/sh")
 
@@ -96,4 +92,4 @@ in
         grep -i "formatting options" /tmp/stylua.toml && rm -f /tmp/stylua.toml
       ''
     ];
-  }
+}
