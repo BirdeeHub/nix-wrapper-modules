@@ -67,6 +67,7 @@ This is done at the start of `early-init.el`.";
     content =
       lib.optionalString (config.userDirectory != null) ''
         (setq user-emacs-directory "${config.userDirectory}")
+        (setq package-user-dir (expand-file-name "elpa/" user-emacs-directory))
       ''
       + config.earlyConfigFile;
   };
