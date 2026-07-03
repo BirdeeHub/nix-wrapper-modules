@@ -85,13 +85,13 @@ test { wrapper = "stylua"; } {
       ''
         cd /tmp && ${cpScriptNameWrapper}/bin/test_script -i && \
         [[ -e /tmp/stylua.toml ]] && [[ -w /tmp/stylua.toml ]] && \
-        grep -i "formatting options" /tmp/stylua.toml && rm -f /tmp/stylua.toml
+        grep -i 'enabled = true|false' /tmp/stylua.toml && rm -f /tmp/stylua.toml
       ''
 
       ''
         cd /tmp && ${cpScriptNameWrapper}/bin/test_script --add-doc && \
         [[ -e /tmp/stylua.toml ]] && [[ -w /tmp/stylua.toml ]] && \
-        grep -i "formatting options" /tmp/stylua.toml && rm -f /tmp/stylua.toml
+        grep -i 'enabled = true|false' /tmp/stylua.toml && rm -f /tmp/stylua.toml
       ''
 
       ''

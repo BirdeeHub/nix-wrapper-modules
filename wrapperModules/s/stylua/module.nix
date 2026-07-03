@@ -81,8 +81,7 @@
             target=$(pwd)/stylua.toml
 
             doc=$(${placeholder config.outputName}/bin/stylua --help \
-            | ${pkgs.gnused}/bin/sed -n \
-            '/^FORMATTING OPTIONS:$/,$ {1d;s/^[[:space:]]*/   /;s/^[[:space:]]*--/** /;s/^/# /;p}')
+            | ${pkgs.gawk}/bin/awk '/^FORMATTING OPTIONS:/{f=1;next}f{sub(/^[[:space:]]*/,"");if($0=="")next;sub(/^--/,"** ");gsub(/ *<[^>]*>/,"");gsub(/-/,"_");if($0=="Enable requires sorting")$0=$0" [enabled = true|false]";if(/^\*\*/)printf "\n";print "# "$0}')
 
             if [ "$#" -ne 1 ]; then
               cp -f ${placeholder config.outputName}/styles/stylua.toml $(pwd)/ \
