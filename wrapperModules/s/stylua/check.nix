@@ -22,8 +22,9 @@ test { wrapper = "stylua"; } {
       };
       styluaWrapper = default.wrap {
         customStyle = {
-          call_parentheses = "Always";
+          call_parentheses = "None";
           column_width = 100;
+          quote_style = "ForceSingle";
         };
       };
       cpScriptWrapper = styluaWrapper.wrap {
@@ -37,8 +38,9 @@ test { wrapper = "stylua"; } {
         };
       };
       styluaTomlContent = ''
-        call_parentheses = "Always"
+        call_parentheses = "None"
         column_width = 100
+        quote-style = "ForceSingle"
       '';
     in
     [
@@ -67,7 +69,7 @@ test { wrapper = "stylua"; } {
       ''
         cd /tmp && ${cpScriptNameWrapper}/bin/test_script && \
         [[ -e /tmp/stylua.toml ]] && [[ -w /tmp/stylua.toml ]] && \
-        grep -i "always" /tmp/stylua.toml && rm -f /tmp/stylua.toml
+        grep -i "forcesingle" /tmp/stylua.toml && rm -f /tmp/stylua.toml
       ''
 
       ''
@@ -90,6 +92,23 @@ test { wrapper = "stylua"; } {
         cd /tmp && ${cpScriptNameWrapper}/bin/test_script --add-doc && \
         [[ -e /tmp/stylua.toml ]] && [[ -w /tmp/stylua.toml ]] && \
         grep -i "formatting options" /tmp/stylua.toml && rm -f /tmp/stylua.toml
+      ''
+
+      ''
+        echo "print 'ugly and bad but or and good'" > /tmp/test.lua
+      ''
+
+      ''
+        [[ $(${styluaWrapper}/bin/stylua -c /tmp/test.lua 2>&1) == "" ]]
+      ''
+
+      ''
+        output=$("${default}/bin/stylua" -c /tmp/test.lua 2>&1)
+        echo "$output" | grep -q 'print("ugly and bad but or and good")'
+      ''
+
+      ''
+        cd /tmp && ${cpScriptWrapper}/bin/cp_stylua_toml && cat stylua.toml
       ''
     ];
 }
