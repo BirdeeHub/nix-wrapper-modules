@@ -38,10 +38,7 @@
         Options for copy script which help you quickly copy your
         settings into `$CWD` for further customization.
 
-        The script `cp_stylua_toml` (name is customizable) copys the generated
-        `stylua.toml` file into '$CWD' in case you want to include it in the
-        repo or customize it.
-
+        The script's name can be customized.
         With the `-i|--add-doc` option, it will add the configuraiton
         documentation to the end of the copied file.
       '';
@@ -50,16 +47,16 @@
           enable = lib.mkEnableOption ''
             generating a copy script.
 
-            If you don't add `customStyle`, the script will ofcause copy nothing.
-            But you can use the `-i|--add-doc` option to generate one with documentation added
-            file.
+            If you don't add `customStyle`, the script will of cause copy nothing.
+            But you can use the `-i|--add-doc` option to generate one with only
+            documentation added.
           '';
           name = lib.mkOption {
             type = lib.types.str;
             default = "cp_stylua_toml";
             description = ''
               Customize the name of the copy script. If the name has `/` in it,
-              the wrapper will only take the file's base name.
+              the wrapper will ignore and only take the base name.
             '';
           };
         };
