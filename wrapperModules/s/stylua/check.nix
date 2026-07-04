@@ -37,63 +37,86 @@ test { wrapper = "stylua"; } {
           name = "./bin/test_script";
         };
       };
+      cpScriptOnlyWrapper = default.wrap {
+        generateCpScript.enable = true;
+      };
       styluaTomlContent = ''
         call_parentheses = "None"
         column_width = 100
         quote-style = "ForceSingle"
       '';
+      styluaFile = "styles/stylua.toml";
+      styluaToml = "/tmp/stylua.toml";
     in
     [
       (isDirectory default)
-      (notIsFile "${default}/styles/stylua.toml")
+      (notIsFile "${default}/${styluaFile}")
       (notIsFile "${default}/bin/cp_stylua_toml")
 
       (isDirectory styluaWrapper)
-      (isFile "${styluaWrapper}/styles/stylua.toml")
-      (fileContains "${styluaWrapper}/styles/stylua.toml" "${styluaTomlContent}")
+      (isFile "${styluaWrapper}/${styluaFile}")
+      (fileContains "${styluaWrapper}/${styluaFile}" "${styluaTomlContent}")
       (notIsFile "${styluaWrapper}/bin/cp_stylua_toml")
 
       (isDirectory cpScriptWrapper)
-      (isFile "${cpScriptWrapper}/styles/stylua.toml")
-      (fileContains "${cpScriptWrapper}/styles/stylua.toml" "${styluaTomlContent}")
+      (isFile "${cpScriptWrapper}/${styluaFile}")
+      (fileContains "${cpScriptWrapper}/${styluaFile}" "${styluaTomlContent}")
       (isFile "${cpScriptWrapper}/bin/cp_stylua_toml")
       (fileContains "${cpScriptWrapper}/bin/cp_stylua_toml" "bin/sh")
 
       (isDirectory cpScriptNameWrapper)
-      (isFile "${cpScriptNameWrapper}/styles/stylua.toml")
-      (fileContains "${cpScriptNameWrapper}/styles/stylua.toml" "${styluaTomlContent}")
+      (isFile "${cpScriptNameWrapper}/${styluaFile}")
+      (fileContains "${cpScriptNameWrapper}/${styluaFile}" "${styluaTomlContent}")
       (isFile "${cpScriptNameWrapper}/bin/test_script")
       (fileContains "${cpScriptNameWrapper}/bin/test_script" "bin/sh")
 
-      # test the copy script
+      (isDirectory cpScriptOnlyWrapper)
+      (isFile "${cpScriptOnlyWrapper}/bin/cp_stylua_toml")
+      (notIsFile "${cpScriptOnlyWrapper}/${styluaFile}")
+
       ''
         cd /tmp && ${cpScriptNameWrapper}/bin/test_script && \
-        [[ -e /tmp/stylua.toml ]] && [[ -w /tmp/stylua.toml ]] && \
-        grep -i "forcesingle" /tmp/stylua.toml && rm -f /tmp/stylua.toml
+        [[ -e ${styluaToml} ]] && [[ -w ${styluaToml} ]] && \
+        grep -i "forcesingle" ${styluaToml} && rm -f ${styluaToml}
       ''
 
       ''
         ${cpScriptNameWrapper}/bin/test_script -h |
-        grep -i "add-doc"
+        grep -i "add-doc" && [[ ! -e ${styluaToml} ]]
       ''
 
       ''
         ${cpScriptNameWrapper}/bin/test_script --help |
-        grep -i "add-doc"
+        grep -i "add-doc" && [[ ! -e ${styluaToml} ]]
       ''
 
       ''
         cd /tmp && ${cpScriptNameWrapper}/bin/test_script -i && \
-        [[ -e /tmp/stylua.toml ]] && [[ -w /tmp/stylua.toml ]] && \
-        grep -i 'enabled = true|false' /tmp/stylua.toml && rm -f /tmp/stylua.toml
+        [[ -e ${styluaToml} ]] && [[ -w ${styluaToml} ]] && \
+        grep -i 'enabled = true|false' ${styluaToml} && rm -f ${styluaToml}
       ''
 
       ''
         cd /tmp && ${cpScriptNameWrapper}/bin/test_script --add-doc && \
-        [[ -e /tmp/stylua.toml ]] && [[ -w /tmp/stylua.toml ]] && \
-        grep -i 'enabled = true|false' /tmp/stylua.toml && rm -f /tmp/stylua.toml
+        [[ -e ${styluaToml} ]] && [[ -w ${styluaToml} ]] && \
+        grep -i 'enabled = true|false' ${styluaToml} && rm -f ${styluaToml}
       ''
 
+      ''
+        cd /tmp && ${cpScriptWrapper}/bin/cp_stylua_toml && cat stylua.toml && rm -f ${styluaToml}
+      ''
+
+      ''
+        cd /tmp && ${cpScriptOnlyWrapper}/bin/cp_stylua_toml | grep "have not generated stylua.toml" \
+        && [[ ! -e ${styluaToml} ]]
+      ''
+
+      ''
+        cd /tmp && ${cpScriptOnlyWrapper}/bin/cp_stylua_toml -i \
+        && [[ -e ${styluaToml} ]] && grep 'enabled = true|false' ${styluaToml} && rm -f ${styluaToml}
+      ''
+
+      # prepare the test lua file
       ''
         echo "print 'ugly and bad but or and good'" > /tmp/test.lua
       ''
@@ -107,8 +130,9 @@ test { wrapper = "stylua"; } {
         echo "$output" | grep -q 'print("ugly and bad but or and good")'
       ''
 
+      # clean up
       ''
-        cd /tmp && ${cpScriptWrapper}/bin/cp_stylua_toml && cat stylua.toml
+        rm /tmp/test.lua
       ''
     ];
 }

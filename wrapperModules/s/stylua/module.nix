@@ -49,6 +49,10 @@
         options = {
           enable = lib.mkEnableOption ''
             generating a copy script.
+
+            If you don't add `customStyle`, the script will ofcause copy nothing.
+            But you can use the `-i|--add-doc` option to generate one with documentation added
+            file.
           '';
           name = lib.mkOption {
             type = lib.types.str;
@@ -79,19 +83,22 @@
             help=$'cp_stylua_toml [-h|--help|-i|--add-doc]\nCopy stylua files.\nOptions:\n\t-h|--help\tPrint this help\n\t-i|--add-doc\tAdd the configuration doccumentation to the end of the stylua.toml'
 
             target=$(pwd)/stylua.toml
+            source=${placeholder config.outputName}/styles/stylua.toml
 
             doc=$(${placeholder config.outputName}/bin/stylua --help \
             | ${pkgs.gawk}/bin/awk '/^FORMATTING OPTIONS:/{f=1;next}f{sub(/^[[:space:]]*/,"");if($0=="")next;sub(/^--/,"** ");gsub(/ *<[^>]*>/,"");gsub(/-/,"_");if($0=="Enable requires sorting")$0=$0" [enabled = true|false]";if(/^\*\*/)printf "\n";print "# "$0}')
 
             if [ "$#" -ne 1 ]; then
-              cp -f ${placeholder config.outputName}/styles/stylua.toml $(pwd)/ \
-              && chmod u+w "$target"
+              [[ ! -e "$source" ]] \
+              && echo "You have not generated stylua.toml. You can use -i|--add-doc option to add a stylua.toml with only documentation included." \
+              && exit 0
+              cp -f "$source" "$target" && chmod u+w "$target"
             elif [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
               echo "$help"
               exit 0
             elif [ "$1" == "-i" ] || [ "$1" == "--add-doc" ]; then
-              cp -f ${placeholder config.outputName}/styles/stylua.toml $(pwd)/ \
-              && chmod u+w "$target" && echo >> "$target" && echo "$doc" >> "$target"
+              [[ -e "$source" ]] && cp -f "$source" "$target"
+              touch "$target" && chmod u+w "$target" && echo "$doc" >> "$target"
             fi
           '';
         };
