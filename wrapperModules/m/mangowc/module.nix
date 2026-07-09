@@ -193,6 +193,25 @@
         default = "";
         internal = true;
       };
+
+      hotReload.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          When `true`, the wrapper will generate mango-reload service which will reload mango with the new config on rebuild.
+
+          Note: You have to start the mango-reload.service yourself.
+          For Example:
+          ```
+            systemd.packages = [ config.wrappers.mango.wrapper ];
+            wrappers.mango.settings.exec-once = [
+              "systemctl --user start mango-reload.service"
+            ];
+          ```
+
+          Mango 0.15 is required for this functionality.
+        '';
+      };
     };
 
   config = {
@@ -246,6 +265,23 @@
       content = config.autostart_sh;
       builder = ''
         printf '%s\n' ${lib.escapeShellArg "#!${pkgs.bash}${pkgs.bash.shellPath}"} > "$2" && cat "$1" >> "$2" && chmod +x "$2"
+      '';
+    };
+
+    buildCommand.mangoReloadConfig = lib.mkIf config.hotReload.enable {
+      data = ''
+        mkdir -p ${placeholder config.outputName}/lib/systemd/user/;
+        cat > ${placeholder config.outputName}/lib/systemd/user/mango-reload.service<<EOF
+        [Unit]
+        X-Reload-Triggers=${config.constructFiles.generatedConfig.path}
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=${lib.getExe' pkgs.coreutils "true"}
+        ExecReload=${lib.getExe' config.package "mmsg"} dispatch load_config_file,${config.constructFiles.generatedConfig.path}
+        X-ReloadIfChanged=true
+        EOF
       '';
     };
 
