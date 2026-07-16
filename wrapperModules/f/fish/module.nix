@@ -45,7 +45,7 @@ let
             "anywhere"
             "command"
           ];
-          default = "anywhere";
+          default = "command";
           description = ''
             The scope of the abbreviation.
 
