@@ -66,6 +66,11 @@ in
   };
 
   config = {
+    filesToPatch = [
+      "share/applications/*.desktop"
+      "share/dbus-1/services/com.mitchellh.ghostty.service"
+      "share/systemd/user/app-com.mitchellh.ghostty.service"
+    ];
     package = lib.mkDefault (if pkgs.stdenv.isDarwin then pkgs.ghostty-bin else pkgs.ghostty);
     constructFiles.ghosttyConfig = {
       content = toGhosttyConf config.settings;
