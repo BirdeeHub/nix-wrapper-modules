@@ -181,7 +181,7 @@ let
                 description = "Restart condition for the service process.";
               };
               RestartSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
                 default = null;
                 description = "Sleep duration before a restart attempt.";
               };
@@ -216,8 +216,8 @@ let
                 description = "Where to connect standard error (journal, syslog, null, tty, ...).";
               };
               X-ReloadIfChanged = lib.mkOption {
-                type = lib.types.bool;
-                default = true;
+                type = lib.types.nullOr lib.types.bool;
+                default = null;
                 description = "Whether to reload the service when its unit file changes.";
               };
             };
@@ -341,7 +341,7 @@ let
                 description = "Permissions for auto-created mount point directories (e.g. 0755).";
               };
               TimeoutSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
                 default = null;
                 description = "Maximum time to wait for the mount command to finish.";
               };
@@ -375,7 +375,7 @@ let
                 description = "Permissions for auto-created automount point directories (e.g. 0755).";
               };
               TimeoutIdleSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
                 default = null;
                 description = "Idle time after which systemd attempts to unmount.";
               };
@@ -414,7 +414,7 @@ let
                 description = "Comma-separated swapon options (e.g. discard).";
               };
               TimeoutSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
                 default = null;
                 description = "Maximum time to wait for swapon to finish.";
               };
@@ -504,28 +504,28 @@ let
             freeformType = sectionType;
             options = {
               OnActiveSec = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
+                default = null;
                 description = "Timer relative to when this timer unit was activated.";
               };
               OnBootSec = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
+                default = null;
                 description = "Timer relative to boot time.";
               };
               OnStartupSec = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
+                default = null;
                 description = "Timer relative to when the service manager started.";
               };
               OnUnitActiveSec = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
+                default = null;
                 description = "Timer relative to when the triggered unit was last activated.";
               };
               OnUnitInactiveSec = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
+                default = null;
                 description = "Timer relative to when the triggered unit was last deactivated.";
               };
               OnCalendar = lib.mkOption {
@@ -534,12 +534,12 @@ let
                 description = "Realtime (wallclock) calendar event expression.";
               };
               AccuracySec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
                 default = null;
                 description = "Scheduling accuracy window (default 1min).";
               };
               RandomizedDelaySec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
                 default = null;
                 description = "Random delay added to each timer firing.";
               };
@@ -625,7 +625,7 @@ let
                 description = "OOM killer behavior for the scope.";
               };
               RuntimeMaxSec = lib.mkOption {
-                type = lib.types.nullOr lib.types.str;
+                type = lib.types.nullOr (lib.types.either lib.types.str lib.types.number);
                 default = null;
                 description = "Maximum time the scope may be active (e.g. 1h, 30m).";
               };
