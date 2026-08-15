@@ -116,4 +116,9 @@
     github = "TrustworthyAdult";
     githubId = 104172948;
   };
+  aliaslion = {
+    name = "aliaslion";
+    github = "aliaslion";
+    githubId = 122117018;
+  };
 }
