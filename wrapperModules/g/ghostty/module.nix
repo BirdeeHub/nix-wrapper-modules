@@ -71,7 +71,9 @@ in
       "share/dbus-1/services/com.mitchellh.ghostty.service"
       "share/systemd/user/app-com.mitchellh.ghostty.service"
     ];
-    package = lib.mkDefault (if pkgs.stdenv.isDarwin then pkgs.ghostty-bin else pkgs.ghostty);
+    package = lib.mkDefault (
+      if pkgs.stdenv.hostPlatform.isDarwin then pkgs.ghostty-bin else pkgs.ghostty
+    );
     constructFiles.ghosttyConfig = {
       content = toGhosttyConf config.settings;
       relPath = "${config.binName}-config";
