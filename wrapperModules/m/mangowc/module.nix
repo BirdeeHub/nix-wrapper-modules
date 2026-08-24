@@ -250,7 +250,7 @@
     };
 
     flags."-c" = config.configFile.path;
-    package = lib.mkDefault pkgs.mangowc;
+    package = lib.mkDefault (pkgs.mangowc or pkgs.mango);
     passthru.providedSessions = config.package.passthru.providedSessions;
 
     meta.platforms = lib.platforms.linux;
