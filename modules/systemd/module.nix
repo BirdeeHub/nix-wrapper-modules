@@ -5,6 +5,25 @@
   ...
 }:
 let
+  description = ''
+    Options for adding systemd unit files to the derivation for both user and system unit search paths.
+
+    This does not add the derivation to the unit search path itself, it adds the unit files to the lib and share directories of the derivation.
+
+    When installing in a target module system using the `config.install` module, the importable module will do this for you (for supported module systems).
+    For example, in nixos, doing so will add the wrapper to `config.systemd.packages` alongside `environment.systemPackages`
+
+    See `options.install.systemd` to control which module systems to install in.
+
+    When using this module, the first time you install the derivation, systemd will not enable the service until you restart the system.
+
+    You may start it manually by name, but systemd does not refresh its paths for `.wants`, `.requires`, and `.upholds` links unless restarted.
+
+    However, for everything other than enablement, it will reflect updates by simply rebuilding with nixos or home manager.
+  '';
+  # TODO: rather than just accepting that this is how it works,
+  # research if enablement can be done better with either override.conf, or maybe a activation script if necessary.
+
   atom = lib.types.nullOr (
     lib.types.oneOf [
       lib.types.bool
@@ -654,12 +673,15 @@ let
               enable = lib.mkOption {
                 type = lib.types.bool;
                 default = true;
-                description = "Enable ${id} unit.";
+                description = "Enable generation of ${id} unit file.";
               };
               doInstall = lib.mkOption {
                 type = lib.types.bool;
                 default = true;
-                description = "Create .wants .requires and .upholds links for ${id} unit.";
+                description = ''
+                  Create .wants .requires and .upholds links for ${id} unit.
+                  (This will enable the service file automatically on next restart if the derivation ends up in your systemd unit search path.)
+                '';
               };
               overwrite = lib.mkOption {
                 type = lib.types.bool;
@@ -890,6 +912,7 @@ in
     ./config.nix
   ];
   config.meta.maintainers = [ wlib.maintainers.birdee ];
+  config.meta.description = description;
   options.install.systemd = lib.mkOption {
     type = lib.types.listOf (
       lib.types.enum [
@@ -903,19 +926,27 @@ in
       "homeManager"
       "hjem"
     ];
-    description = "Add the service files in the derivation to the specified module systems via the install module";
+    description = "Add the service files specified by `options.systemd` in the derivation to the specified module systems via the install module";
   };
   # systemd.<name>.{user, system}.{target, path, timer, service, socket, scope, device, mount, automount, swap, path, slice}.{ relevant filemod + enable, install fields }
   options.systemd = lib.mkOption {
+    description = description;
+    default = { };
     type = lib.types.submodule {
       options = {
         user = lib.mkOption {
           type = lib.types.submodule extensionsSubmodule;
           default = { };
+          description = ''
+            Options for defining user-level systemd unit files.
+          '';
         };
         system = lib.mkOption {
           type = lib.types.submodule extensionsSubmodule;
           default = { };
+          description = ''
+            Options for defining system-level systemd unit files.
+          '';
         };
       };
     };
