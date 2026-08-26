@@ -34,11 +34,17 @@
   declaredBy ?
     { declarations, ... }:
     let
+      removeViaOption =
+        str:
+        let
+          match = builtins.match "^(.*), via option .*$" str;
+        in
+        if match != null then builtins.elemAt match 0 else str;
       linkDest =
         v:
         if lib.hasPrefix wlib.modulesPath v then
           "https://github.com/BirdeeHub/nix-wrapper-modules/blob/main"
-          + lib.removePrefix wlib.modulesPath (toString v)
+          + lib.removePrefix wlib.modulesPath (removeViaOption (toString v))
         else
           toString v;
       linkName = v: lib.removeSuffix "/module.nix" (lib.removePrefix "${wlib.modulesPath}/" (toString v));
