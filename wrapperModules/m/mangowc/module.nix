@@ -6,7 +6,10 @@
   ...
 }:
 {
-  imports = [ wlib.modules.default ];
+  imports = [
+    wlib.modules.default
+    wlib.modules.systemd
+  ];
 
   options =
     let
@@ -268,21 +271,15 @@
       '';
     };
 
-    buildCommand.mangoReloadConfig = lib.mkIf config.hotReload.enable {
-      data = ''
-        mkdir -p ${placeholder config.outputName}/lib/systemd/user/;
-        cat > ${placeholder config.outputName}/lib/systemd/user/mango-reload.service<<EOF
-        [Unit]
-        X-Reload-Triggers=${config.constructFiles.generatedConfig.path}
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=${lib.getExe' pkgs.coreutils "true"}
-        ExecReload=${lib.getExe' config.package "mmsg"} dispatch load_config_file,${config.constructFiles.generatedConfig.path}
-        X-ReloadIfChanged=true
-        EOF
-      '';
+    systemd.user.service.mangoReloadConfig = lib.mkIf config.hotReload.enable {
+      Service = {
+        Type = "oneshot";
+        RemainAfterExit = "yes";
+        ExecStart = "${lib.getExe' pkgs.coreutils "true"}";
+        ExecReload = "${lib.getExe' config.package "mmsg"} dispatch load_config_file,${config.constructFiles.generatedConfig.path}";
+        X-ReloadIfChanged = true;
+      };
+      Unit.X-Reload-Triggers = [ config.constructFiles.generatedConfig.path ];
     };
 
     flags."-c" = config.configFile.path;
