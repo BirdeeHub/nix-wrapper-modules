@@ -121,4 +121,9 @@
     github = "aliaslion";
     githubId = 122117018;
   };
+  Nadim147c = {
+    github = "Nadim147c";
+    githubId = 90786729;
+    name = "Ephemeral";
+  };
 }
