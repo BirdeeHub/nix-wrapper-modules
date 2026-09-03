@@ -19,10 +19,8 @@ let
 
     You may start it manually by name, but systemd does not refresh its paths for `.wants`, `.requires`, and `.upholds` links unless restarted.
 
-    However, for everything other than enablement, it will reflect updates by simply rebuilding with nixos or home manager.
+    However, for everything other than enablement, it will reflect updates by simply rebuilding with nixos or home manager as long as it keeps the same name.
   '';
-  # TODO: rather than just accepting that this is how it works,
-  # research if enablement can be done better with either override.conf, or maybe a activation script if necessary.
 
   atom = lib.types.nullOr (
     lib.types.oneOf [
@@ -93,8 +91,7 @@ let
             X-Reload-Triggers = lib.mkOption {
               type = lib.types.listOf lib.types.str;
               default = [ ];
-              description = "A list of things to watch for reload.";
-              # TODO: research: things? What exactly? Watch how?
+              description = "A list of values to watch for reload which, if changed between nixos generations, will cause the unit to be reloaded.";
             };
           };
         };
@@ -660,6 +657,7 @@ let
         extraMod = { _prefix, ... }: {
           options =
             let
+              # id is just a nice looking name for documentation purposes such as "user <name>.service"
               id =
                 if builtins.length _prefix >= 3 then
                   let
