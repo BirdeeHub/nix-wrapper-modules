@@ -61,7 +61,10 @@ let
     );
 in
 {
-  imports = [ wlib.modules.default ];
+  imports = [
+    wlib.modules.default
+    wlib.modules.systemd
+  ];
 
   options = {
     v2-settings = lib.mkOption {
@@ -312,6 +315,7 @@ in
   };
   config.filesToPatch = [
     "share/applications/*.desktop"
+    "lib/systemd/user/niri.service"
     "share/systemd/user/niri.service"
   ];
   # NOTE: gives users a nice error message about invalid configs, with actual knowledge of niri's config format
@@ -354,18 +358,12 @@ in
         + "\n"
         + config.settings.extraConfig;
   };
-  config.buildCommand.niriReloadConfig = lib.mkIf (!config.disableConfigHotReload) {
-    after = [ "symlinkScript" ];
-    data = ''
-      chmod +w ${placeholder config.outputName}/share/systemd/user/niri.service
-      cat >> ${placeholder config.outputName}/share/systemd/user/niri.service<<EOF
-      [Unit]
-      X-Reload-Triggers=${config.constructFiles.generatedConfig.path}
-      [Service]
-      ExecReload=${lib.getExe config.package} msg action load-config-file --path ${config.constructFiles.generatedConfig.path}
-      X-ReloadIfChanged=true
-      EOF
-    '';
+  config.systemd.user.service.niri = lib.mkIf (!config.disableConfigHotReload) {
+    Unit.X-Reload-Triggers = [ "${config.constructFiles.generatedConfig.path}" ];
+    Service = {
+      ExecReload = "${lib.getExe config.package} msg action load-config-file --path ${config.constructFiles.generatedConfig.path}";
+      X-ReloadIfChanged = true;
+    };
   };
   config.meta.maintainers = [
     wlib.maintainers.patwid
