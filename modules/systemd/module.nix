@@ -907,7 +907,6 @@ let
 in
 {
   imports = [
-    wlib.modules.default
     ./config.nix
   ];
   config.meta.maintainers = [ wlib.maintainers.birdee ];

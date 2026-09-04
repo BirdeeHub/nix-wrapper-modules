@@ -333,7 +333,10 @@ test "systemd" {
             ...
           }:
           {
-            imports = [ wlib.modules.systemd ];
+            imports = [
+              wlib.modules.systemd
+              wlib.modules.default
+            ];
             package = pkgs.runCommand "test-pkg" { } ''
               mkdir -p $out/lib/systemd/user
               cat > $out/lib/systemd/user/test.service <<'EOF'
