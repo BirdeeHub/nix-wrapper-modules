@@ -111,16 +111,15 @@ so that we can all enjoy our portable configurations with as little individual s
 In service of that ideal, the plan is that ownership will be transferred to nix-community,
 so that there is community ownership of where our contributions will be maintained.
 
-The road-map before beginning that process consists of at least most of the following items:
-
-- Better doc-generation options, less buggy and made more available to individual modules outside of the main repository.
-- Services options for generating service files which can be installed by passing the package to the correct option.
-- Non-intrusive `bubblewrap` helper module, for programs that are difficult to wrap.
-- Better documentation in general. Things should already be covered in the docs, but not yet always in a way digestible for everyone.
-- Maybe 1 or 2 other things.
-
 Once the dust has settled, the process will be started to move it to nix-community,
 and we will start building a core team to maintain the repository long into the future!
+
+In terms of features and fixes besides new prebuilt wrapper modules, we would like to see:
+
+- Per-module documentation generation options or functions usable by the end user for their own modules in their configuration.
+- A `bubblewrap` helper module which can help wrap difficult packages. Maybe also a `sandbox-exec` version for mac users.
+- Mac-only fixes for issues such as re-wrapping things in a binary wrapper for derivation locations that on macos require binaries.
+- DBus and udev service file options similar to the ones for systemd.
 
 ## Short-term Goals
 
