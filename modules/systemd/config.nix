@@ -73,11 +73,12 @@ let
     } checked
     + value.suffixedContent or "";
   mapped = lib.pipe config.systemd [
+    (v: { inherit (v) user system; })
     (lib.mapAttrsToList (
       type:
       lib.flip lib.pipe [
         (v: if !v.enable or false then { } else v)
-        (lib.filterAttrs (n: v: builtins.isAttrs v))
+        (builtins.intersectAttrs sectionsByExtension)
         (lib.mapAttrsToList (
           ext:
           lib.flip lib.pipe [
