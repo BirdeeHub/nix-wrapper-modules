@@ -191,12 +191,6 @@
         '';
       };
 
-      extraContent = mkOption {
-        type = types.lines;
-        default = "";
-        internal = true;
-      };
-
       hotReload.enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
@@ -244,19 +238,12 @@
             sourcedFileToSourceExpression =
               sourcedFile:
               if isImpurePath sourcedFile then "source-optional=${sourcedFile}" else "source=${sourcedFile}";
-            extraConfig =
-              if config.extraContent or "" != "" then
-                lib.warn "wrapperModules.mangowc: config.extraContent is deprecated, please use config.extraConfig instead" (
-                  config.extraContent
-                )
-              else
-                config.extraConfig;
           in
           (lib.strings.concatMapStringsSep "\n" sourcedFileToSourceExpression config.sourcedFiles)
           + "\n"
           + settingsString
           + "\n"
-          + extraConfig
+          + config.extraConfig
           + "\n"
           + lib.optionalString (
             config.autostart_sh != ""

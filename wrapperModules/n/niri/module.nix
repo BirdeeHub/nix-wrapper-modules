@@ -67,18 +67,6 @@ in
   ];
 
   options = {
-    v2-settings = lib.mkOption {
-      type = lib.types.nullOr lib.types.bool;
-      default = null;
-      internal = true;
-      apply =
-        x:
-        lib.warnIf (x != null) ''
-          nix-wrapper-modules niri v2-settings option no longer has any effect!
-          `v2-settings == true` is now the default behaviour, and the deprecations for v1 have been removed.
-          You should remove `v2-settings = true` from your config, this option will be removed in a future version.
-        '';
-    };
     settings = lib.mkOption {
       description = ''
         Niri configuration settings.

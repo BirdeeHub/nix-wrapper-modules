@@ -995,17 +995,7 @@ in
           '';
           initial = pkgs.callPackage config.builderFunction (
             args
-            // rec {
-              wrapper = lib.warn ''
-                the `wrapper` argument of config.builderFunction is deprecated.
-
-                Instead of `wrapper`, you will need to run `buildCommand` argument instead.
-
-                It contains the sorted and concatenated value of `config.buildCommand` DAG option
-
-                If you wish to sort the `config.buildCommand` DAG yourself instead, this is fine,
-                but it has been provided in sorted form via the `buildCommand` argument for convenience.
-              '' buildCommand;
+            // {
               buildCommand = lib.pipe config.buildCommand [
                 (wlib.dag.unwrapSort "buildCommand")
                 (map (v: v.data))
