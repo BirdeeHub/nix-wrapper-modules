@@ -19,7 +19,8 @@ let
 
     You may start it manually by name, but systemd does not refresh its paths for `.wants`, `.requires`, and `.upholds` links unless restarted.
 
-    However, for everything other than enablement, it will reflect updates by simply rebuilding with nixos or home manager as long as it keeps the same name.
+    However, for everything other than enablement, it will reflect updates by simply rebuilding with nixos or home manager,
+    and it will continue to be automatically enabled as long as it keeps the same name.
   '';
 
   atom = lib.types.nullOr (
