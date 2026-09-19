@@ -127,4 +127,9 @@
     githubId = 101132529;
     name = "LodWKobku";
   };
+  nuclear-squid = {
+    name = "Nuclear-Squid";
+    github = "Nuclear-Squid";
+    githubId = 70967142;
+  };
 }
