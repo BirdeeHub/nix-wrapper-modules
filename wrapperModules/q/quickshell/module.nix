@@ -101,14 +101,18 @@ in
           lib.foldlAttrs (
             acc: name: v:
             let
-              value = if isStringLike v then builtins.toString v else v;
+              value = if isStringLike v then toString v else v;
 
               # Auto capitalization for qml files or inlined text
-              attrIsFile = builtins.isString v || (isStringLike v && lib.hasSuffix ".qml" value);
+              attrIsFile = builtins.isString v || (isLinkable v && lib.hasSuffix ".qml" value);
 
               firstChar = builtins.substring 0 1 name;
               restChars = builtins.substring 1 (-1) name;
-              finalName = if !attrIsFile then name else (lib.toUpper firstChar) + restChars + ".qml";
+              finalName =
+                if !attrIsFile then
+                  name
+                else
+                  (lib.toUpper firstChar) + restChars + lib.optionalString (!lib.hasSuffix ".qml" name) ".qml";
             in
             acc // getComponents' (prefix + "/" + finalName) value
           ) { } val
