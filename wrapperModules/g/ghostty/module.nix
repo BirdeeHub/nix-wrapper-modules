@@ -83,6 +83,7 @@ in
       "--config-file=${config.constructFiles.ghosttyConfig.path}"
     ];
     wrapperVariants.ghostty = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+      wrapperImplementation = "binary";
       exePath = "Applications/Ghostty.app/Contents/MacOS/ghostty";
       binDir = "Applications/Ghostty.app/Contents/MacOS";
     };
